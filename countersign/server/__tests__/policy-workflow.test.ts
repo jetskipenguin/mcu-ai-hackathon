@@ -101,6 +101,9 @@ test("crawler signs into the local ungoverned portal and captures the three real
   assert.equal(pages[0].forms[0].action, "POST /quiz/1/submit");
   assert.equal(pages[0].forms[0].fields.length, 5);
   assert.deepEqual(pages[1].forms[0].fields, ["body"]);
+  assert.equal(pages[1].forms.length, 1);
+  assert.doesNotMatch(pages[1].html, /data-demo-controls|reset_token|\/discussion\/2\/reset/,
+    "maintenance controls and CSRF tokens are never sent to the policy model");
   assert.deepEqual(pages[2].markedFields, ["name", "ssn", "dod-id", "medical"]);
   assert.match(pages[2].html, /900-12-3411/);
   assert.doesNotMatch(JSON.stringify(pages), /countersign_off_session|<script|<style/);

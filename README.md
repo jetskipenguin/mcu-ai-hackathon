@@ -94,14 +94,49 @@ confirmation. See [dataset import evidence](docs/build-log/dataset-import-verifi
 
 ## Demo Walkthrough
 
-1. Open `http://localhost:3001/login`, choose `Capt J. Demo`, and visit the three portal pages without Countersign enforcement or provenance writes.
+1. Open `http://localhost:3001/login`, choose `Capt J. Demo`, and visit the three portal pages without Countersign enforcement or ordinary-action provenance writes. The demo-only discussion reset is the explicit audit exception described below.
 2. Open `http://localhost:3000/login` in the browser/profile used by the demo agent and choose the same user. First login redirects to `/register`: click **Register passkey with Touch ID** and complete registration. Use the **Register passkey** navigation link to add a credential if another profile cannot access the existing one. Credentials survive server restarts in gitignored `data/credentials.json`.
 3. On `/quiz/1`, let the agent fill the form and submit. A fresh WebAuthn prompt requires human confirmation. After Touch ID, the page shows **Quiz submitted. Human presence verified.** The log records `presence-requested`, then `allowed` / `human-verified` with an assertion ID. Canceling leaves the form available for a fresh attempt; direct submissions without a valid assertion return a logged 403.
-4. On `/discussion/2`, `independent_first` hides peer posts until the learner submits an initial response. Declare `own-work` or `ai-assisted` at Publish, then complete the presence check. The published post displays **Own work (declared)** or **AI-assisted (disclosed)** separately from **Human presence verified at submit**. Contradictions publish with **Flagged for review**; expand **Provenance details** for the assertion and matching event IDs. Seeded posts show **Provenance not recorded**. Demo posts/badges last for the current server run; the JSONL audit persists.
+4. On `/discussion/2`, `independent_first` hides peer posts until the learner submits an initial response. Declare `own-work` or `ai-assisted` at Publish, then complete the presence check. The published post displays **Own work (declared)** or **AI-assisted (disclosed)** separately from **Human presence verified at submit**. Contradictions publish with **Flagged for review**; expand **Provenance details** for the assertion and matching event IDs. Seeded posts show **Provenance not recorded**. Demo posts/badges last for the current server run unless removed by the demo reset; the JSONL audit persists.
 5. On `/record/1`, the `marking` rule withholds record fields until signal evaluation. A suspected-agent session sees placeholders and an **Automation suspected** banner. Register a passkey and select **Verify presence to view** to reveal the record using WebAuthn.
 6. Open `/countersign/` on port 3000 to watch the provenance timeline. Click a user or use **Show user** for exact-ID filtering; `/countersign/?user=stu-0011` is a shareable drill-down. Expand **Event details** for the assertion ID, UP/UV, age, attestation, signals, telemetry, hash, and notes. One-second polling preserves open details and retains the last rows during a recoverable read error. Use `/countersign/policy/review` to compare active and draft policies.
 
 A2–A4 implement registration, action-bound WebAuthn verification, and governed submission enforcement. Challenges are single-use and bound to the user, session, action, form contents, and attestation; required UP/UV and age checks run server-side. A9 stores and renders the attested discussion's disclosure, presence status, and advisory review flags. Record masking, deterministic signal scoring, and action-bound reveal from A6–A8 share the same credential and verification service. A1's source-derived fixtures and B4's Registry-backed GPT-6 drafting are implemented and verified alongside policy approval.
+
+### Repeat the discussion demo
+
+1. Sign in as **Capt J. Demo** (`stu-0011`) on the instance to rehearse:
+   `http://localhost:3000/discussion/2` (governed) or
+   `http://localhost:3001/discussion/2` (ungoverned).
+2. Expand the initially collapsed **Demo controls**, check **I want to reset this
+   discussion demo.**, then select **Reset discussion demo**. The native form
+   returns to `/discussion/2?reset=1`, with peers server-hidden and the initial
+   response composer restored. Only this demo user gets these controls.
+3. Reload other open discussion tabs and publish a new initial response. On the
+   governed instance, choose a fresh attestation and complete a new WebAuthn
+   ceremony using the existing passkey. Old discussion challenges and reset tokens
+   are invalidated. Use a fresh agent context for a clean independent-first
+   measurement: reset cannot make a person or agent forget peers already seen.
+
+Keep both servers running; no restart, new dependency, or environment flag is
+needed. Reset removes only Capt J. Demo's runtime-added posts on that instance.
+Seeded posts, other learners' runtime posts, the other instance's posts, passkeys,
+session, signals, policies, and prior JSONL timeline remain. Each reset adds an
+administrative `demo-discussion-reset` event **even with `COUNTERSIGN=off`**;
+ordinary ungoverned actions still write no governance log. If the audit cannot be
+written, reset fails without removing posts.
+
+Demo controls and their CSRF tokens are excluded from the policy generator's
+HTML/form input. If generation reports a missing initial-post form, reset Capt J.
+Demo's discussion on the **ungoverned** instance and retry; the crawler does not
+reset posts automatically.
+
+This is a synthetic-demo affordance, not production administrator authorization
+or a human-only guarantee; reset itself requires no presence proof. See the
+[reset contract](docs/contracts.md#demo-only-discussion-reset) and
+[manual checklist](docs/manual-acceptance-testing.md#test-discussion-post-reset-post).
+The reset is covered by the **108-test** suite and isolated browser checks in
+both modes; see [verification evidence](docs/build-log/discussion-reset-verification.md).
 
 ### Student-record protection (A6–A8)
 

@@ -90,6 +90,14 @@ return { challenge_id: challengeId, options, expires_at: created + 120_000 };
 
 The binding is server-side: the authenticator signs the random challenge; the server remembers what that challenge was issued *for*. Never accept an assertion whose `challenge_id` isn't in the map. Delete the entry on first use, success or failure.
 
+The discussion demo reset also advances a server-only per-user/action generation.
+It revokes that user's discussion challenges across sessions; generation is checked
+after option generation and again in `checkAge`, including after async verification.
+Already-consumed/in-flight assertions cannot cross a reset. Registration, quiz,
+record, and other users' challenges remain separate. The portal adds a final
+generation guard so a stale request cannot publish after awaiting audit I/O.
+See [the reset contract](contracts.md#demo-only-discussion-reset).
+
 ### 3.2 Client — inside `countersign.js`
 
 ```js

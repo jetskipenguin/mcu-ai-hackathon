@@ -54,6 +54,7 @@ Stable IDs preserve the ordering and grouping in `docs/countersign-plan.md` sect
 ## Track A - Evening
 
 - [ ] **A11** Fix bugs from the integrated run; add nothing new.
+- [x] **A12** Add the user-requested discussion demo reset: restore Capt J. Demo's initial-post state on the current instance, retain fixtures/passkeys/audit, record the reset, and require a fresh governed submission after reset. Both modes, stale/concurrent requests, audit failure, and unaffected quiz/record/registration were verified; 108 tests and Chrome checks pass (see [reset evidence](build-log/discussion-reset-verification.md)).
 
 ## Track B - Morning
 

@@ -101,6 +101,7 @@ Then split into tracks.
 
 **Evening**
 - [ ] Bug fixes from the integrated run. Nothing new.
+- [x] User-requested discussion demo reset (A12): restore Capt J. Demo's initial-post state on the current instance, retain fixtures/passkeys/audit, record the reset, and require a fresh governed submission after reset. Both modes, stale/concurrent requests, audit failure, and unaffected quiz/record/registration were verified; 108 tests and Chrome checks pass (see [reset evidence](build-log/discussion-reset-verification.md)).
 
 ### Track B — Dashboard, policy generator, demo assets — Chris *(iterate)*
 **Morning (to 13:00)**
