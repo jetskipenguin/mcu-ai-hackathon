@@ -1,5 +1,13 @@
-import { appendFileSync } from "node:fs"
+import { appendFileSync, existsSync } from "node:fs"
 import path from "node:path"
+import { fileURLToPath } from "node:url"
+
+const policyFile = "governance.policy.json"
+const auditFile = "governance.audit.jsonl"
+// OpenCode passes the directory it was launched in, not the project's. Defaults are
+// therefore resolved next to this file as a fallback, so a copy of the plugin under
+// .opencode/plugins finds its policy no matter where OpenCode runs from.
+const pluginDirectory = path.dirname(fileURLToPath(import.meta.url))
 
 function contains(value: unknown, phrases: string[]): boolean {
   if (typeof value === "string") return phrases.some((phrase) => value.toLowerCase().includes(phrase))
@@ -10,13 +18,14 @@ function contains(value: unknown, phrases: string[]): boolean {
 }
 
 export default async (input: { directory: string }, options: Record<string, unknown> = {}) => {
+  // TODO: We want to fail if there is a broken configuration, it makes debugging much easier.
   // OpenCode skips plugins that reject during initialization. Keep hooks registered
   // and reject inside them instead, so a broken policy cannot silently disable us.
-  const loaded = await loadPolicy(input.directory, options).catch((error: unknown) => ({
+  const loaded = await loadPolicy(input?.directory, options).catch((error: unknown) => ({
     error:
       error instanceof Error && error.message.startsWith("GOVERNANCE_")
         ? error
-        : new Error("GOVERNANCE_CONFIG_INVALID: cannot initialize policy or audit file"),
+        : new Error(`GOVERNANCE_CONFIG_INVALID: cannot initialize policy or audit file (${String(error)})`),
   }))
 
   function inspect(hook: string, value: unknown) {
@@ -39,15 +48,31 @@ export default async (input: { directory: string }, options: Record<string, unkn
   }
 }
 
-async function loadPolicy(directory: string, options: Record<string, unknown>) {
+async function loadPolicy(opencodeDirectory: string, options: Record<string, unknown>) {
+  const policyOption = options.policyPath
+  const auditOption = options.auditPath
   if (
-    (options.policyPath !== undefined && typeof options.policyPath !== "string") ||
-    (options.auditPath !== undefined && typeof options.auditPath !== "string")
+    (policyOption !== undefined && typeof policyOption !== "string") ||
+    (auditOption !== undefined && typeof auditOption !== "string")
   )
     throw new Error("GOVERNANCE_CONFIG_INVALID: policyPath and auditPath must be strings")
+  if (typeof opencodeDirectory !== "string" || opencodeDirectory.length === 0)
+    throw new Error("GOVERNANCE_CONFIG_INVALID: OpenCode did not pass a working directory")
 
-  const policyPath = path.resolve(directory, (options.policyPath as string | undefined) ?? "governance.policy.json")
-  const auditPath = path.resolve(directory, (options.auditPath as string | undefined) ?? "governance.audit.jsonl")
+  // Explicit options are relative to the directory OpenCode runs in. Defaults prefer that
+  // directory too, so launching OpenCode in the project keeps using the project's policy.
+  const candidates = [path.join(opencodeDirectory, policyFile), path.join(pluginDirectory, policyFile)]
+  const policyPath =
+    typeof policyOption === "string"
+      ? path.resolve(opencodeDirectory, policyOption)
+      : candidates.find((candidate) => existsSync(candidate))
+  if (policyPath === undefined)
+    throw new Error(`GOVERNANCE_POLICY_INVALID: no policy file found; looked in ${candidates.join(" and ")}`)
+
+  const auditPath =
+    typeof auditOption === "string"
+      ? path.resolve(opencodeDirectory, auditOption)
+      : path.join(path.dirname(policyPath), auditFile)
   const policy: unknown = await Bun.file(policyPath)
     .json()
     .catch(() => {

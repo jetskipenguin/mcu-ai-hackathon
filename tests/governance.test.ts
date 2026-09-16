@@ -106,3 +106,12 @@ test("supports custom paths and reloads policy only on a new plugin instance", a
   )
   expect(await Bun.file(path.join(directory, "custom-audit.jsonl")).exists()).toBe(true)
 })
+
+test("names every searched location when no policy file exists", async () => {
+  const directory = await mkdtemp(path.join(tmpdir(), "governance-test-"))
+  directories.push(directory)
+  const hooks = await governance({ directory })
+  await expect(hooks["experimental.chat.system.transform"]({}, { system: ["Clean input"] })).rejects.toThrow(
+    /GOVERNANCE_POLICY_INVALID: no policy file found; looked in .*governance\.policy\.json and .*governance\.policy\.json/,
+  )
+})
