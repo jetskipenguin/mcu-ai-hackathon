@@ -1,8 +1,6 @@
 # OpenCode Governance
 
-An OpenCode plugin that blocks configured banned phrases in conversation content,
-system prompts, and tool definitions using case-insensitive substring matching.
-The included launcher runs OpenCode with DeepSeek (`deepseek/deepseek-flash`).
+An OpenCode plugin that can block configured banned phrases in conversations, system prompts and tool definitions.
 
 ## Set up the environment
 
@@ -56,3 +54,15 @@ decision if OpenCode displays a generic error.
 
 Each command starts a fresh session and reloads `.env` and the policy. The launcher
 automatically uses a fixed session title to avoid the known automatic-title bypass.
+
+## Set it up on a real opencode instance
+
+Previous sections only showed you how to set up the plugin for integration testing.
+
+To use it in a opencode interactively follow these steps: ( these steps will only add the plugin at the project level)
+
+- Add dependencies from the package.json to `.opencode/package.json`
+- Add `governance.audit.jsonl`, `governance.policy.json`, and `governance.ts` to `.opencode/plugins` directory.
+- Restart opencode
+- Submit one normal prompt with clean text. You should get a response back. If the plugin failed to load, this won't work
+- Submit one prompt with banned text, the response should be cancelled
