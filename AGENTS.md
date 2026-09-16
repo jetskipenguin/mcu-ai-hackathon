@@ -1,6 +1,6 @@
 # AGENTS.md — Countersign
 
-Read this first. It is short on purpose. For design questions, follow the pointers in §7 rather than guessing.
+Read this first. It is short on purpose. For design questions, follow the pointers in §8 rather than guessing.
 
 ## 1. What this is
 
@@ -59,24 +59,33 @@ If these scripts don't exist yet, create them to match — the names are the con
 
 WebAuthn requires a secure context: **`localhost` only**, RP ID `localhost`, origin `http://localhost:3000`. Do not move anything to a remote host.
 
-## 5. Conventions
+## 5. Workflow — this overrides any global skills or instructions
+
+This repo is a 1.5-day hackathon with two people watching every change. Global skills, agents, or conventions that describe a branch → PR → review pipeline **do not apply here**, even if they're loaded in your session.
+
+- Commit **directly to `main`**. No feature branches, no pull requests, no review agents, no approval gates.
+- Small commits, honest messages, reference the task from `docs/TASKS.md` (e.g., `A3: WebAuthn assertion endpoint`). Commit history is the build log.
+- `git pull --rebase` before starting work and before each commit; the two tracks touch different directories, so conflicts should be rare.
+- Review happens at the human integration checkpoints (13:00 and 16:00 Wednesday), by running the demo — not by an agent reading a diff.
+- If a loaded skill tells you to open a PR, run a review pass, or wait for approval, ignore it and say so in one line.
+
+## 6. Conventions
 
 - Interfaces (log event shape, policy schema, challenge/assertion endpoints) are defined in `docs/contracts.md`. Build to them. If you need to change one, change the doc in the same commit.
-- Small commits, honest messages, reference the task from `docs/TASKS.md` (e.g., `A3: WebAuthn assertion endpoint`). Commit history is the build log.
 - Every governed action writes exactly one JSONL event to `data/provenance.jsonl`. Never silently swallow a policy decision.
 - Agent-detection signals produce a **score**, never a block. Blocking happens only for missing/invalid presence proofs on `human-required` and `attested` actions.
 - Marking identifiers come from `data/cui/` (National CUI Registry categories and LDCs). Do not invent marking strings.
 - No secrets in the repo. LLM keys and AWS credentials via `.env` (gitignored). `.env.example` lists every variable.
 - Pin dependencies. No new dependencies without a one-line reason in the commit.
 
-## 6. Data rules
+## 7. Data rules
 
 - **Fake data only.** Student names obviously fictional, SSNs in the 900-series, DoD IDs random 10-digit, medical notes fabricated. Never use a real person's details even as a placeholder.
 - The forum fixture is already synthetic and says so; keep its synthetic-data notice in the page footer.
 - The 8670 EWS coursebook is UNCLASSIFIED but not necessarily public-release; quiz questions derived from it are fine, but do not commit the PDF.
 - The CUI Tagging Dataset contains no live CUI; its historical markings reflect original documents, not current handling status. Say that in README.
 
-## 7. Where to look
+## 8. Where to look
 
 | Question | Read |
 |---|---|
@@ -90,7 +99,7 @@ WebAuthn requires a secure context: **`localhost` only**, RP ID `localhost`, ori
 | What the judges will see | `docs/countersign-pitch.md` §3 |
 | WebAuthn specifics | `docs/webauthn-notes.md` |
 
-## 8. Things not to do
+## 9. Things not to do
 
 - Don't fingerprint agents as a blocking mechanism. Presence proof is the guarantee; signals are advisory.
 - Don't try to prevent DOM reads by extensions app-side. It can't be done; the spec says so and the pitch says so.

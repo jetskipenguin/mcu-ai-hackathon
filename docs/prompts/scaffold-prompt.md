@@ -40,14 +40,14 @@ Produce a **working skeleton**, not a finished product. Scaffold means: the app 
 
 ### Markdown files to create
 
-- `README.md`: what Countersign is (three sentences), the name in two sentences, architecture diagram (copy from the spec §6), how to run both instances, how to run the generator and tests, demo walkthrough (ungoverned on :3001 then governed on :3000; the three pages and what each demonstrates), datasets used with the caveats from `AGENTS.md` §6 verbatim, non-goals (spec §3 condensed to five bullets), status ("hackathon prototype, built in 1.5 days"), team. No marketing tone.
+- `README.md`: what Countersign is (three sentences), the name in two sentences, architecture diagram (copy from the spec §6), how to run both instances, how to run the generator and tests, demo walkthrough (ungoverned on :3001 then governed on :3000; the three pages and what each demonstrates), datasets used with the caveats from `AGENTS.md` §7 verbatim, non-goals (spec §3 condensed to five bullets), status ("hackathon prototype, built in 1.5 days"), team. No marketing tone.
 - `docs/TASKS.md`: every checkbox from `docs/countersign-plan.md` §1 (the Wednesday morning block), §2 (Track A and Track B), and §3, as a flat checklist with stable IDs — `M1…` for morning, `A1…` for Track A, `B1…` for Track B, `T1…` for Thursday — so commit messages can reference them. Preserve the order and grouping from the plan.
 - `docs/BUILD-LOG.md`: a table with columns Timestamp · Milestone · Evidence (path under `docs/build-log/`), seeded with one row for the initial docs commit (use `git log` for the timestamp) and one for this scaffold.
 - `docs/build-log/.gitkeep`.
 
 ### Rules
 
-- Follow `AGENTS.md` §5 and §6 exactly: fake data only, 900-series SSNs, no secrets, pinned dependencies, no new dependencies without a one-line reason in your summary.
+- Follow `AGENTS.md` §5, §6, and §7 exactly: commit directly to main, no PRs; fake data only, 900-series SSNs, no secrets, pinned dependencies, no new dependencies without a one-line reason in your summary.
 - Do not implement the WebAuthn verification logic, agent scoring, masking, attestation UI, or the real policy generator. Those are the tracks' work; leave clear `// TODO(track-a)` / `// TODO(track-b)` markers.
 - Do not add a database, a frontend framework for the portal, a CSS framework, Docker, CI, or anything not listed here.
 - Do not ask clarifying questions. Where the docs leave something open, choose the simplest option that satisfies the contracts and list it under "Assumptions" at the end.
