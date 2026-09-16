@@ -185,3 +185,29 @@ The raw HTML contains the full synthetic SSN `900-12-3411`. This check confirms 
 - Live `/countersign/events` corroborates an `own-work` submission: `presence-requested` at `2026-09-16T16:04:41.591Z`, followed by `allowed` / `human-verified` at `2026-09-16T16:04:46.801Z`, with UP/UV both true.
 - Allowed event: `evt_8443e01f0d0e41269a530c7e073f46ce`; assertion: `asr_fc061e79-5c3b-4ca9-9c77-fde012150ece`. No contradiction event appeared for this submission in the returned log.
 - The report confirms the live discussion behavior; an agent-specific recording has not been supplied.
+
+## Generator prerequisites — M16 / M22 (initial snapshot)
+
+- Provider configuration check: `LLM_PROVIDER=bedrock`, `AWS_REGION=us-east-1`; no Bedrock model ID, OpenAI/Anthropic model IDs, or corresponding API/AWS credential environment variables were present. Shared AWS credential-chain availability was not established. A live GovCloud West smoke test remains blocked on the intended model/credentials/region.
+- Read-only dataset search found only the explicitly labeled scaffold category/LDC lists (2 + 1), the 3-post forum fixture, and placeholder quiz questions. No source CUI ZIP/manifests/chunk JSONL, coursebook, full forum JSON, or download URL is available in the workspace/docs.
+- Continue implementing and verifying the generator/approval workflow against isolated fixtures. Real dataset extraction, authoritative Registry counts/citations, and live provider generation remain external prerequisites; no identifiers or source content will be invented.
+
+## 2026-09-16T13:14:32-04:00 — OpenAI generator and approval verified
+
+- User selected OpenAI/GPT-6. The saved key is now in gitignored `.env`; `.env.example` has empty secret fields. The account's model list exposed `gpt-6-astra`, which is configured in `OPENAI_MODEL` rather than hardcoded in application logic.
+- `npm run llm:smoke` passed live at `2026-09-16T16:41:00.717Z` using OpenAI `gpt-6-astra`. This resolves M16 for the selected provider; a GovCloud call was not claimed.
+- `npm run generate` succeeded live at `2026-09-16T16:43:41.784Z`. It crawled all three pages on port 3001, called GPT-6, validated the draft, and attached actual supplied definitions. Draft revision: `b1e7877cb5a27437d18f9d0081ac8a7f9df3bc7793ffb7b3e7f209a6c503d3d6`. The active policy file was unchanged.
+- The draft explicitly uses 2 category placeholders and 1 LDC placeholder; metadata/UI label this and citations use `scaffold-vocabulary`. M22 and the authoritative-data portion of B4 remain blocked on source files.
+- Implemented provider adapters, bounded local crawl, structured prompt, validated/atomic draft output, normalized vocabulary importer, policy review, per-rule/selected/all approval, and shared hot-reloading policy reads. Approval preserves the demo's presence-required interfaces and rejects stale review snapshots.
+- Native `.env` loading exposed a blank-session-secret login bug; empty values now select the documented ephemeral-secret fallback. Login/crawl regression tests pass.
+- Verification: 72 tests passed, zero failures/skips/TODOs; TypeScript build passed. Isolated Chrome checks exercised generation (replaying the separately obtained real model result), each approval control, stale-review rejection, and quiz/record WebAuthn after activation without restart.
+- Evidence: `docs/build-log/policy-generation-verification.md`, `docs/build-log/policy-review-draft.png`. M16, B2, and B6 are synchronized as complete in both task and plan checklists. B4 stays partial until the authoritative dataset is available.
+
+## 2026-09-16T17:56:54Z — Source datasets imported; A1 and B4 verified
+
+- The user supplied the three source datasets in `data/source/`. Imported all 126 Registry categories and 10 LDCs with exact definitions/source metadata. Category IDs use the manifest's unique `source_id`; nine categories lack abbreviations and two NATO entries share instruction text, so abbreviations cannot serve as a unique primary key. LDC definitions/notes come from the companion Registry text.
+- Selected Lesson 2 Reading, *Fundamentals of National Defense*, from PDF pages 4–23 of the 220-page AY27 coursebook; replaced five quiz placeholders with source-cited MCQs. Imported IFD 2's faculty prompt and 30 subsequent posts, preserving synthetic notice, source fields, thread links, and the unposted demo learner. Imported posts carry no presence proofs.
+- `npm run generate` passed live at `2026-09-16T17:54:06.439Z` using OpenAI `gpt-6-astra`, 126 categories/10 LDCs, and `placeholder: false`. Draft revision: `3d5be54ec30cb450a7755c4f9d1d8cbff3d201d5ff5d884302f709e48b1438e3`. Definitions cite General Privacy, Health Information, and Student Records. Active-policy activation remains the existing review/approval action.
+- `npm test`: 82 passed, zero failures/skips/TODOs. `npm run build`: passed. Isolated Chrome/virtual-authenticator checks passed generation replay, all approval controls, stale-review rejection, quiz submission, record reveal, and independent-first publication revealing exactly the 30 source posts.
+- Synced upstream through `8faac3e` while preserving the uncommitted generator work; retained both tracks' `.gitignore` additions. Raw datasets remain ignored. A1/B4 and M22's local-data subcheck are complete in both tracking documents. Registration of all three datasets on the hackathon portal still needs human confirmation; physical Comet/Touch ID recording remains separately tracked.
+- Evidence and reproducible mappings: `docs/build-log/dataset-import-verification.md`; screenshot: `docs/build-log/policy-review-registry.png`.

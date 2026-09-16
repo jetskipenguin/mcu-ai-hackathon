@@ -1,24 +1,24 @@
 [
   {
     "id": "stu-0003",
-    "name": "Maj Rowan Vector",
-    "email": "rowan.vector@example.invalid",
+    "name": "LCDR P. Raghunathan",
+    "email": "p.raghunathan@example.invalid",
     "ssn": "900-12-3403",
     "dod_id": "7301946285",
     "medical_note": "Fabricated note: temporary light-duty restriction through the end of the month."
   },
   {
     "id": "stu-0006",
-    "name": "Capt Mira North",
-    "email": "mira.north@example.invalid",
+    "name": "Capt S. Lindquist",
+    "email": "s.lindquist@example.invalid",
     "ssn": "900-12-3406",
     "dod_id": "4817205936",
     "medical_note": "Fabricated note: cleared for normal training with a routine follow-up."
   },
   {
     "id": "stu-0009",
-    "name": "1stLt Theo Lantern",
-    "email": "theo.lantern@example.invalid",
+    "name": "Capt A. Pierce",
+    "email": "a.pierce@example.invalid",
     "ssn": "900-12-3409",
     "dod_id": "6259031748",
     "medical_note": "Fabricated note: no current duty limitations."

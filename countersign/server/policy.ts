@@ -7,7 +7,7 @@ import type {
   PolicyRule,
 } from "./types.js";
 
-const DEFAULT_PATHS = {
+export const DEFAULT_POLICY_PATHS = {
   policyPath: resolve(
     process.cwd(),
     "countersign/policy/countersign.policy.json",
@@ -247,7 +247,7 @@ function validatePresence(value: unknown, context: string): void {
 }
 
 export function loadPolicy(paths: Partial<PolicyPaths> = {}): CountersignPolicy {
-  const resolvedPaths = { ...DEFAULT_PATHS, ...paths };
+  const resolvedPaths = { ...DEFAULT_POLICY_PATHS, ...paths };
   const knownMarkings = new Set([
     ...loadVocabulary(resolvedPaths.categoriesPath),
     ...loadVocabulary(resolvedPaths.ldcsPath),

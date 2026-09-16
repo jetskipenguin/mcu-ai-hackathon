@@ -10,6 +10,9 @@
     "dev": "tsx watch portal/server.ts",
     "dev:ungoverned": "COUNTERSIGN=off PORT=3001 tsx watch portal/server.ts",
     "generate": "tsx countersign/generate/index.ts",
+    "llm:smoke": "tsx countersign/generate/smoke.ts",
+    "cui:import": "tsx countersign/generate/import-cui.ts",
+    "forum:import": "tsx portal/import-forum.ts",
     "test": "tsx --test countersign/server/__tests__/*.test.ts",
     "build": "tsc -p tsconfig.json"
   },

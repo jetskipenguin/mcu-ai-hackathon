@@ -1,9 +1,130 @@
 [
   {
+    "id": "NOFORN",
+    "name": "No foreign dissemination",
+    "authority": "https://www.archives.gov/cui/registry/limited-dissemination",
+    "description": "Information may not be disseminated in any form to foreign governments, foreign nationals, foreign or international organizations, or non-US citizens.",
+    "source": {
+      "portion_marking": "NF",
+      "last_reviewed": "July 14, 2025",
+      "source_id": "national-cui-registry-limited-dissemination",
+      "source_url": "https://www.archives.gov/cui/registry/limited-dissemination"
+    }
+  },
+  {
+    "id": "FED ONLY",
+    "name": "Federal employees only",
+    "authority": "https://www.archives.gov/cui/registry/limited-dissemination",
+    "description": "Dissemination authorized only to (1) employees of United States Government executive branch departments and agencies (as the agency is defined in 5 U.S.C. 105), or (2) armed forces personnel of the United States or Active Guard and Reserve (as defined in 10 USC 101).",
+    "source": {
+      "portion_marking": "FED ONLY",
+      "last_reviewed": "July 14, 2025",
+      "source_id": "national-cui-registry-limited-dissemination",
+      "source_url": "https://www.archives.gov/cui/registry/limited-dissemination"
+    }
+  },
+  {
+    "id": "FEDCON",
+    "name": "Federal employees and contractors only",
+    "authority": "https://www.archives.gov/cui/registry/limited-dissemination",
+    "description": "Dissemination authorized only to (1) employees of United States Government executive branch departments and agencies (as the agency is defined in 5 U.S.C. 105), (2) armed forces personnel of the United States or Active Guard and Reserve (as defined in 10 USC 101), or (3) individuals or employers who enter into a contract with the United States (any department or agency) to perform a specific job, supply labor and materials, or for the sale of products and services, so long as dissemination is in furtherance of that contractual purpose.",
+    "source": {
+      "portion_marking": "FEDCON",
+      "last_reviewed": "July 14, 2025",
+      "source_id": "national-cui-registry-limited-dissemination",
+      "source_url": "https://www.archives.gov/cui/registry/limited-dissemination"
+    }
+  },
+  {
+    "id": "NOCON",
+    "name": "No dissemination to contractors",
+    "authority": "https://www.archives.gov/cui/registry/limited-dissemination",
+    "description": "No dissemination authorized to individuals or employers who enter into a contract with the United States (any department or agency) to perform a specific job, supply labor and materials, or for the sale of products and services. Note: This dissemination control is intended for use when dissemination is not permitted to Federal contractors, but permits dissemination to state, local, or tribal employees.",
+    "source": {
+      "portion_marking": "NOCON",
+      "last_reviewed": "July 14, 2025",
+      "source_id": "national-cui-registry-limited-dissemination",
+      "source_url": "https://www.archives.gov/cui/registry/limited-dissemination"
+    }
+  },
+  {
+    "id": "DL ONLY",
+    "name": "Dissemination list controlled",
+    "authority": "https://www.archives.gov/cui/registry/limited-dissemination",
+    "description": "Dissemination authorized only to those individuals, organizations, or entities included on an accompanying dissemination list. Note: Use of this limited dissemination control supersedes other limited dissemination controls, but cannot supersede dissemination stipulated in law, Federal regulation, or Government-wide policy.",
+    "source": {
+      "portion_marking": "DL ONLY",
+      "last_reviewed": "July 14, 2025",
+      "source_id": "national-cui-registry-limited-dissemination",
+      "source_url": "https://www.archives.gov/cui/registry/limited-dissemination"
+    }
+  },
+  {
+    "id": "RELIDO",
+    "name": "Releasable by information disclosure official",
+    "authority": "https://www.archives.gov/cui/registry/limited-dissemination",
+    "description": "A permissive foreign disclosure and release marking used on information to indicate that the originator has authorized a Senior Foreign Disclosure and Release Authority (SFDRA) to make further sharing decisions for uncaveated intelligence material (intelligence with no restrictive dissemination controls) in accordance with existing procedures, guidelines, and implementation guidance. Second party integrees (people who work solely under direction and operational control of the Director of the NSA/Chief of Central Security Service on cryptologic or information assurance activities) may access RELIDO information that is not classified military information (CMI) or signals intelligence (SIGINT) without a SFDRA review, including intelligence information created after 28 June 2010 - excluding SIGINT – which carries no foreign disclosure and release markings and hence is treated as if marked RELIDO.\nNote: Only agencies that are eligible to use RELIDO in the intelligence community (IC) classified information context may use this LDCM on CUI. It is defined and applied in the same manner as in the IC context.",
+    "source": {
+      "portion_marking": "RELIDO",
+      "last_reviewed": "July 14, 2025",
+      "source_id": "national-cui-registry-limited-dissemination",
+      "source_url": "https://www.archives.gov/cui/registry/limited-dissemination"
+    }
+  },
+  {
+    "id": "REL TO [USA, LIST]",
+    "name": "Authorized for release to certain nationals only",
+    "authority": "https://www.archives.gov/cui/registry/limited-dissemination",
+    "description": "Information has been predetermined by the designating agency to be releasable or has been released only to the specific foreign\ncountry(ies)/international organization(s) indicated, through established foreign disclosure procedures and channels.\nNote: When marking REL TO:\n1) USA must always appear first.\n2) Followed by trigraph country code(s),\nin alphabetical order.\n3) Followed by tetragraph codes for\ncoalition or international\norganization(s), in alphabetical order.",
+    "source": {
+      "portion_marking": "REL TO [USA, LIST]",
+      "last_reviewed": "July 14, 2025",
+      "source_id": "national-cui-registry-limited-dissemination",
+      "source_url": "https://www.archives.gov/cui/registry/limited-dissemination"
+    }
+  },
+  {
+    "id": "DISPLAY ONLY [USA, LIST]",
+    "name": "Display only",
+    "authority": "https://www.archives.gov/cui/registry/limited-dissemination",
+    "description": "Information is authorized for disclosure to a foreign recipient but without providing the foreign recipient with a physical copy for\nretention (regardless of medium), to the foreign country(ies)/international organization(s) indicated, through\nestablished foreign disclosure procedures and channels.\nNote: When marking DISPLAY ONLY:\n1) USA must always appear first.\n2) Followed by trigraph country code(s),\nin alphabetical order.\n3) Followed by tetragraph codes for\ncoalition or international\norganization(s), in alphabetical order.",
+    "source": {
+      "portion_marking": "DISPLAY ONLY [USA, LIST]",
+      "last_reviewed": "July 14, 2025",
+      "source_id": "national-cui-registry-limited-dissemination",
+      "source_url": "https://www.archives.gov/cui/registry/limited-dissemination"
+    }
+  },
+  {
+    "id": "Attorney-Client",
+    "name": "Attorney-client",
+    "authority": "https://www.archives.gov/cui/registry/limited-dissemination",
+    "description": "Dissemination of information protected by the attorney-client privilege beyond the attorney, the attorney’s agents, or the client can result in the loss of the privilege and is prohibited by this marking unless the agency's executive decision-makers decide to disclose the information outside the bounds of its protection.\nNote: This is for use only with the \"Legal Privilege\" category.",
+    "source": {
+      "portion_marking": "AC",
+      "last_reviewed": "July 14, 2025",
+      "source_id": "national-cui-registry-limited-dissemination",
+      "source_url": "https://www.archives.gov/cui/registry/limited-dissemination"
+    }
+  },
+  {
+    "id": "Attorney-WP",
+    "name": "Attorney work product",
+    "authority": "https://www.archives.gov/cui/registry/limited-dissemination",
+    "description": "Dissemination of information protected by the attorney work product privilege beyond the attorney, the attorney’s agents, or the client can result in the loss of the privilege and is prohibited by this marking unless specifically permitted by the overseeing attorney who originated the work product or their successor.\nNote: This is for use only with the \"Legal Privilege\" category.",
+    "source": {
+      "portion_marking": "AWP",
+      "last_reviewed": "July 14, 2025",
+      "source_id": "national-cui-registry-limited-dissemination",
+      "source_url": "https://www.archives.gov/cui/registry/limited-dissemination"
+    }
+  },
+  {
     "id": "PLACEHOLDER-LDC-INTERNAL",
     "name": "Placeholder Internal Dissemination Control",
     "authority": "Not authoritative - replace from the National CUI Registry dataset",
     "description": "Scaffold-only limited-dissemination identifier.",
-    "placeholder": true
+    "placeholder": true,
+    "legacy": true
   }
 ]

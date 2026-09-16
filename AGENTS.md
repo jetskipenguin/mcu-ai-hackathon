@@ -29,7 +29,7 @@ Priorities in order: (1) that flow works, (2) the other two pages work, (3) the 
 - `countersign.js` is **vanilla JS, no framework, no build step** — it must be injectable into any page.
 - Dashboard: server-rendered pages or a small React app, whichever is faster. Don't spend time on styling.
 - Storage: in-memory + JSON/JSONL files. No database.
-- LLM calls go through one module (`countersign/generate/llm.ts`) behind `LLM_PROVIDER=bedrock|openai|anthropic`. Bedrock (GovCloud West) is primary; OpenAI is fallback. Model IDs come from `.env`; never hardcode them.
+- LLM calls go through one module (`countersign/generate/llm.ts`) behind `LLM_PROVIDER=bedrock|openai|anthropic`. OpenAI is the selected demo provider (GPT-6 via the configured model ID); Bedrock GovCloud West remains supported. Model IDs come from `.env`; never hardcode them in application code.
 
 ```
 portal/                 mock "MCU Learning Portal" — the governed app (routes: /login /quiz/1 /discussion/2 /record/1)

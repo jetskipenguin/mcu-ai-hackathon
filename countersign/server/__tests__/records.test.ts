@@ -114,7 +114,7 @@ test("unflagged foreground records load for the signed-in user, not a hard-coded
   const otherSession = await login("stu-0003");
   assert.ok(otherSession);
   const other = await (await request("/countersign/record-fields", { signals: visible }, otherSession)).json();
-  assert.equal(other.fields.name, "Maj Rowan Vector");
+  assert.equal(other.fields.name, "LCDR P. Raghunathan");
   assert.equal(other.fields.ssn, "900-12-3403");
 });
 

@@ -13,6 +13,7 @@ import { isRecord } from "./canonical.js";
 import { CredentialStore } from "./credentials.js";
 import { appendProvenanceEvent } from "./log.js";
 import { loadPolicy, matchRule } from "./policy.js";
+import type { PolicyStore } from "./policy-store.js";
 import type { Attestation, PolicyRule, PortalUser, PresenceProof } from "./types.js";
 
 export const RP = {
@@ -219,6 +220,7 @@ export class WebAuthnService {
 export interface GovernanceServices {
   webAuthn: WebAuthnService;
   provenancePath?: string;
+  policies?: PolicyStore;
 }
 
 export function createWebAuthnRouter(
@@ -259,7 +261,7 @@ export function createWebAuthnRouter(
     const body = isRecord(request.body) ? request.body : {};
     const user = response.locals.user as PortalUser;
     const sessionId = response.locals.sessionId as string;
-    const policy = loadPolicy();
+    const policy = services.policies?.active() ?? loadPolicy();
     const action = actions.find((item) => item.action === body.action);
     const rule = action && matchRule(action.route, action.action, action.context?.(user), policy);
     if (!action || !rule || rule.id !== body.rule_id || !rule.presence ||

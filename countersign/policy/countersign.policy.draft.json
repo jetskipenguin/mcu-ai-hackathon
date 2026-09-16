@@ -1,11 +1,12 @@
 {
-  "version": "0.1",
+  "version": "draft-2026-09-16-registry-scoped-demo-governance",
   "app": "mcu-learning-portal",
   "defaults": {
     "class": "unrestricted",
     "signals": {
       "suspect_threshold": 0.6,
-      "webdriver": 0.4,
+      "webdriver": 0.6,
+      "background_record_read": 0.6,
       "fill_without_focus": 0.2,
       "uniform_timing": 0.2,
       "hidden_during_input": 0.2
@@ -23,7 +24,7 @@
         "uv": "required",
         "max_age_s": 60
       },
-      "rationale": "Exam submission. Academic integrity requires the enrolled student to perform this.",
+      "rationale": "The observed form submits five required multiple-choice answers for the Fundamentals of National Defense prerequisite review. Require human presence with user verification no more than 60 seconds old at this assessment submission boundary, rather than restricting ordinary quiz viewing. This verifies participation in the submission action; it does not certify authorship, independent reasoning, or absence of AI assistance. Automation signals remain advisory and must not independently block submission. This is a proposed governance rule for synthetic demonstration data.",
       "citations": []
     },
     {
@@ -41,7 +42,7 @@
         "uv": "preferred",
         "max_age_s": 60
       },
-      "rationale": "Q&A forum, independent_first: the initial post must be the learner's own thinking.",
+      "rationale": "The discussion form publishes an initial analytical response while peer posts remain hidden until that response is published. Attestation supports this independent-first sequence by asking the learner to affirm compliance and disclose AI use, without equating independence from peer posts with an unsupported claim of unaided authorship. Apply the rule only to initial posts, not subsequent peer responses. Recent user verification is preferred, not required; neither its absence nor advisory automation signals should become an additional action blocker. Human presence does not certify authorship. This is a proposed rule for the synthetic discussion interface.",
       "citations": []
     },
     {
@@ -52,28 +53,35 @@
       "class": "marking",
       "markings": [
         {
+          "selector": "[data-field=name]",
+          "marking": "cui-category-privacy",
+          "categories": [
+            "PII"
+          ]
+        },
+        {
           "selector": "[data-field=ssn]",
-          "marking": "PLACEHOLDER-CUI-PII",
+          "marking": "cui-category-privacy",
           "categories": [
             "PII"
           ]
         },
         {
           "selector": "[data-field=dod-id]",
-          "marking": "PLACEHOLDER-CUI-PII",
+          "marking": "cui-category-privacy",
           "categories": [
             "PII"
           ]
         },
         {
           "selector": "[data-field=medical]",
-          "marking": "PLACEHOLDER-CUI-PHI",
+          "marking": "cui-category-health-info",
           "categories": [
             "PHI"
           ]
         }
       ],
-      "page_marking": "PLACEHOLDER-CUI-PII",
+      "page_marking": "cui-category-student-records",
       "mask_when": "automation-suspected",
       "unmask": {
         "rule_id": "student-record.unmask",
@@ -83,12 +91,22 @@
           "max_age_s": 300
         }
       },
-      "rationale": "Personnel and medical data; not authorized for third-party models.",
+      "rationale": "The name identifies the student in context, the SSN is a direct personal identifier with substantial disclosure risk, and the DoD ID is a unique identifier linkable to that student. General Privacy is the supported non-provisional category for these three fields. The provisional Privacy Information and Sensitive Personally Identifiable Information entries are not selected merely because their descriptions overlap; the page does not establish an applicable provisional authority scope. A rank and DoD identifier alone also do not establish that the narrower authorities associated with Military Personnel Records govern this record. The medical field describes an evaluation and a temporary physical-activity limitation, making Health Information the appropriate content-specific proposal; the PHI label does not itself establish HIPAA applicability. Student Records is the page-level proposal because the assembled record directly relates to a student, while field markings preserve the distinctions between identifiers and health content. Legacy placeholder attributes are not authoritative. Mask these fields for automation-suspected sessions, but treat suspicion only as an advisory presentation signal, not proof of misuse or an action blocker. Keep student-record.unmask available with required user verification no more than 300 seconds old; successful verification permits reveal despite the suspicion signal and does not establish additional access entitlement. These are proposed governance mappings for fabricated data, not a classification determination or a determination that CUI Basic, CUI Specified, or any limited dissemination control applies.",
       "citations": [
         {
           "source": "cui-registry",
-          "ref": "PLACEHOLDER-CUI-PII",
-          "excerpt": "Placeholder citation; replace when the Registry dataset is extracted."
+          "ref": "cui-category-privacy",
+          "excerpt": "Refers to personal information, or, in some cases, \"personally identifiable information,\" as defined in OMB M-17-12, or \"means of identification\" as defined in 18 USC 1028(d)(7)."
+        },
+        {
+          "source": "cui-registry",
+          "ref": "cui-category-health-info",
+          "excerpt": "As per 42 USC 1320d(4), \"health information\" means any information, whether oral or recorded in any form or medium, that (A) is created or received by a health care provider, health plan, public health authority, employer, life insurer, school or university, or health care clearinghouse; and (B) relates to the past, present, or future physical or mental health or condition of an individual, the provision of health care to an individual, or the past, present, or future payment for the provision of health care to an individual."
+        },
+        {
+          "source": "cui-registry",
+          "ref": "cui-category-student-records",
+          "excerpt": "As per 20 USC 1232g, the Family Educational Rights and Privacy Act of 1974, an education record which is comprised of those records which are directly related to a student."
         }
       ]
     }

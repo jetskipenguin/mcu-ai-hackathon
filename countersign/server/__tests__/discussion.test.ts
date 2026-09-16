@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { once } from "node:events";
+import { readFileSync } from "node:fs";
 import { mkdtemp, rm } from "node:fs/promises";
 import type { AddressInfo } from "node:net";
 import { tmpdir } from "node:os";
@@ -11,6 +12,14 @@ import { CredentialStore } from "../credentials.js";
 import { readProvenanceEvents } from "../log.js";
 import type { Attestation, SubmissionProvenance } from "../types.js";
 import { authenticator } from "./authenticator.js";
+
+const forum = JSON.parse(readFileSync(new URL("../../../portal/data/forum.json", import.meta.url), "utf8")) as {
+  faculty_prompt: string;
+  faculty_prompt_post_id: string;
+  synthetic_data_notice: string;
+  posts: Array<{ post_id: string; body: string }>;
+};
+const discussionPosts = forum.posts.filter((post) => post.post_id !== forum.faculty_prompt_post_id);
 
 async function setup(context: TestContext, enabled = true) {
   const directory = await mkdtemp(join(tmpdir(), "countersign-discussion-"));
@@ -72,9 +81,44 @@ function publishedArticle(html: string, postId: string): string {
   return article[0];
 }
 
+function decodedText(html: string): string {
+  return html.replaceAll("&#039;", "'").replaceAll("&quot;", '"')
+    .replaceAll("&lt;", "<").replaceAll("&gt;", ">").replaceAll("&amp;", "&");
+}
+
+function assertIndependentFirst(html: string): void {
+  const text = decodedText(html);
+  assert.equal(discussionPosts.length, 30);
+  assert.ok(text.includes(forum.faculty_prompt), "the full faculty prompt is available before posting");
+  assert.ok(text.includes(forum.synthetic_data_notice), "the full synthetic notice is always visible");
+  assert.match(html, /Peer posts are hidden until/);
+  assert.match(html, /<textarea id="body"/);
+  assert.doesNotMatch(html, /data-post-id=/);
+  for (const post of discussionPosts) {
+    assert.ok(!text.includes(post.body.split("\n\n")[0]), `no excerpt from ${post.post_id} leaks before posting`);
+  }
+}
+
+function assertImportedDiscussion(html: string, enabled: boolean, newPostId: string): void {
+  const renderedIds = [...html.matchAll(/data-post-id="([^"]+)"/g)].map((match) => match[1]);
+  assert.deepEqual(renderedIds, [...discussionPosts.map((post) => post.post_id), newPostId],
+    "all 30 seeded posts and the new initial response appear once, without duplicating the root");
+  const text = decodedText(html);
+  assert.equal(text.split(forum.faculty_prompt).length - 1, 1, "faculty prompt appears exactly once");
+  assert.ok(text.includes(forum.synthetic_data_notice));
+  assert.doesNotMatch(html, /Peer posts are hidden until|<textarea id="body"/);
+  for (const post of discussionPosts) {
+    const article = publishedArticle(html, post.post_id);
+    assert.ok(decodedText(article).includes(post.body), `the complete text of ${post.post_id} is preserved`);
+    assert.doesNotMatch(article, /data-actor-class|data-attestation|data-presence-status|Assertion:/);
+    if (enabled) assert.match(article, /data-provenance="unrecorded"/);
+    else assert.doesNotMatch(article, /post-provenance/);
+  }
+}
+
 test("AI-assisted posts retain server provenance across reloads and expose it to peers after publishing", async (context) => {
   const h = await setup(context);
-  assert.match(await h.page(), /Peer posts are hidden until/);
+  assertIndependentFirst(await h.page());
   const result = await h.publish("ai-assisted", { field: "body", single_event_fill: true, keystrokes: 0, final_length: 75 });
   assert.equal(result.ok, true);
   assert.equal(result.redirect, `/discussion/2?posted=${result.post_id}#${result.post_id}`);
@@ -89,6 +133,7 @@ test("AI-assisted posts retain server provenance across reloads and expose it to
   for (const user of ["stu-0011", "stu-0003"]) {
     await h.login(user);
     const html = await h.page();
+    assertImportedDiscussion(html, true, result.post_id);
     const article = publishedArticle(html, result.post_id);
     assert.match(article, /AI-assisted \(disclosed\)/);
     assert.match(article, /Human presence verified at submit/);
@@ -149,14 +194,15 @@ test("missing proof does not publish a post or disclose the hidden peer discussi
   const response = await h.post("/discussion/2/post", { body: "This submission has no presence proof." });
   assert.equal(response.status, 403);
   const html = await h.page();
-  assert.match(html, /Peer posts are hidden until/);
-  assert.doesNotMatch(html, /This submission has no presence proof|Enduring purpose, changing means/);
+  assertIndependentFirst(html);
+  assert.doesNotMatch(html, /This submission has no presence proof/);
   const events = (await h.events()).filter((event) => event.action === "POST /discussion/2/post");
   assert.deepEqual(events.map((event) => event.decision), ["blocked"]);
 });
 
 test("ungoverned posts ignore forged provenance, render no badges, and write no events", async (context) => {
   const h = await setup(context, false);
+  assertIndependentFirst(await h.page());
   const forged = { actor_class: "human-verified", attestation: "ai-assisted", presence: { assertion_id: "forged-assertion" } };
   const response = await h.post("/discussion/2/post", {
     body: "An ungoverned synthetic response.", provenance: forged, countersign: forged,
@@ -165,7 +211,10 @@ test("ungoverned posts ignore forged provenance, render no badges, and write no 
   const result = await response.json();
   assert.equal(result.provenance, null);
   const html = await h.page();
+  assertImportedDiscussion(html, false, result.post_id);
   assert.match(html, /An ungoverned synthetic response/);
   assert.doesNotMatch(html, /data-actor-class|data-disclosure|data-presence-status|data-review-flag|forged-assertion/);
+  await h.login("stu-0003");
+  assertImportedDiscussion(await h.page(), false, result.post_id);
   assert.deepEqual(await h.events(), []);
 });

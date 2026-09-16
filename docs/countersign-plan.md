@@ -26,7 +26,7 @@ Implementation/adversary checkboxes are synchronized with [TASKS.md](TASKS.md); 
 **Wednesday 08:00–09:30, in this order.** Everything below was originally "tonight." It moved; it didn't shrink. The 12:00 checkpoint becomes **13:00**; everything after shifts an hour. Nothing else changes.
 
 1. **Comet tests A, B, C** (Chris, 45 min) — the whole demo depends on these, so they go first. Fresh macOS account, Touch ID enrolled, Comet installed, throwaway quiz and record pages, WebAuthn prompt inside Comet. Decision gates below apply unchanged.
-2. **Token checks** (Collin, parallel, 20 min) — Codex/OpenCode authenticate and run one trivial task; Bedrock GovCloud returns a small JSON object from one model; note model IDs in `NOTES.md`.
+2. **Token checks** (Collin, parallel, 20 min) — Codex/OpenCode authenticate and run one trivial task; the selected LLM provider returns a small JSON object; note model IDs in `NOTES.md`. OpenAI is selected for the current demo per user preference; Bedrock GovCloud remains supported.
 3. **`AGENTS.md` + `docs/contracts.md`** (both, 15 min) — log event shape, policy shape, challenge/assertion endpoints. Written before anyone opens a coding session.
 4. **Extension adversary decision** (Chris, 5 min) — is the ChatGPT extension available? If not, buy Manus, and Collin runs the one-hour time-box in the afternoon.
 5. **Datasets** (Collin, 10 min) — coursebook chapter picked; CUI ZIP unpacked, category/LDC files located; all three registered on the portal.
@@ -57,7 +57,7 @@ Then split into tracks.
 - [x] Use Codex/OpenCode to scaffold: Express app, fake-SSO login (pick a user), three empty routes, static `countersign.js`, `COUNTERSIGN=off|on` env toggle, JSONL log writer.
 - [x] Fake data file: 3 students, obviously fictional, 900-series SSNs, fabricated notes.
 - [x] Confirm the app runs on two ports (`:3000` governed, `:3001` ungoverned) using `npm run dev` and `npm run dev:ungoverned`.
-- [ ] Bedrock GovCloud smoke test: one call from the hackathon credentials, ask for a small JSON object, see which model returns it cleanly. Note the model ID and region in `NOTES.md`. Stub the `LLM_PROVIDER` switch with the OpenAI fallback wired.
+- [x] Selected-provider smoke test: request a small JSON object and record the model/configuration in `NOTES.md`. OpenAI `gpt-6-astra` passed the live test. The `LLM_PROVIDER` switch also supports explicitly configured Bedrock GovCloud and Anthropic calls.
 
 ### 1.3 Together (before splitting)
 - [x] Iterate on the spec/pitch/plan docs.
@@ -65,7 +65,9 @@ Then split into tracks.
 - [ ] Skeleton slide deck with the 11 slide titles from the pitch outline. No content yet.
 - [x] Repo created, docs committed. Start `docs/BUILD-LOG.md` with that as the first entry (timestamps from the commits).
 - [ ] Rubric is in hand (pitch §0). Still need: presentation format (7 min inclusive or exclusive of Q&A?), semi/final schedule, deliverables list.
-- [ ] Datasets (spec §11.1): forum dataset ✔ inspected, CUI dataset ✔ confirmed by description. Wednesday morning: download the 8670 EWS coursebook and pick the quiz chapter; unzip the CUI dataset and locate the category/LDC files and the chunk JSONL, note field names. Register all three on the portal so it's off the list.
+- [ ] Datasets (spec §11.1): select the coursebook chapter, extract the CUI category/LDC files, note dataset fields, and register all three on the hackathon portal.
+  - [x] Local dataset preparation: Lesson 2 selected; full IFD 2 imported; 126 categories/10 LDCs extracted; chunk JSONL located and field mappings recorded in [dataset evidence](build-log/dataset-import-verification.md).
+  - [ ] Confirm all three datasets are registered on the hackathon portal (separate from importing files locally).
 
 ---
 
@@ -84,7 +86,7 @@ Then split into tracks.
 
 ### Track A — Portal + enforcement — Collin *(iterate: or Chris)*
 **Morning (to 13:00)**
-- [ ] Portal pages with real (fake) content: `/quiz/1` (5 MCQ), `/discussion/2`, `/record/1`. Plain, readable, clearly a learning portal. Bootstrap-level styling is enough.
+- [x] Portal pages with real (fake) content: `/quiz/1` (5 source-cited Lesson 2 MCQs), `/discussion/2` (full IFD 2 thread and synthetic notice), `/record/1` (fabricated records). Independent-first omission and post-publication display passed HTTP/browser checks; plain portal styling retained.
 - [x] WebAuthn: registration on first login (Touch ID), assertion endpoint. Store credentials in memory/JSON.
 - [x] `countersign.js` v1: intercept form submits matching policy; request challenge; call `navigator.credentials.get`; POST assertion + form together.
 - [x] Middleware v1: load `countersign.policy.json` (hand-written); for `human-required` verify assertion (signature, challenge binding, UP/UV flags, max age) before executing; write log event.
@@ -103,13 +105,13 @@ Then split into tracks.
 ### Track B — Dashboard, policy generator, demo assets — Chris *(iterate)*
 **Morning (to 13:00)**
 - [ ] Dashboard v1: live timeline reading the JSONL log (poll every 1s); event rows colored by actor class; per-user drill-down.
-- [ ] Draft the policy generator prompt: input = rendered HTML of each route + list of form actions; output = policy JSON per spec §7 with rationale strings. Test against the three pages by hand before wiring it.
+- [x] Draft the policy generator prompt: input = rendered HTML of each route + list of form actions; output = policy JSON per spec §7 with rationale strings. Live GPT-6 generation against all three source-derived local pages passed with all 126 categories/10 LDCs and exact Registry-definition citations.
 - [ ] Pitch slides 2, 3, 8, 9, 10 first-draft (the ones that don't depend on the build).
 
 **Afternoon (to 18:00)**
-- [ ] Policy generator CLI/endpoint: crawl routes → LLM → draft policy → write `countersign.policy.draft.json`. Load the 126 Registry categories + 10 LDCs from the CUI dataset as structured input; the generator may only emit identifiers from that list (spec §5.6).
-- [ ] *(1 hr, if on schedule)* Cite per marking: keyword/BM25 lookup over the dataset's JSONL chunks, attach the Registry definition and one governing-document chunk to each proposed marking's rationale. Shows in the approval view.
-- [ ] Dashboard: policy review view (draft vs. current, per-rule approve, "Approve all"). Approval writes `countersign.policy.json` and hot-reloads the middleware.
+- [x] Policy generator CLI/endpoint: crawl routes → LLM → draft policy → write `countersign.policy.draft.json`. Load the 126 Registry categories + 10 LDCs from the CUI dataset as structured input; the generator may only emit identifiers from that list (spec §5.6). Live GPT-6 generation passed with `placeholder: false`; draft-only writes and post-approval enforcement passed regression checks (see [dataset evidence](build-log/dataset-import-verification.md)).
+- [ ] *(1 hr, if on schedule)* Cite per marking: keyword/BM25 lookup over the dataset's JSONL chunks, attach the Registry definition and one governing-document chunk to each proposed marking's rationale. Exact Registry definitions are attached and visible in the approval view; governing-document chunk retrieval remains open.
+- [x] Dashboard: policy review view (draft vs. current, per-rule approve, "Approve all"). Approval writes `countersign.policy.json` and hot-reloads the middleware. Selective/full approval, stale-review handling, and continued enforcement passed browser tests.
 - [ ] Extension adversary: run the quiz + record tasks in Chrome with the chosen extension; **record the clips**, including the vendor's task log / chat history showing the SSN.
 - [ ] Manus (if bought): same, time-boxed.
 

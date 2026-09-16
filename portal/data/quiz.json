@@ -1,62 +1,62 @@
 {
   "id": "1",
-  "title": "EWS Prerequisite Review",
-  "notice": "Scaffold questions are synthetic placeholders pending selection of the approved coursebook chapter.",
+  "title": "8670 Prerequisite Review — Fundamentals of National Defense",
+  "notice": "Five demonstration questions derived from Lesson 2 Reading, Fundamentals of National Defense, in the AY27 8670 Prerequisite Coursebook. Source page numbers refer to the original 220-page Moodle PDF.",
   "questions": [
     {
       "id": "q1",
-      "prompt": "Which activity best begins a deliberate planning process?",
+      "prompt": "In the coursebook’s ends–ways–means framework, what are ‘ways’?",
       "options": {
-        "a": "Publishing the final order",
-        "b": "Framing the problem and mission",
-        "c": "Conducting the after-action review",
-        "d": "Closing the command post"
+        "a": "The resources available to execute a strategy",
+        "b": "The objectives the strategy seeks to achieve",
+        "c": "The methods used to employ resources toward objectives",
+        "d": "The risks resulting from an unbalanced strategy"
       },
-      "source_ref": "8670 EWS coursebook chapter pending - scaffold item 1"
+      "source_ref": "AY27 8670 Prerequisite Coursebook — Lesson 2 Reading: Fundamentals of National Defense, §2.c (Strategy Theory), PDF p. 5 of 220."
     },
     {
       "id": "q2",
-      "prompt": "What is the primary purpose of commander's intent?",
+      "prompt": "A national strategy uses trade regulation, loans, and foreign aid to pursue its objectives. Which instrument of national power is primarily involved?",
       "options": {
-        "a": "To replace all subordinate judgment",
-        "b": "To list equipment serial numbers",
-        "c": "To communicate purpose, key tasks, and end state",
-        "d": "To record historical weather"
+        "a": "Economic",
+        "b": "Information",
+        "c": "Diplomatic",
+        "d": "Military"
       },
-      "source_ref": "8670 EWS coursebook chapter pending - scaffold item 2"
+      "source_ref": "AY27 8670 Prerequisite Coursebook — Lesson 2 Reading: Fundamentals of National Defense, §2.d(4) (Economic), PDF p. 6 of 220."
     },
     {
       "id": "q3",
-      "prompt": "A course of action should first be checked for which quality?",
+      "prompt": "A credible threat of unacceptable counteraction prevents an adversary from taking an undesired action. Which strategic use of military force does this describe?",
       "options": {
-        "a": "Suitability for accomplishing the mission",
-        "b": "Length of its title",
-        "c": "Number of briefing slides",
-        "d": "Similarity to every prior operation"
+        "a": "Assurance",
+        "b": "Compellence",
+        "c": "Coercion",
+        "d": "Deterrence"
       },
-      "source_ref": "8670 EWS coursebook chapter pending - scaffold item 3"
+      "source_ref": "AY27 8670 Prerequisite Coursebook — Lesson 2 Reading: Fundamentals of National Defense, §3.a(2) (Deterrence), PDF p. 13 of 220."
     },
     {
       "id": "q4",
-      "prompt": "Why are assumptions identified during planning?",
+      "prompt": "Which statement best reflects the coursebook’s distinction between war’s nature and its character?",
       "options": {
-        "a": "To avoid collecting information",
-        "b": "To make uncertain conditions explicit for validation",
-        "c": "To guarantee the preferred outcome",
-        "d": "To eliminate branch plans"
+        "a": "War’s nature changes with technology, while its character remains fixed.",
+        "b": "War’s nature remains fundamentally human, while its character reflects changing societal and technological conditions.",
+        "c": "War’s nature consists of its equipment, while its character consists only of human emotions.",
+        "d": "Both war’s nature and character remain unchanged across time and societies."
       },
-      "source_ref": "8670 EWS coursebook chapter pending - scaffold item 4"
+      "source_ref": "AY27 8670 Prerequisite Coursebook — Lesson 2 Reading: Fundamentals of National Defense, §4.a–b (The Nature of War; Changing Character of War), PDF pp. 15–16 of 220."
     },
     {
       "id": "q5",
-      "prompt": "What does a decision point connect to during execution?",
+      "prompt": "Which activity best exemplifies the operational level of war?",
       "options": {
-        "a": "A random calendar date",
-        "b": "A condition requiring a command decision",
-        "c": "A completed personnel roster",
-        "d": "A fixed formatting rule"
+        "a": "Directing an individual tactical engagement",
+        "b": "Establishing national policy objectives",
+        "c": "Linking tactical results through a campaign to achieve strategic objectives",
+        "d": "Coordinating all instruments of national power into national strategy"
       },
-      "source_ref": "8670 EWS coursebook chapter pending - scaffold item 5"
+      "source_ref": "AY27 8670 Prerequisite Coursebook — Lesson 2 Reading: Fundamentals of National Defense, §4.d(3) (Operational Level), PDF p. 18 of 220."
     }
   ]
 }

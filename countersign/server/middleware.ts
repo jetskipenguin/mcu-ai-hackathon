@@ -70,7 +70,7 @@ export function governedSubmission(
   }
 
   const matchGovernedRule: RequestHandler = (_request, response, next) => {
-    const policy = loadPolicy();
+    const policy = services.policies?.active() ?? loadPolicy();
     const user = response.locals.user as PortalUser;
     response.locals.governance = {
       rule: matchRule(action.route, action.action, action.context?.(user), policy),

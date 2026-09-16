@@ -15,7 +15,8 @@ import { matchRule, requiresPresence } from "../countersign/server/policy.js";
 import { createCountersignRouter } from "../countersign/server/routes.js";
 import { createRecordGovernance, type RecordOptions } from "../countersign/server/records.js";
 import { appendProvenanceEvent } from "../countersign/server/log.js";
-import type { PolicyRule, PortalUser, SubmissionProvenance } from "../countersign/server/types.js";
+import type { CountersignPolicy, PolicyRule, PortalUser, SubmissionProvenance } from "../countersign/server/types.js";
+import { PolicyStore, type PolicyStorePaths } from "../countersign/server/policy-store.js";
 import { WebAuthnService, type GovernedAction, type WebAuthnOptions } from "../countersign/server/webauthn.js";
 
 interface Student extends PortalUser {
@@ -57,6 +58,7 @@ interface ForumFixture {
   ifd: number;
   title: string;
   faculty_prompt: string;
+  faculty_prompt_post_id: string;
   synthetic_data_notice: string;
   roster: Array<{ user_id: string; name: string; tier: string }>;
   posts: ForumPost[];
@@ -107,6 +109,7 @@ function page(
     .notice { border-left: .35rem solid #a16c20; padding: .75rem 1rem; background: #fff7dc; }
     .provenance-tag { display: inline-block; border: 1px solid #bbb6a7; padding: .2rem .45rem; margin: 0 .4rem .4rem 0; font-family: sans-serif; font-size: .85rem; }
     .post-provenance details { margin: .35rem 0 1rem; overflow-wrap: anywhere; }
+    .forum-text { white-space: pre-wrap; }
     .record dt { font-weight: bold; margin-top: .8rem; }
     .record dd { margin: .2rem 0 .7rem; }
     [data-marking] { outline: 1px dotted #8a5c13; outline-offset: .15rem; }
@@ -155,9 +158,9 @@ function markingFor(rule: PolicyRule | undefined, field: string): string {
   );
 }
 
-function presenceAttributes(enabled: boolean, action: GovernedAction, user: PortalUser): string {
+function presenceAttributes(enabled: boolean, action: GovernedAction, user: PortalUser, readPolicy: () => CountersignPolicy): string {
   if (!enabled) return "";
-  const rule = matchRule(action.route, action.action, action.context?.(user));
+  const rule = matchRule(action.route, action.action, action.context?.(user), readPolicy());
   if (!requiresPresence(rule)) return "";
   return `data-countersign-rule="${escapeHtml(rule.id)}" data-countersign-class="${escapeHtml(rule.class)}" data-countersign-action="${escapeHtml(action.action)}"`;
 }
@@ -197,13 +200,14 @@ export interface AppOptions extends WebAuthnOptions {
   sessionSecret?: string;
   recordOptions?: Pick<RecordOptions, "credentialsPath" | "writeEvent">;
   provenancePath?: string;
+  policyPaths?: Partial<PolicyStorePaths>;
 }
 
 export function createApp(options: AppOptions = {}): express.Express {
   const enabled =
     options.countersignEnabled ?? process.env.COUNTERSIGN !== "off";
   const sessionSecret =
-    options.sessionSecret ?? process.env.SESSION_SECRET ?? randomUUID();
+    options.sessionSecret || process.env.SESSION_SECRET || randomUUID();
   const students = readJson<Student[]>("portal/data/students.json");
   const quiz = readJson<QuizFixture>("portal/data/quiz.json");
   const forum = readJson<ForumFixture>("portal/data/forum.json");
@@ -212,7 +216,9 @@ export function createApp(options: AppOptions = {}): express.Express {
   const webAuthn = new WebAuthnService({
     ...options, credentialsPath: options.credentialsPath ?? options.recordOptions?.credentialsPath,
   });
-  const services = { webAuthn, provenancePath: options.provenancePath };
+  const policies = new PolicyStore(options.policyPaths);
+  const readPolicy = () => policies.active();
+  const services = { webAuthn, policies, provenancePath: options.provenancePath };
   const quizAction: GovernedAction = { route: "/quiz/1", action: "POST /quiz/1/submit" };
   const discussionAction: GovernedAction = {
     route: "/discussion/2", action: "POST /discussion/2/post",
@@ -224,6 +230,7 @@ export function createApp(options: AppOptions = {}): express.Express {
   const records = createRecordGovernance({
     ...options.recordOptions,
     webAuthn,
+    readPolicy,
     writeEvent: options.recordOptions?.writeEvent ?? ((event) => appendProvenanceEvent(event, options.provenancePath)),
     enabled,
     fieldsForUser(userId) {
@@ -338,7 +345,7 @@ export function createApp(options: AppOptions = {}): express.Express {
           quiz.title,
           `<h1>${escapeHtml(quiz.title)}</h1>
            <p class="notice">${escapeHtml(quiz.notice)}</p>
-            <form method="post" action="/quiz/1/submit" ${presenceAttributes(enabled, quizAction, response.locals.user)}>
+            <form method="post" action="/quiz/1/submit" ${presenceAttributes(enabled, quizAction, response.locals.user, readPolicy)}>
              ${questions}
              <button type="submit">Submit quiz</button>
              <p role="status" data-countersign-status></p>
@@ -381,19 +388,20 @@ export function createApp(options: AppOptions = {}): express.Express {
       const hasPosted = postedUsers.has(user.id);
       const postMarkup = hasPosted
         ? posts
+            .filter((post) => post.post_id !== forum.faculty_prompt_post_id)
             .map(
               (post) => `<article id="${escapeHtml(post.post_id)}" data-post-id="${escapeHtml(post.post_id)}">
                 <h2>${escapeHtml(post.subject)}</h2>
                 <p><strong>${escapeHtml(post.author)}</strong> &middot; <time>${escapeHtml(post.timestamp)}</time></p>
                 ${enabled ? postProvenance(post.provenance) : ""}
-                <p>${escapeHtml(post.body)}</p>
+                <p class="forum-text">${escapeHtml(post.body)}</p>
               </article>`,
             )
             .join("")
         : '<p class="notice">Peer posts are hidden until you publish your initial response (independent_first).</p>';
       const form = hasPosted
         ? ""
-        : `<form method="post" action="/discussion/2/post" ${presenceAttributes(enabled, discussionAction, user)}>
+        : `<form method="post" action="/discussion/2/post" ${presenceAttributes(enabled, discussionAction, user, readPolicy)}>
             <label for="body"><strong>Your initial response</strong></label>
             <textarea id="body" name="body" required></textarea>
             <button type="submit">Publish response</button>
@@ -403,7 +411,7 @@ export function createApp(options: AppOptions = {}): express.Express {
         page(
           forum.title,
            `<h1>${escapeHtml(forum.title)}</h1>
-            <section class="panel"><h2>Faculty prompt</h2><p>${escapeHtml(forum.faculty_prompt)}</p></section>
+            <section class="panel"><h2>Faculty prompt</h2><p class="forum-text">${escapeHtml(forum.faculty_prompt)}</p></section>
             ${enabled ? '<p class="notice">Presence verification confirms a human was present at submission. Authorship disclosures and composition signals are recorded separately.</p>' : ""}
            ${form}
            <section><h2>Peer discussion</h2>${postMarkup}</section>`,
@@ -463,7 +471,7 @@ export function createApp(options: AppOptions = {}): express.Express {
     records.visit,
     (_request, response) => {
       const student = students.find((candidate) => candidate.id === response.locals.user.id)!;
-      const rule = matchRule("/record/1", "GET /record/1");
+      const rule = matchRule("/record/1", "GET /record/1", {}, readPolicy());
       const value = (raw: string) => enabled ? "[Hidden — verify presence to view]" : escapeHtml(raw);
       response.type("html").send(
         page(

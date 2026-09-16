@@ -22,7 +22,7 @@ Stable IDs preserve the ordering and grouping in `docs/countersign-plan.md` sect
 - [x] **M13** Scaffold the Express app, fake-SSO login, three routes, static `countersign.js`, `COUNTERSIGN=off|on`, and JSONL writer.
 - [x] **M14** Add three fictional students plus the demo student, 900-series SSNs, and fabricated notes.
 - [x] **M15** Confirm the governed and ungoverned app instances run on ports 3000 and 3001.
-- [ ] **M16** Run the Bedrock GovCloud smoke test, record model and region in `NOTES.md`, and confirm the OpenAI fallback.
+- [x] **M16** Run the selected provider's JSON smoke test and record its model/configuration. Per user preference, OpenAI is primary for this demo: live `gpt-6-astra` smoke test passed; Bedrock remains an explicitly configured alternative (see [generator evidence](build-log/policy-generation-verification.md)).
 
 ## Wednesday Morning - Together
 
@@ -31,11 +31,13 @@ Stable IDs preserve the ordering and grouping in `docs/countersign-plan.md` sect
 - [ ] **M19** Create the skeleton slide deck with the 11 pitch-outline titles.
 - [x] **M20** Create the repository, commit the docs, and start `docs/BUILD-LOG.md` from commit timestamps.
 - [ ] **M21** Confirm presentation format, semifinal/final schedule, and deliverables.
-- [ ] **M22** Select the coursebook chapter, extract the CUI category/LDC files, note dataset fields, and register all three datasets on the portal.
+- [ ] **M22** Select the coursebook chapter, extract the CUI category/LDC files, note dataset fields, and register all three datasets on the hackathon portal.
+  - [x] Local dataset preparation: Lesson 2 selected; full IFD 2 imported; 126 categories/10 LDCs extracted; chunk JSONL located and field mappings recorded in [dataset evidence](build-log/dataset-import-verification.md).
+  - [ ] Confirm all three datasets are registered on the hackathon portal (separate from importing files locally).
 
 ## Track A - Morning
 
-- [ ] **A1** Build plain portal pages with real synthetic content for the quiz, discussion, and record routes.
+- [x] **A1** Build plain portal pages with real synthetic content for the quiz, discussion, and record routes. Five coursebook-derived MCQs, the complete IFD 2 thread and synthetic notice, and fabricated records are verified. Independent-first omission and post-publication display passed HTTP/browser checks.
 - [x] **A2** Implement first-login WebAuthn registration and action assertions; store credentials in memory/JSON. Verified with real library registration/assertion tests and Chrome's virtual platform authenticator.
 - [x] **A3** Implement `countersign.js` v1 to intercept policy-matched forms, request a challenge, call WebAuthn, and submit assertion plus form. Browser checks cover success, cancellation/retry, form edits, and advisory-signal failure.
 - [x] **A4** Implement middleware v1 to load policy, verify human-required assertions and binding, enforce UP/UV and age, and write the event. All seven required tests plus cryptographic/binding regressions pass; see [verification evidence](build-log/a2-a4-verification.md). Physical-sensor checkpoint A5 remains open.
@@ -43,7 +45,7 @@ Stable IDs preserve the ordering and grouping in `docs/countersign-plan.md` sect
 
 ## Track A - Afternoon
 
-- [x] **A6** Render record markings and the `Countersign-Marking` response header. Verified in HTTP tests and the Chrome browser run using current policy identifiers; Registry dataset replacement remains M22.
+- [x] **A6** Render record markings and the `Countersign-Marking` response header. Verified in HTTP tests and Chrome, including imported Registry identifiers after approval in an isolated policy store.
 - [x] **A7** Implement browser signals, deterministic scoring, and page-load/pre-submit delivery. BrowserOS background record reads verified; evidence is advisory and retained per session.
 - [x] **A8** Mask marked fields at the threshold, implement step-up reveal, and log `unmask`. Initial HTML withholds all record fields; record WebAuthn verification and automated tests implemented. Physical Touch ID / Windows Hello rehearsal still pending.
 - [x] **A9** Detect discussion actor class and store/render the AI-assisted tag. Published posts retain server-generated disclosure, presence, event IDs, and advisory review flags. Six new integration tests and both disclosure variants passed browser checks (see [A9 evidence](build-log/a9-verification.md)).
@@ -56,14 +58,14 @@ Stable IDs preserve the ordering and grouping in `docs/countersign-plan.md` sect
 ## Track B - Morning
 
 - [ ] **B1** Build dashboard v1 with one-second JSONL polling, actor-class colors, and per-user drill-down.
-- [ ] **B2** Draft and hand-test the policy generator prompt against all three pages.
+- [x] **B2** Draft and hand-test the policy generator prompt against all three pages. Live GPT-6 generation used the source-derived localhost pages and all 126 categories/10 LDCs, producing a validated draft with rationales and exact Registry-definition citations.
 - [ ] **B3** Draft pitch slides 2, 3, 8, 9, and 10.
 
 ## Track B - Afternoon
 
-- [ ] **B4** Implement the policy generator CLI/endpoint, constrained Registry vocabulary, and draft-policy output.
-- [ ] **B5** If on schedule, attach a Registry definition and governing-document citation to each marking.
-- [ ] **B6** Implement policy review, per-rule approval, approve-all, active-policy writes, and middleware hot reload.
+- [x] **B4** Implement the policy generator CLI/endpoint, constrained Registry vocabulary, and draft-policy output. Live GPT-6 generation passed with 126 imported categories/10 LDCs and `placeholder: false`; draft-only writes and post-approval enforcement passed regression checks (see [dataset evidence](build-log/dataset-import-verification.md)).
+- [ ] **B5** If on schedule, attach a Registry definition and governing-document citation to each marking. Exact Registry definitions are attached; optional governing-document chunk retrieval remains open.
+- [x] **B6** Implement policy review, per-rule approval, approve-all, active-policy writes, and middleware hot reload. HTTP and browser checks verify selective/full approval, stale-review rejection, and continued quiz/record enforcement without restart (see [generator evidence](build-log/policy-generation-verification.md)).
 - [ ] **B7** Run and record quiz and record tasks with the chosen Chrome extension, including its vendor-side trace. Progress: Nanobrowser quiz completion/submission passed by tester report; record extraction was partial (DoD ID and medical note reproduced, SSN redacted). Recordings and task/vendor trace remain pending (see [NOTES.md](../NOTES.md)).
 - [ ] **B8** If purchased, run the same Manus tests within the time box.
 

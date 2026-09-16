@@ -30,7 +30,7 @@ A sentry asks for a countersign before allowing someone to pass, even when that 
 
 ## Run
 
-Node.js 20 or newer is required. Install the pinned dependencies:
+Use Node.js 20.12 or newer for native `.env` loading. Install the pinned dependencies:
 
 ```sh
 npm install
@@ -45,15 +45,52 @@ npm run dev:ungoverned
 
 The governed instance is at `http://localhost:3000`; the ungoverned instance is at `http://localhost:3001`. Set `SESSION_SECRET` for a stable signed-cookie key across restarts; when omitted, the server creates an ephemeral development key. The instances use separate cookie names so logging into one does not replace the other's session.
 
-Run the current generator scaffold and test suite with:
+Configure `.env` using the variable names in `.env.example`. Both server and CLI
+load it automatically; exported shell variables take precedence. The selected
+demo provider is `LLM_PROVIDER=openai` with `OPENAI_MODEL=gpt-6-astra`. Put the API
+key only in the gitignored `.env` file. Restart the server after changing model
+configuration. Bedrock and Anthropic are available through explicit provider
+selection; their model IDs also come from configuration.
+
+Run the provider smoke test, generator, and checks with:
 
 ```sh
+npm run llm:smoke
 npm run generate
 npm test
 npm run build
 ```
 
-The generator currently copies the validated active policy to `countersign/policy/countersign.policy.draft.json`. Track B replaces that copy step with an LLM-generated draft.
+The generator signs into the local ungoverned portal, reads `/quiz/1`,
+`/discussion/2`, and `/record/1`, and sends rendered HTML, form actions, and the
+loaded vocabulary to the selected model. Keep port 3001 running and use a student
+who has not posted an initial response. `GENERATOR_BASE_URL` and
+`GENERATOR_USER_ID` configure that source (defaults: `http://localhost:3001` and
+`stu-0011`). Responses are schema/identifier checked; supplied definitions are
+attached as citations. Invalid output leaves the previous draft intact.
+
+Review the result at **http://localhost:3000/countersign/policy/review** after
+signing in. **Generate draft**, **Approve this rule**, **Approve selected**, and
+**Approve all** are implemented. Partial approval preserves other rules and global
+defaults; approve-all replaces the whole policy. Approval takes effect on the next
+request without a restart. The demo's required quiz/discussion/record interfaces
+are validated before activation. Generation itself never changes the active file.
+
+The Registry lists now contain all **126 source categories and 10 LDCs**. To
+reproduce the import from the supplied archive in the ignored `data/source/` folder:
+
+```sh
+unzip -q -n data/source/public-reference-corpus-portal-2026-09-13.zip -d data/source
+npm run cui:import -- --corpus data/source/public-reference-corpus
+npm run generate
+```
+
+The importer checks the expected 126 categories and 10 LDCs, definitions, and
+unique IDs. It retains legacy identifiers for the existing active policy while
+new drafts use the imported vocabulary. See [`data/cui/README.md`](data/cui/README.md).
+The source files are available locally and the source-backed draft has passed a
+live GPT-6 run. M22's separate hackathon-portal dataset registration still needs
+confirmation. See [dataset import evidence](docs/build-log/dataset-import-verification.md).
 
 ## Demo Walkthrough
 
@@ -64,7 +101,7 @@ The generator currently copies the validated active policy to `countersign/polic
 5. On `/record/1`, the `marking` rule withholds record fields until signal evaluation. A suspected-agent session sees placeholders and an **Automation suspected** banner. Register a passkey and select **Verify presence to view** to reveal the record using WebAuthn.
 6. Open `/countersign/` on port 3000 to watch the provenance timeline and `/countersign/policy/review` to compare active and draft policies.
 
-A2–A4 implement registration, action-bound WebAuthn verification, and governed submission enforcement. Challenges are single-use and bound to the user, session, action, form contents, and attestation; required UP/UV and age checks run server-side. A9 stores and renders the attested discussion's disclosure, presence status, and advisory review flags. Record masking, deterministic signal scoring, and action-bound reveal from A6–A8 share the same credential and verification service. LLM policy generation and approval remain track work.
+A2–A4 implement registration, action-bound WebAuthn verification, and governed submission enforcement. Challenges are single-use and bound to the user, session, action, form contents, and attestation; required UP/UV and age checks run server-side. A9 stores and renders the attested discussion's disclosure, presence status, and advisory review flags. Record masking, deterministic signal scoring, and action-bound reveal from A6–A8 share the same credential and verification service. A1's source-derived fixtures and B4's Registry-backed GPT-6 drafting are implemented and verified alongside policy approval.
 
 ### Student-record protection (A6–A8)
 
@@ -76,16 +113,27 @@ A2–A4 implement registration, action-bound WebAuthn verification, and governed
 
 ## Datasets
 
-- **8670 EWS Distance Education Program Prerequisite Coursebook:** source for the final five-question quiz fixture; the committed scaffold questions remain labeled placeholders until an approved chapter is selected.
-- **8801 Seminar 12 Synthetic Forum Dataset:** source for the final IFD 2 discussion fixture; this repository currently carries a compact synthetic scaffold with the same required fields.
-- **CUI Tagging Dataset:** source for the National CUI Registry category and limited-dissemination vocabularies; the committed vocabulary contains clearly labeled placeholders until extraction.
+- **8670 EWS Distance Education Program Prerequisite Coursebook:** five derived MCQs from Lesson 2 Reading, *Fundamentals of National Defense* (original PDF pages 4–23 of 220), each with a section/page citation.
+- **8801 Seminar 12 Synthetic Forum Dataset:** IFD 2's faculty prompt and all 30 other posts, preserving source fields and the complete synthetic-data notice. The demo is an eleventh learner with no seeded posts. Peer posts remain server-hidden until the initial submission in both modes.
+- **CUI Tagging Dataset:** the supplied public reference corpus provides the 126 categories, 10 LDCs, exact definitions, source URLs, and marking metadata used by the generator. Three legacy identifiers remain solely for active-policy migration.
+
+Reproduce the forum fixture with:
+
+```sh
+npm run forum:import -- data/source/8801-seminar12-synthetic-forum-dataset/8801-seminar12-synthetic-forum-dataset.json
+```
+
+Raw ZIP/PDF/JSON inputs and extracted source text remain in gitignored
+`data/source/`. The normalized vocabulary and derived portal fixtures are the
+repository artifacts. [Source hashes and mappings](docs/build-log/dataset-import-verification.md)
+record exactly what was imported.
 
 Data caveats:
 
 - **Fake data only.** Student names obviously fictional, SSNs in the 900-series, DoD IDs random 10-digit, medical notes fabricated. Never use a real person's details even as a placeholder.
 - The forum fixture is already synthetic and says so; keep its synthetic-data notice in the page footer.
 - The 8670 EWS coursebook is UNCLASSIFIED but not necessarily public-release; quiz questions derived from it are fine, but do not commit the PDF.
-- The CUI Tagging Dataset contains no live CUI; its historical markings reflect original documents, not current handling status. Say that in README.
+- The CUI Tagging Dataset contains no live CUI; its historical markings reflect original documents, not current handling status.
 
 ## Non-Goals
 

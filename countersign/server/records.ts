@@ -3,7 +3,7 @@ import { appendProvenanceEvent } from "./log.js";
 import { loadPolicy, matchRule } from "./policy.js";
 import { RecordPresence, PresenceError } from "./record-presence.js";
 import { scoreSignals, type ClientSignals, type SignalResult } from "./signals.js";
-import type { Decision, NewProvenanceEvent, PortalUser, PresenceProof } from "./types.js";
+import type { CountersignPolicy, Decision, NewProvenanceEvent, PortalUser, PresenceProof } from "./types.js";
 import { WebAuthnService } from "./webauthn.js";
 
 export interface RecordOptions {
@@ -12,12 +12,14 @@ export interface RecordOptions {
   credentialsPath?: string;
   webAuthn?: WebAuthnService;
   writeEvent?: (event: NewProvenanceEvent) => Promise<unknown>;
+  readPolicy?: () => CountersignPolicy;
 }
 
 export function createRecordGovernance(options: RecordOptions) {
   const router = Router();
   const presence = new RecordPresence(options.webAuthn ?? new WebAuthnService({ credentialsPath: options.credentialsPath }));
   const writeEvent = options.writeEvent ?? appendProvenanceEvent;
+  const readPolicy = options.readPolicy ?? loadPolicy;
   const sessions = new Map<string, SignalResult & { user: PortalUser; first_seen: string }>();
 
   function observe(request: Request, response: Response, route: string, signals: Partial<ClientSignals> = {}) {
@@ -26,7 +28,7 @@ export function createRecordGovernance(options: RecordOptions) {
     const result = scoreSignals({
       ...signals,
       agent_header_declared: Boolean(request.get("Countersign-Agent")) || signals.agent_header_declared === true,
-    }, loadPolicy().defaults.signals, route);
+    }, readPolicy().defaults.signals, route);
     // A later clean sample or navigation cannot erase previously observed evidence.
     const declared = result.actor_class === "agent-declared" || previous?.actor_class === "agent-declared";
     result.score = Math.max(previous?.score ?? 0, result.score);
@@ -38,7 +40,7 @@ export function createRecordGovernance(options: RecordOptions) {
   }
 
   function recordRule() {
-    const rule = matchRule("/record/1", "GET /record/1");
+    const rule = matchRule("/record/1", "GET /record/1", {}, readPolicy());
     if (rule?.class !== "marking" || !rule.unmask) throw new Error("Student record protection policy is missing");
     return rule;
   }

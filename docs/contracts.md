@@ -280,7 +280,52 @@ Countersign-Marking: <page_marking>; categories=PII,PHI
 | `GET /countersign/sessions/flagged` | `{ "sessions": [ { session_id, user, score, first_seen, flags } ] }` |
 | `GET /countersign/policy` | active policy |
 | `GET /countersign/policy/draft` | draft policy or `404` |
-| `POST /countersign/policy/approve` | `{ "rule_ids": ["…"] }` or `{ "all": true }` → `{ "ok": true, "active_version" }` |
+| `POST /countersign/policy/generate` | `{}` → `{ "ok": true, "draft_version", "generated_at", "provider", "model", "source_urls", "vocabulary", "draft_revision" }` (`region` also present for Bedrock) |
+| `POST /countersign/policy/approve` | `{ "rule_ids": ["…"] }` or `{ "all": true }` → `{ "ok": true, "active_version", "active_revision", "approved_rule_ids" }` |
+
+Generation and approval require the governed instance, a signed-in demo session,
+JSON, and the expected browser Origin when supplied (`http://localhost:3000`).
+They return 404 on the ungoverned instance, 401 without a session, 415 for non-JSON,
+and 403 for an unexpected Origin. This is the demo's fake-SSO workflow, not an
+administrator role system.
+
+- **Generation:** uses server-configured `GENERATOR_BASE_URL` (HTTP localhost
+  only) and `GENERATOR_USER_ID`. It logs into the ungoverned instance and fetches
+  only the three demo pages, without submitting their forms. Cookies/credentials
+  are not part of the model prompt. Concurrent generation returns 409; provider,
+  crawl, or model-validation failures return 502 with an error/message envelope.
+- **Draft files:** validated JSON is written atomically to the draft path, with
+  provenance in `countersign.policy.draft.meta.json`. Metadata contains the model,
+  source URLs, timestamp, vocabulary counts/placeholder status, and the draft's
+  SHA-256 revision. Stale metadata is ignored if its revision does not match.
+  Generation never writes the active policy.
+- **Citations:** new marking references are restricted to the loaded vocabulary.
+  Each selected marking gets its actual supplied description, with source
+  `cui-registry` or, for placeholders, `scaffold-vocabulary`. Model-supplied
+  quotations must match the supplied source. Optional corpus-chunk retrieval is
+  separate B5 work.
+- **Approval:** `rule_ids` must be unique, known, and non-empty, and cannot be
+  combined with `all`. Per-rule approval replaces only those rules and preserves
+  active defaults. Approve-all replaces the complete policy. Both validate the
+  three demo interfaces, including UV-required quiz submission and record reveal.
+  Unknown selections return 400; no draft returns 404; invalid drafts return 422.
+- **Stale review protection:** the UI includes optional `active_revision` and
+  `draft_revision` hashes in approval requests. A mismatch returns 409 and changes
+  nothing. The hashes are SHA-256 of `JSON.stringify(policy)`; they are content
+  revisions rather than user-controlled version labels.
+- **Hot reload:** approval atomically replaces the active file. Form rendering,
+  challenges, submission middleware, and record protection read that same store
+  on subsequent requests. The existing server is not restarted.
+
+The importer accepts the extracted public reference corpus via `--corpus`, or
+normalized JSON arrays via `--categories` and `--ldcs` using §8's vocabulary fields.
+It requires the dataset's expected 126 categories and 10 LDCs with definitions, and
+retains old identifiers with `legacy: true` so an existing active policy remains
+valid during migration. Newly generated drafts exclude those legacy identifiers
+when the imported vocabulary is available. The current imported vocabulary is
+126 categories and 10 LDCs; three legacy placeholders are retained only for the
+existing active policy. The review UI and draft metadata expose vocabulary counts
+and whether the generator is using placeholders.
 
 ---
 
@@ -358,6 +403,6 @@ Note that `human-verified` on an `attested` action says a human was present at s
 ## 8. Fixtures
 
 - `portal/data/students.json` — 3 students + the demo student (`stu-0011`, "Capt J. Demo", no forum posts yet). SSNs 900-series. DoD IDs random.
-- `portal/data/quiz.json` — 5 MCQs from the chosen 8670 coursebook chapter; include `source_ref` per question.
-- `portal/data/forum.json` — the 8801 Seminar 12 dataset filtered to `ifd == 2`; `roster[]` and `posts[]` unchanged; add the demo student to the roster with `tier: "-"`.
-- `data/cui/categories.json` and `data/cui/ldcs.json` — extracted from the CUI Tagging Dataset; shape `{ "id", "name", "authority"?, "description"? }`.
+- `portal/data/quiz.json` — 5 MCQs from Lesson 2 Reading, *Fundamentals of National Defense*, in the supplied AY27 8670 coursebook. `source_ref` includes the section and original PDF page number per question. The submit handler records acceptance; it does not grade answers.
+- `portal/data/forum.json` — the 8801 Seminar 12 dataset filtered to `ifd == 2`: 31 records, comprising the opening prompt plus 30 subsequent posts. Original `roster[]`/`posts[]` fields and ordering are preserved; roster entries gain `user_id`/`name`, posts gain `user_id`, and the demo student is appended with `tier: "-"`. `fac-0001` is the instructor, `stu-0011` is the unposted demo learner. `source_dataset` holds the full source's metadata/counts; `course` retains course metadata. `faculty_prompt_post_id` identifies the opening prompt rendered separately from the peer list. Imported posts have no invented `provenance`. The complete PDF synthetic notice is retained in `synthetic_data_notice`.
+- `data/cui/categories.json` and `data/cui/ldcs.json` — extracted from the CUI Tagging Dataset; shape `{ "id", "name", "authority"?, "description"?, "source"?, "placeholder"?, "legacy"? }`. Imported categories use the exact manifest `source_id`; LDCs use the exact `marking`. `source` retains original metadata (source URL/ID, marking/banner alternatives, portion marking, provisional status, review date as applicable). `description` supplies the exact category definition or the LDC definition/notes extracted from the companion Registry text. IDs identify vocabulary entries, not independently validated complete CUI banners.

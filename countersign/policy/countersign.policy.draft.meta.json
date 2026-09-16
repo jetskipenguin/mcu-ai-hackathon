@@ -1,0 +1,16 @@
+{
+  "generated_at": "2026-09-16T17:54:06.439Z",
+  "provider": "openai",
+  "model": "gpt-6-astra",
+  "source_urls": [
+    "http://localhost:3001/quiz/1",
+    "http://localhost:3001/discussion/2",
+    "http://localhost:3001/record/1"
+  ],
+  "vocabulary": {
+    "categories": 126,
+    "ldcs": 10,
+    "placeholder": false
+  },
+  "draft_revision": "3d5be54ec30cb450a7755c4f9d1d8cbff3d201d5ff5d884302f709e48b1438e3"
+}
