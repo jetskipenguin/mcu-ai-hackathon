@@ -1,9 +1,4 @@
-import {
-  BedrockRuntimeClient,
-  ConverseCommand,
-} from "@aws-sdk/client-bedrock-runtime";
-
-type Provider = "bedrock" | "openai" | "anthropic";
+type Provider = "openai" | "anthropic";
 
 function required(name: string): string {
   const value = process.env[name];
@@ -11,23 +6,6 @@ function required(name: string): string {
     throw new Error(`${name} is required`);
   }
   return value;
-}
-
-async function completeWithBedrock(prompt: string): Promise<string> {
-  const client = new BedrockRuntimeClient({ region: required("AWS_REGION") });
-  const response = await client.send(
-    new ConverseCommand({
-      modelId: required("BEDROCK_MODEL_ID"),
-      messages: [{ role: "user", content: [{ text: prompt }] }],
-    }),
-  );
-  const text = response.output?.message?.content?.find(
-    (item) => "text" in item,
-  )?.text;
-  if (!text) {
-    throw new Error("Bedrock returned no text content");
-  }
-  return text;
 }
 
 async function completeWithOpenAI(prompt: string): Promise<string> {
@@ -57,10 +35,8 @@ async function completeWithOpenAI(prompt: string): Promise<string> {
 }
 
 export async function complete(prompt: string): Promise<string> {
-  const provider = (process.env.LLM_PROVIDER ?? "bedrock") as Provider;
+  const provider = (process.env.LLM_PROVIDER ?? "openai") as Provider;
   switch (provider) {
-    case "bedrock":
-      return completeWithBedrock(prompt);
     case "openai":
       return completeWithOpenAI(prompt);
     case "anthropic":

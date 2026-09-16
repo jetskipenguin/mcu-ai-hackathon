@@ -26,7 +26,7 @@ Implementation/adversary checkboxes are synchronized with [TASKS.md](TASKS.md); 
 **Wednesday 08:00–09:30, in this order.** Everything below was originally "tonight." It moved; it didn't shrink. The 12:00 checkpoint becomes **13:00**; everything after shifts an hour. Nothing else changes.
 
 1. **Comet tests A, B, C** (Chris, 45 min) — the whole demo depends on these, so they go first. Fresh macOS account, Touch ID enrolled, Comet installed, throwaway quiz and record pages, WebAuthn prompt inside Comet. Decision gates below apply unchanged.
-2. **Token checks** (Collin, parallel, 20 min) — Codex/OpenCode authenticate and run one trivial task; Bedrock GovCloud returns a small JSON object from one model; note model IDs in `NOTES.md`.
+2. **Token checks** (Collin, parallel, 20 min) — Codex/OpenCode authenticate and run one trivial task; OpenAI returns a small JSON object from one model; note model IDs in `NOTES.md`.
 3. **`AGENTS.md` + `docs/contracts.md`** (both, 15 min) — log event shape, policy shape, challenge/assertion endpoints. Written before anyone opens a coding session.
 4. **Extension adversary decision** (Chris, 5 min) — is the ChatGPT extension available? If not, buy Manus, and Collin runs the one-hour time-box in the afternoon.
 5. **Datasets** (Collin, 10 min) — coursebook chapter picked; CUI ZIP unpacked, category/LDC files located; all three registered on the portal.
@@ -57,7 +57,7 @@ Then split into tracks.
 - [x] Use Codex/OpenCode to scaffold: Express app, fake-SSO login (pick a user), three empty routes, static `countersign.js`, `COUNTERSIGN=off|on` env toggle, JSONL log writer.
 - [x] Fake data file: 3 students, obviously fictional, 900-series SSNs, fabricated notes.
 - [x] Confirm the app runs on two ports (`:3000` governed, `:3001` ungoverned) using `npm run dev` and `npm run dev:ungoverned`.
-- [ ] Bedrock GovCloud smoke test: one call from the hackathon credentials, ask for a small JSON object, see which model returns it cleanly. Note the model ID and region in `NOTES.md`. Stub the `LLM_PROVIDER` switch with the OpenAI fallback wired.
+- [ ] OpenAI smoke test: one call from the hackathon credentials, ask for a small JSON object, see which model returns it cleanly. Note the model ID in `NOTES.md` and confirm OpenAI is the default for `LLM_PROVIDER`.
 
 ### 1.3 Together (before splitting)
 - [x] Iterate on the spec/pitch/plan docs.

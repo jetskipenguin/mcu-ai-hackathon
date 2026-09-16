@@ -147,7 +147,7 @@ Effects of a high score: marked content masks; `human-required` actions still re
 - LDCs and categories are treated as dissemination rules, and an LLM endpoint is a dissemination target: the same vocabulary that says who may receive a document says which model may receive a page.
 - Output is a **draft for human approval** in the dashboard (diff view: proposed vs. current). Nothing takes effect until approved.
 - Why it matters: governance for legacy DoD web apps without hand-writing rules per app. Point Countersign at an existing system; get a starting policy in minutes.
-- Model: Bedrock in GovCloud West for the hackathon (see §10.2) — the same class of infrastructure the production pitch names, so the story and the build match. Provider switch with OpenAI fallback for resilience.
+- Model: OpenAI for the hackathon's synthetic-data demo (see §10.2). Model IDs come from environment configuration; production use requires an endpoint authorized for the governed data.
 
 ### 5.7 Provenance log and dashboard
 
@@ -304,8 +304,8 @@ An in-portal AI tutor that honors markings and action classes — helps the stud
 | **SimpleWebAuthn** (`@simplewebauthn/server` + `/browser`) | WebAuthn registration/assertion | Best-documented WebAuthn library; handles the crypto and the browser API quirks |
 | **Vanilla JS for `countersign.js`** | Client script | Must be injectable into any page; no framework dependency |
 | **React (or plain server-rendered pages)** | Dashboard | Whatever is faster to make look decent; Chris knows React |
-| **Amazon Bedrock, GovCloud West** (hackathon-provided) | Policy generator; compliant-tutor stretch; the "cleared" endpoint in the gateway stretch | The generator reads the governed app's pages — in production, the CUI itself — so it must run on an authorized model. GovCloud Bedrock makes that real and is a one-line Security & Sustainability point. Anthropic models aren't in the provided list; use Nova / Llama / OpenAI-on-Bedrock, whichever returns clean JSON in tonight's test. |
-| **Provider switch** `LLM_PROVIDER=bedrock\|openai\|anthropic` | Insurance | Hackathon creds expire and venue networks drop. Free OpenAI access is the fallback; a pre-generated draft policy is the fallback's fallback. |
+| **OpenAI** | Policy generator for the synthetic-data demo | Use the provided OpenAI access and configure the model ID via environment variables. Production use requires a model endpoint authorized for the governed data; this demo does not establish that authorization. |
+| **Provider switch** `LLM_PROVIDER=openai\|anthropic` | Provider configuration | OpenAI is the default; Anthropic is stubbed. A pre-generated draft policy is the fallback if credentials or network access fail. |
 | *Not used:* Kiro, Quick Suite, EKS/ECS, SageMaker, GPU EC2, AgentCore, Strands, LISA | — | Nothing the demo needs. AgentCore/Strands are roadmap (agent identity → `agent-declared`); LISA/SageMaker appear on the gateway diagram as "self-hosted cleared model." The portal never leaves the laptop: WebAuthn and Touch ID require it. |
 | **Presidio or regex set** | Deterministic PII detection in gateway (stretch) | Don't rely on the LLM alone for SSN/DoD-ID patterns |
 | **mkcert** | HTTPS if we need a second machine | WebAuthn secure-context requirement |
@@ -348,7 +348,7 @@ Doctrine to quote, not register: **MCDP 7 (Learning)** on the hook slide; **OBME
 1. ~~Name~~ — Countersign (§0).
 2. ~~Exact marking strings~~ — come from the CUI Tagging Dataset's Registry list, never hand-typed (§5.2, §11.1). ~~DoDI 5200.48 on a slide~~ — yes, it's on pitch Slide 8 as one of three standards we ride.
 3. ~~Judging rubric~~ — in hand: Mission Impact 30 / Technical Innovation 25 / Usability & Design 20 / Security & Sustainability 15 / Team Collaboration 10, plus four 1% bonuses we don't build for. Mapped slide-by-slide in pitch §0.
-4. ~~Which LLM for the generator~~ — Bedrock in GovCloud West with an OpenAI fallback behind `LLM_PROVIDER` (§5.6, §10.2). Specific model ID decided by tonight's smoke test.
+4. ~~Which LLM for the generator~~ — OpenAI by default behind `LLM_PROVIDER` (§5.6, §10.2). Specific model ID decided by tonight's smoke test.
 
 **Still open — decide tonight**
 5. Node vs. Python for the server. Default: Node + Express + SimpleWebAuthn. Decide when Collin scaffolds.

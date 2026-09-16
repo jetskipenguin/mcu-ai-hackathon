@@ -101,7 +101,7 @@ One line for the defense-priority tie: "This is Zero Trust applied to the human/
 Bottom row — standards we're riding, not inventing: **WebAuthn/FIDO2** (DoD already accepts FIDO2 authenticators; CAC → FIDO2 is the production root — *verify the current DoD CIO memo before the slide*) · **WebMCP** (Chrome origin trial — apps declaring tools to agents) · **CUI markings** (DoDI 5200.48), made machine-readable.
 Reuse line, for the Usability score: "A script tag and a policy file, or a proxy in front of a legacy app. The policy schema is open. Any web app, no rewrite."
 Enterprise hook, one sentence: "The forum dataset we used was built to test MCU's Learning Intelligence Dashboard. That analyzer scores Bloom's levels and engagement. It has no authorship column. Countersign's provenance log is that column."
-Infrastructure, one sentence: "The AI that drafts your governance reads your app's pages — so it runs in GovCloud, on Bedrock, not in someone else's cloud. That's how we built it this week, not a promise."
+Infrastructure, one sentence: "The policy generator uses OpenAI for this synthetic-data demo; production deployment would require a model endpoint authorized for the governed data."
 
 ### Slide 9 — Honest limits (0:20) — Chris
 One slide, three bullets, delivered fast and unbothered:

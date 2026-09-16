@@ -22,7 +22,7 @@ Stable IDs preserve the ordering and grouping in `docs/countersign-plan.md` sect
 - [x] **M13** Scaffold the Express app, fake-SSO login, three routes, static `countersign.js`, `COUNTERSIGN=off|on`, and JSONL writer.
 - [x] **M14** Add three fictional students plus the demo student, 900-series SSNs, and fabricated notes.
 - [x] **M15** Confirm the governed and ungoverned app instances run on ports 3000 and 3001.
-- [ ] **M16** Run the Bedrock GovCloud smoke test, record model and region in `NOTES.md`, and confirm the OpenAI fallback.
+- [ ] **M16** Run the OpenAI smoke test, record the model ID in `NOTES.md`, and confirm OpenAI is the default for `LLM_PROVIDER`.
 
 ## Wednesday Morning - Together
 

@@ -29,7 +29,7 @@ Priorities in order: (1) that flow works, (2) the other two pages work, (3) the 
 - `countersign.js` is **vanilla JS, no framework, no build step** — it must be injectable into any page.
 - Dashboard: server-rendered pages or a small React app, whichever is faster. Don't spend time on styling.
 - Storage: in-memory + JSON/JSONL files. No database.
-- LLM calls go through one module (`countersign/generate/llm.ts`) behind `LLM_PROVIDER=bedrock|openai|anthropic`. Bedrock (GovCloud West) is primary; OpenAI is fallback. Model IDs come from `.env`; never hardcode them.
+- LLM calls go through one module (`countersign/generate/llm.ts`) behind `LLM_PROVIDER=openai|anthropic`. OpenAI is the default; Anthropic is stubbed. Model IDs come from `.env`; never hardcode them.
 
 ```
 portal/                 mock "MCU Learning Portal" — the governed app (routes: /login /quiz/1 /discussion/2 /record/1)
@@ -76,7 +76,7 @@ This repo is a 1.5-day hackathon with two people watching every change. Global s
 - Every governed action writes exactly one JSONL event to `data/provenance.jsonl`. Never silently swallow a policy decision.
 - Agent-detection signals produce a **score**, never a block. Blocking happens only for missing/invalid presence proofs on `human-required` and `attested` actions.
 - Marking identifiers come from `data/cui/` (National CUI Registry categories and LDCs). Do not invent marking strings.
-- No secrets in the repo. LLM keys and AWS credentials via `.env` (gitignored). `.env.example` lists every variable.
+- No secrets in the repo. LLM keys via `.env` (gitignored). `.env.example` lists every variable.
 - Pin dependencies. No new dependencies without a one-line reason in the commit.
 
 ## 7. Data rules

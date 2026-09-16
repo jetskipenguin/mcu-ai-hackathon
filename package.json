@@ -14,7 +14,6 @@
     "build": "tsc -p tsconfig.json"
   },
   "dependencies": {
-    "@aws-sdk/client-bedrock-runtime": "3.1133.0",
     "@simplewebauthn/browser": "14.0.0",
     "@simplewebauthn/server": "14.0.2",
     "cookie-parser": "1.4.7",
