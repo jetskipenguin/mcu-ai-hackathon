@@ -7,9 +7,9 @@ Stable IDs preserve the ordering and grouping in `docs/countersign-plan.md` sect
 - [ ] **M1** Create a fresh macOS user account for demo work. Enroll Touch ID for it.
 - [ ] **M2** Install Comet in that account. Sign in to nothing real.
 - [ ] **M3** Create a throwaway HTML page with a 3-question quiz and submit; create another with a fake SSN and clinical note; serve both on `localhost`.
-- [ ] **M4** Test A: determine whether Comet completes and submits the quiz with 2-3 prompt phrasings.
-- [ ] **M5** Test B: determine whether Comet reads and summarizes the sensitive page.
-- [ ] **M6** Test C: determine whether a WebAuthn prompt fires inside Comet on `localhost` and Touch ID completes it.
+- [x] **M4** Test A: determine whether Comet completes and submits the quiz with 2-3 prompt phrasings. Outcome: two reported refusals; follow the planned fallback (see [NOTES.md](../NOTES.md)).
+- [x] **M5** Test B: determine whether Comet reads and summarizes the sensitive page. Outcome: reproduced the synthetic SSN, DoD ID, and medical note; values match the fixture (see [NOTES.md](../NOTES.md)).
+- [ ] **M6** Test C: determine whether a WebAuthn prompt fires inside Comet on `localhost` and Touch ID completes it. Preliminary WebAuthn.io registration/authentication check passed by tester report; localhost verification remains pending (see [NOTES.md](../NOTES.md)).
 - [ ] **M7** Record each adversary test in `NOTES.md`, including pass/fail and the phrasing that worked.
 - [ ] **M8** Check the ChatGPT Chrome extension; if unavailable, buy the cheapest Manus Browser Operator tier and time-box Tests A and B to 60 minutes.
 
@@ -36,10 +36,10 @@ Stable IDs preserve the ordering and grouping in `docs/countersign-plan.md` sect
 ## Track A - Morning
 
 - [ ] **A1** Build plain portal pages with real synthetic content for the quiz, discussion, and record routes.
-- [ ] **A2** Implement first-login WebAuthn registration and action assertions; store credentials in memory/JSON.
-- [ ] **A3** Implement `countersign.js` v1 to intercept policy-matched forms, request a challenge, call WebAuthn, and submit assertion plus form.
-- [ ] **A4** Implement middleware v1 to load policy, verify human-required assertions and binding, enforce UP/UV and age, and write the event.
-- [ ] **A5** Run Comet against the governed quiz and record the 13:00 checkpoint when the wall works.
+- [x] **A2** Implement first-login WebAuthn registration and action assertions; store credentials in memory/JSON. Verified with real library registration/assertion tests and Chrome's virtual platform authenticator.
+- [x] **A3** Implement `countersign.js` v1 to intercept policy-matched forms, request a challenge, call WebAuthn, and submit assertion plus form. Browser checks cover success, cancellation/retry, form edits, and advisory-signal failure.
+- [x] **A4** Implement middleware v1 to load policy, verify human-required assertions and binding, enforce UP/UV and age, and write the event. All seven required tests plus cryptographic/binding regressions pass; see [verification evidence](build-log/a2-a4-verification.md). Physical-sensor checkpoint A5 remains open.
+- [ ] **A5** Run Comet against the governed quiz and record the 13:00 checkpoint when the wall works. Progress: live localhost quiz success corroborated at 11:17 with `allowed` / `human-verified`, UP/UV true, and an assertion ID following the Nanobrowser test. Full agent/sensor recording and the Comet-local check remain pending (see [live evidence](build-log/live-quiz-verification.md)).
 
 ## Track A - Afternoon
 
@@ -64,7 +64,7 @@ Stable IDs preserve the ordering and grouping in `docs/countersign-plan.md` sect
 - [ ] **B4** Implement the policy generator CLI/endpoint, constrained Registry vocabulary, and draft-policy output.
 - [ ] **B5** If on schedule, attach a Registry definition and governing-document citation to each marking.
 - [ ] **B6** Implement policy review, per-rule approval, approve-all, active-policy writes, and middleware hot reload.
-- [ ] **B7** Run and record quiz and record tasks with the chosen Chrome extension, including its vendor-side trace.
+- [ ] **B7** Run and record quiz and record tasks with the chosen Chrome extension, including its vendor-side trace. Progress: Nanobrowser quiz completion/submission passed by tester report; record extraction was partial (DoD ID and medical note reproduced, SSN redacted). Recordings and task/vendor trace remain pending (see [NOTES.md](../NOTES.md)).
 - [ ] **B8** If purchased, run the same Manus tests within the time box.
 
 ## Track B - Evening

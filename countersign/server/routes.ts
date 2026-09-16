@@ -7,7 +7,11 @@ import { renderDashboard, renderPolicyReview } from "../../dashboard/index.js";
 import { readProvenanceEvents } from "./log.js";
 import { loadPolicy, validatePolicy } from "./policy.js";
 import type { CountersignPolicy } from "./types.js";
-import { createWebAuthnRouter } from "./webauthn.js";
+import {
+  createWebAuthnRouter,
+  type GovernedAction,
+  type GovernanceServices,
+} from "./webauthn.js";
 
 const DRAFT_PATH = resolve(
   process.cwd(),
@@ -40,9 +44,11 @@ function readDraftPolicy(): CountersignPolicy | null {
   return validatePolicy(JSON.parse(raw) as unknown, knownMarkings);
 }
 
-export function createCountersignRouter(): Router {
+export function createCountersignRouter(
+  enabled: boolean, services: GovernanceServices, actions: GovernedAction[],
+): Router {
   const router = Router();
-  router.use(createWebAuthnRouter());
+  router.use(createWebAuthnRouter(enabled, services, actions));
 
   router.get("/", (_request, response) => {
     response.type("html").send(renderDashboard());
@@ -53,7 +59,7 @@ export function createCountersignRouter(): Router {
   });
 
   router.get("/events", async (request, response) => {
-    const events = await readProvenanceEvents();
+    const events = await readProvenanceEvents(services.provenancePath);
     const since = typeof request.query.since === "string" ? request.query.since : null;
     const index = since
       ? events.findIndex((event) => event.event_id === since)

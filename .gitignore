@@ -1,6 +1,7 @@
 .env
 data/provenance.jsonl
 data/credentials.json
+data/credentials.json.*.tmp
 dist/
 node_modules/
 *.pdf

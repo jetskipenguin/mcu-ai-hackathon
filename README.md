@@ -43,7 +43,7 @@ npm run dev
 npm run dev:ungoverned
 ```
 
-The governed instance is at `http://localhost:3000`; the ungoverned instance is at `http://localhost:3001`. Set `SESSION_SECRET` for a stable signed-cookie key across restarts; when omitted, the server creates an ephemeral development key.
+The governed instance is at `http://localhost:3000`; the ungoverned instance is at `http://localhost:3001`. Set `SESSION_SECRET` for a stable signed-cookie key across restarts; when omitted, the server creates an ephemeral development key. The instances use separate cookie names so logging into one does not replace the other's session.
 
 Run the current generator scaffold and test suite with:
 
@@ -58,13 +58,13 @@ The generator currently copies the validated active policy to `countersign/polic
 ## Demo Walkthrough
 
 1. Open `http://localhost:3001/login`, choose `Capt J. Demo`, and visit the three portal pages without Countersign enforcement or provenance writes.
-2. Open `http://localhost:3000/login`, choose the same user, and repeat the flow with the Countersign client and middleware active.
-3. On `/quiz/1`, the `human-required` rule demonstrates the action-time WebAuthn boundary at submission.
+2. Open `http://localhost:3000/login` in the browser/profile used by the demo agent and choose the same user. First login redirects to `/register`: click **Register passkey with Touch ID** and complete registration. Use the **Register passkey** navigation link to add a credential if another profile cannot access the existing one. Credentials survive server restarts in gitignored `data/credentials.json`.
+3. On `/quiz/1`, let the agent fill the form and submit. A fresh WebAuthn prompt requires human confirmation. After Touch ID, the page shows **Quiz submitted. Human presence verified.** The log records `presence-requested`, then `allowed` / `human-verified` with an assertion ID. Canceling leaves the form available for a fresh attempt; direct submissions without a valid assertion return a logged 403.
 4. On `/discussion/2`, `independent_first` hides peer posts until the learner submits an initial response; the `attested` rule records disclosure and composition telemetry.
 5. On `/record/1`, the `marking` rule withholds record fields until signal evaluation. A suspected-agent session sees placeholders and an **Automation suspected** banner. Register a passkey and select **Verify presence to view** to reveal the record using WebAuthn.
 6. Open `/countersign/` on port 3000 to watch the provenance timeline and `/countersign/policy/review` to compare active and draft policies.
 
-Record masking, deterministic signal scoring, passkey registration, and action-bound record reveal are implemented. Quiz/discussion assertion enforcement, attestation presentation, and LLM policy generation remain scaffold work; the seven original quiz/WebAuthn tests are still TODOs.
+A2–A4 implement registration, action-bound WebAuthn verification, and governed submission enforcement. Challenges are single-use and bound to the user, session, action, form contents, and attestation; required UP/UV and age checks run server-side. The attested discussion flow logs disclosure/telemetry and advisory contradictions while allowing valid submissions. Record masking, deterministic signal scoring, and action-bound reveal from A6–A8 share the same credential and verification service. Richer attestation presentation/tagging and LLM policy generation remain track work.
 
 ### Student-record protection (A6–A8)
 
@@ -72,7 +72,7 @@ Record masking, deterministic signal scoring, passkey registration, and action-b
 - Hidden, unfocused record reads score `0.6`, reaching the policy threshold. This catches the observed BrowserOS workflow despite `webdriver=false`. Suspicion persists for the login session; verified reveals do not clear it.
 - This is a heuristic: background human tabs can be flagged, while foreground agents or spoofed telemetry can evade it. See `docs/contracts.md` for the endpoints and presence-verification rules.
 
-`npm test` exercises record access and WebAuthn with temporary signed assertions. Physical Touch ID / Windows Hello confirmation needs a human on the demo machine.
+`npm test` covers the seven required enforcement cases plus real cryptographic verification, record access, registration, replay, session/action binding, and origin/RP/UP/UV rejection. An isolated Chrome run with a virtual platform authenticator also verifies the browser flow; evidence is in `docs/build-log/a2-a4-verification.md`. A live governed quiz assertion was verified separately in `docs/build-log/live-quiz-verification.md`. **The complete agent/Touch ID recording and Comet-local checkpoint remain open.** Register separately on localhost; the WebAuthn.io test credential does not apply. Disable any DevTools virtual authenticator before the physical-sensor demo.
 
 ## Datasets
 

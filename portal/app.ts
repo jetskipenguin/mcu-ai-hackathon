@@ -11,10 +11,12 @@ import express, {
 } from "express";
 
 import { governedPageVisit, governedSubmission } from "../countersign/server/middleware.js";
-import { matchRule } from "../countersign/server/policy.js";
+import { matchRule, requiresPresence } from "../countersign/server/policy.js";
 import { createCountersignRouter } from "../countersign/server/routes.js";
 import { createRecordGovernance, type RecordOptions } from "../countersign/server/records.js";
+import { appendProvenanceEvent } from "../countersign/server/log.js";
 import type { PolicyRule, PortalUser } from "../countersign/server/types.js";
+import { WebAuthnService, type GovernedAction, type WebAuthnOptions } from "../countersign/server/webauthn.js";
 
 interface Student extends PortalUser {
   email: string;
@@ -116,7 +118,8 @@ function page(
     <nav>
       <a href="/quiz/1">Quiz</a>
       <a href="/discussion/2">Discussion</a>
-      <a href="/record/1">Student record</a>
+       <a href="/record/1">Student record</a>
+      ${enabled ? '<a href="/register">Register passkey</a>' : ""}
       <a href="/countersign/">Countersign</a>
       <a href="/login">Switch user</a>
     </nav>
@@ -149,10 +152,18 @@ function markingFor(rule: PolicyRule | undefined, field: string): string {
   );
 }
 
-export interface AppOptions {
+function presenceAttributes(enabled: boolean, action: GovernedAction, user: PortalUser): string {
+  if (!enabled) return "";
+  const rule = matchRule(action.route, action.action, action.context?.(user));
+  if (!requiresPresence(rule)) return "";
+  return `data-countersign-rule="${escapeHtml(rule.id)}" data-countersign-class="${escapeHtml(rule.class)}" data-countersign-action="${escapeHtml(action.action)}"`;
+}
+
+export interface AppOptions extends WebAuthnOptions {
   countersignEnabled?: boolean;
   sessionSecret?: string;
   recordOptions?: Pick<RecordOptions, "credentialsPath" | "writeEvent">;
+  provenancePath?: string;
 }
 
 export function createApp(options: AppOptions = {}): express.Express {
@@ -165,9 +176,22 @@ export function createApp(options: AppOptions = {}): express.Express {
   const forum = readJson<ForumFixture>("portal/data/forum.json");
   const posts = [...forum.posts];
   const postedUsers = new Set(posts.map((post) => post.user_id));
+  const webAuthn = new WebAuthnService({
+    ...options, credentialsPath: options.credentialsPath ?? options.recordOptions?.credentialsPath,
+  });
+  const services = { webAuthn, provenancePath: options.provenancePath };
+  const quizAction: GovernedAction = { route: "/quiz/1", action: "POST /quiz/1/submit" };
+  const discussionAction: GovernedAction = {
+    route: "/discussion/2", action: "POST /discussion/2/post",
+    context: (user) => ({ is_initial_post: !postedUsers.has(user.id) }),
+  };
+  // Cookies are hostname-scoped, not port-scoped. Keep the two demos isolated.
+  const cookiePrefix = enabled ? "countersign" : "countersign_off";
   const app = express();
   const records = createRecordGovernance({
     ...options.recordOptions,
+    webAuthn,
+    writeEvent: options.recordOptions?.writeEvent ?? ((event) => appendProvenanceEvent(event, options.provenancePath)),
     enabled,
     fieldsForUser(userId) {
       const student = students.find((candidate) => candidate.id === userId)!;
@@ -180,10 +204,10 @@ export function createApp(options: AppOptions = {}): express.Express {
   app.use(express.urlencoded({ extended: true }));
   app.use(cookieParser(sessionSecret));
   app.use((request, response, next) => {
-    const userId = request.signedCookies.countersign_user as
+    const userId = request.signedCookies[`${cookiePrefix}_user`] as
       | string
       | undefined;
-    const sessionId = request.signedCookies.countersign_session as
+    const sessionId = request.signedCookies[`${cookiePrefix}_session`] as
       | string
       | undefined;
     const user = students.find((candidate) => candidate.id === userId);
@@ -198,7 +222,8 @@ export function createApp(options: AppOptions = {}): express.Express {
     "/assets",
     express.static(resolve(process.cwd(), "countersign/client")),
   );
-  app.use("/countersign", records.router, createCountersignRouter());
+  app.use(records.attachSignals);
+  app.use("/countersign", records.router, createCountersignRouter(enabled, services, [quizAction, discussionAction]));
 
   app.get("/", (_request, response) => response.redirect(302, "/login"));
 
@@ -236,15 +261,31 @@ export function createApp(options: AppOptions = {}): express.Express {
       sameSite: "lax" as const,
       secure: false,
     };
-    response.cookie("countersign_user", user.id, cookieOptions);
-    response.cookie("countersign_session", `sess_${randomUUID()}`, cookieOptions);
-    response.redirect(303, "/quiz/1");
+    response.cookie(`${cookiePrefix}_user`, user.id, cookieOptions);
+    response.cookie(`${cookiePrefix}_session`, `sess_${randomUUID()}`, cookieOptions);
+    response.redirect(303, enabled && webAuthn.credentials.forUser(user.id).length === 0 ? "/register" : "/quiz/1");
+  });
+
+  app.get("/register", requireUser(), (_request, response) => {
+    if (!enabled) {
+      response.redirect(303, "/quiz/1");
+      return;
+    }
+    const user = response.locals.user as PortalUser;
+    response.type("html").send(page("Register passkey", `
+      <h1>Register a passkey for ${escapeHtml(user.name)}</h1>
+      <p>Use Touch ID on this Mac to register in the browser profile you will use for the demo.</p>
+      <p>If your passkey is unavailable in another browser, register an additional one here.</p>
+      <form data-countersign-register>
+        <button type="submit">Register passkey with Touch ID</button>
+        <p role="status" data-countersign-status></p>
+      </form>`, enabled));
   });
 
   app.get(
     "/quiz/1",
     requireUser(),
-    governedPageVisit(enabled),
+    governedPageVisit(enabled, options.provenancePath),
     (_request, response) => {
       const questions = quiz.questions
         .map(
@@ -264,7 +305,7 @@ export function createApp(options: AppOptions = {}): express.Express {
           quiz.title,
           `<h1>${escapeHtml(quiz.title)}</h1>
            <p class="notice">${escapeHtml(quiz.notice)}</p>
-           <form method="post" action="/quiz/1/submit" data-countersign-rule="quiz-submit" data-countersign-action="POST /quiz/1/submit">
+            <form method="post" action="/quiz/1/submit" ${presenceAttributes(enabled, quizAction, response.locals.user)}>
              ${questions}
              <button type="submit">Submit quiz</button>
              <p role="status" data-countersign-status></p>
@@ -278,16 +319,20 @@ export function createApp(options: AppOptions = {}): express.Express {
   app.post(
     "/quiz/1/submit",
     requireUser(),
-    ...governedSubmission(enabled),
+    ...governedSubmission(enabled, quizAction, services),
     (request, response) => {
       if (request.is("application/json")) {
-        response.json({ ok: true, message: "Quiz submission accepted by the scaffold." });
+        response.json({
+          ok: true,
+          message: response.locals.presence ? "Quiz submitted. Human presence verified." : "Quiz submitted.",
+          assertion_id: response.locals.presence?.assertion_id ?? null,
+        });
         return;
       }
       response.type("html").send(
         page(
           "Quiz submitted",
-          "<h1>Quiz submitted</h1><p>The scaffold accepted this placeholder submission.</p>",
+          "<h1>Quiz submitted</h1><p>Your submission was accepted.</p>",
           enabled,
         ),
       );
@@ -297,7 +342,7 @@ export function createApp(options: AppOptions = {}): express.Express {
   app.get(
     "/discussion/2",
     requireUser(),
-    governedPageVisit(enabled),
+    governedPageVisit(enabled, options.provenancePath),
     (_request, response) => {
       const user = response.locals.user as PortalUser;
       const hasPosted = postedUsers.has(user.id);
@@ -314,7 +359,7 @@ export function createApp(options: AppOptions = {}): express.Express {
         : '<p class="notice">Peer posts are hidden until you publish your initial response (independent_first).</p>';
       const form = hasPosted
         ? ""
-        : `<form method="post" action="/discussion/2/post" data-countersign-rule="discussion-initial-post" data-countersign-action="POST /discussion/2/post">
+        : `<form method="post" action="/discussion/2/post" ${presenceAttributes(enabled, discussionAction, user)}>
             <label for="body"><strong>Your initial response</strong></label>
             <textarea id="body" name="body" required></textarea>
             <button type="submit">Publish response</button>
@@ -337,7 +382,7 @@ export function createApp(options: AppOptions = {}): express.Express {
   app.post(
     "/discussion/2/post",
     requireUser(),
-    ...governedSubmission(enabled),
+    ...governedSubmission(enabled, discussionAction, services),
     (request, response) => {
       const user = response.locals.user as PortalUser;
       const body = typeof request.body.body === "string" ? request.body.body.trim() : "";

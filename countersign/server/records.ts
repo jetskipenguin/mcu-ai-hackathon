@@ -4,17 +4,19 @@ import { loadPolicy, matchRule } from "./policy.js";
 import { RecordPresence, PresenceError } from "./record-presence.js";
 import { scoreSignals, type ClientSignals, type SignalResult } from "./signals.js";
 import type { Decision, NewProvenanceEvent, PortalUser, PresenceProof } from "./types.js";
+import { WebAuthnService } from "./webauthn.js";
 
 export interface RecordOptions {
   enabled: boolean;
   fieldsForUser: (userId: string) => Record<string, string>;
   credentialsPath?: string;
+  webAuthn?: WebAuthnService;
   writeEvent?: (event: NewProvenanceEvent) => Promise<unknown>;
 }
 
 export function createRecordGovernance(options: RecordOptions) {
   const router = Router();
-  const presence = new RecordPresence(options.credentialsPath);
+  const presence = new RecordPresence(options.webAuthn ?? new WebAuthnService({ credentialsPath: options.credentialsPath }));
   const writeEvent = options.writeEvent ?? appendProvenanceEvent;
   const sessions = new Map<string, SignalResult & { user: PortalUser; first_seen: string }>();
 
@@ -114,17 +116,6 @@ export function createRecordGovernance(options: RecordOptions) {
       ...(masked ? {} : { fields: options.fieldsForUser(response.locals.user.id) }) });
   });
 
-  router.post("/webauthn/register/options", authenticated, async (_request, response) => {
-    response.json(await presence.registrationOptions(response.locals.user, response.locals.sessionId));
-  });
-  router.post("/webauthn/register/verify", authenticated, async (request, response) => {
-    try {
-      response.json(await presence.register(response.locals.user, response.locals.sessionId, request.body));
-    } catch (error) {
-      response.status(403).json({ error: "registration_failed", reason: error instanceof PresenceError ? error.message : "verification_failed" });
-    }
-  });
-
   router.post("/unmask", authenticated, async (request, response) => {
     headers(response);
     const rule = recordRule().unmask!;
@@ -152,18 +143,30 @@ export function createRecordGovernance(options: RecordOptions) {
     const rule = recordRule().unmask!;
     const signals = observe(request, response, "/record/1");
     let proof: PresenceProof;
+    let notes: string;
     try {
-      proof = await presence.verify(response.locals.user, response.locals.sessionId, rule.rule_id,
+      const result = await presence.verify(response.locals.user, response.locals.sessionId, rule.rule_id,
         rule.presence, request.body?.challenge_id, request.body?.assertion);
+      proof = result.presence;
+      notes = result.notes;
     } catch (error) {
       const reason = error instanceof PresenceError ? error.message : "verification_failed";
       await log(response, "POST /countersign/unmask/verify", "blocked", signals, null, reason, true);
       response.status(403).json({ error: "countersign_required", reason });
       return;
     }
-    await log(response, "POST /countersign/unmask/verify", "unmasked", signals, proof, "", true);
+    await log(response, "POST /countersign/unmask/verify", "unmasked", signals, proof, notes, true);
     response.json({ ok: true, fields: options.fieldsForUser(response.locals.user.id) });
   });
 
-  return { router, visit };
+  const attachSignals: RequestHandler = (_request, response, next) => {
+    const observed = options.enabled && sessions.get(response.locals.sessionId);
+    if (observed) {
+      response.locals.signals = { score: observed.score, flags: observed.flags };
+      response.locals.agentDeclared = observed.actor_class === "agent-declared";
+    }
+    next();
+  };
+
+  return { router, visit, attachSignals };
 }

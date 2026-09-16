@@ -300,3 +300,7 @@ export function matchRule(
     );
   });
 }
+
+export function requiresPresence(rule: PolicyRule | undefined): rule is PolicyRule {
+  return rule?.class === "human-required" || rule?.class === "attested";
+}

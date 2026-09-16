@@ -144,7 +144,7 @@ test("missing/fabricated assertions never unmask; registration is not a placehol
   const registration = await (await request("/countersign/webauthn/register/options", {})).json();
   assert.equal(registration.rp.id, "localhost");
   assert.equal(registration.user.name, "stu-0011");
-  assert.equal((await request("/countersign/webauthn/register/verify", {})).status, 403);
+  assert.equal((await request("/countersign/webauthn/register/verify", {})).status, 400);
 });
 
 test("reveal rejects and consumes cross-session and expired challenges", async (context) => {

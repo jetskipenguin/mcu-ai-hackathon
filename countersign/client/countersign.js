@@ -228,18 +228,66 @@ async function postJson(url, body) {
   });
   const payload = await response.json().catch(() => ({}));
   if (!response.ok) {
-    throw new Error(payload.message || payload.reason || payload.error || "Request failed");
+    const error = new Error(payload.message || payload.reason || payload.error || "Request failed");
+    error.code = payload.error;
+    throw error;
   }
   return payload;
 }
 
+function showError(status, error) {
+  if (!status) return;
+  status.textContent =
+    error.name === "NotAllowedError" || error.cause?.name === "NotAllowedError"
+      ? "A human must confirm this action. You can try again."
+      : error.message;
+  if (error.code === "registration_required" || error.code === "login_required") {
+    const link = document.createElement("a");
+    link.href = error.code === "registration_required" ? "/register" : "/login";
+    link.textContent = error.code === "registration_required" ? " Register passkey" : " Sign in";
+    status.append(link);
+  }
+}
+
+for (const form of document.querySelectorAll("form[data-countersign-register]")) {
+  let busy = false;
+  form.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    if (busy) return;
+    busy = true;
+    const button = form.querySelector('button[type="submit"]');
+    const status = form.querySelector("[data-countersign-status]");
+    button.disabled = true;
+    status.textContent = "Use Touch ID to register this browser's passkey...";
+    try {
+      const options = await postJson("/countersign/webauthn/register/options", {});
+      const credential = await startRegistration({ optionsJSON: options });
+      await postJson("/countersign/webauthn/register/verify", credential);
+      status.textContent = "Passkey registered.";
+      location.assign("/quiz/1");
+    } catch (error) {
+      showError(status, error);
+    } finally {
+      button.disabled = false;
+      busy = false;
+    }
+  });
+}
+
 for (const form of governedForms) {
+  let busy = false;
   form.addEventListener("submit", async (event) => {
     const rule = form.dataset.countersignRule;
     if (!rule) {
       return;
     }
     event.preventDefault();
+    if (busy) return;
+    busy = true;
+    let submitted = false;
+    const buttons = [...form.querySelectorAll('button[type="submit"], input[type="submit"]')];
+    const disabled = buttons.map((button) => button.disabled);
+    buttons.forEach((button) => { button.disabled = true; });
 
     const status = form.querySelector("[data-countersign-status]");
     if (status) {
@@ -247,11 +295,12 @@ for (const form of governedForms) {
     }
 
     try {
-      await sendSignals();
+      // Advisory telemetry must never prevent a real presence check.
+      await sendSignals().catch(() => {});
       const fields = serialize(form);
       const form_hash = await sha256Canonical(fields);
       const attestation =
-        rule === "discussion-initial-post" ? await askAttestation() : null;
+        form.dataset.countersignClass === "attested" ? await askAttestation() : null;
       const challenge = await postJson("/countersign/challenge", {
         rule_id: rule,
         action: form.dataset.countersignAction,
@@ -261,6 +310,9 @@ for (const form of governedForms) {
       const assertion = await startAuthentication({
         optionsJSON: challenge.options,
       });
+      if (await sha256Canonical(serialize(form)) !== form_hash) {
+        throw new Error("The form changed during confirmation. Submit again to confirm the new contents.");
+      }
       const result = await postJson(form.action, {
         ...fields,
         countersign: {
@@ -270,6 +322,7 @@ for (const form of governedForms) {
           telemetry: telemetryFor(form),
         },
       });
+      submitted = true;
       if (status) {
         status.textContent = result.message || "Action submitted.";
       }
@@ -277,11 +330,11 @@ for (const form of governedForms) {
         location.assign(result.redirect);
       }
     } catch (error) {
-      if (status) {
-        status.textContent =
-          error.name === "NotAllowedError"
-            ? "A human must confirm this action."
-            : error.message;
+      showError(status, error);
+    } finally {
+      if (!submitted) {
+        busy = false;
+        buttons.forEach((button, index) => { button.disabled = disabled[index]; });
       }
     }
   });

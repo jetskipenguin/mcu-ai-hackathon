@@ -125,13 +125,47 @@ All under `/countersign/`. JSON in, JSON out. Errors: `{ "error": "<code>", "mes
 | `POST /countersign/webauthn/register/options` | `{}` (session user) | `PublicKeyCredentialCreationOptionsJSON` |
 | `POST /countersign/webauthn/register/verify` | `RegistrationResponseJSON` | `{ "ok": true, "credential_id": "cred_…" }` |
 
+Both endpoints require the signed-in session and a JSON request. Registration
+challenges are random, session/user-bound, single-use, and valid for 120 seconds.
+Registration verifies the exact origin `http://localhost:3000`, RP ID `localhost`,
+and both UP and UV before saving any credential. `credential_id` is the
+authenticator's base64url credential ID; `cred_…` above is illustrative.
+
+The governed portal redirects first login to `/register` when the user has no
+credentials. `/register` also allows adding a passkey for another browser profile.
+Public keys (base64url), counters, transports, and device/backup metadata are saved
+in `data/credentials.json`, keyed by user ID. Challenges stay in memory and do not
+survive a server restart. The two portal instances use separate signed-cookie
+names because cookies are shared across ports on the same hostname.
+
+Quiz, discussion, and record reveal use the same registration, credential store,
+and verifier. A newly enrolled credential is immediately usable by each flow;
+record and form challenges cannot authorize each other's actions. Session signal
+scores/declarations are included in form provenance, but a valid presence proof
+still takes precedence as `human-verified` regardless of the score.
+
+Ceremony endpoints return `401 login_required` without a session,
+`415 json_required` for non-JSON requests, and `403 origin_mismatch` when a browser
+sends an Origin other than `http://localhost:3000`. Registration verification
+failures return HTTP 400 with the standard error/message envelope. The ungoverned
+instance returns `404 countersign_disabled` for these endpoints without issuing
+challenges, verifying credentials, or writing provenance.
+
 ### WebAuthn — action step-up
 
 | Endpoint | Body | Returns |
 |---|---|---|
 | `POST /countersign/challenge` | `{ "rule_id", "action", "form_hash", "attestation"?: "own-work"\|"ai-assisted" }` | `{ "challenge_id", "options": PublicKeyCredentialRequestOptionsJSON, "expires_at" }` |
 
-The server stores `{challenge_id → {user, rule_id, action, form_hash, attestation, created}}` and deletes it on first use or expiry (120 s). The challenge is single-use.
+The server stores `{challenge_id → {challenge, user, session_id, rule_id, action, form_hash, attestation, created}}`. It consumes the entry synchronously before verification, whether the attempt succeeds or fails. Entries expire after 120 seconds and are removed on consumption or expiry pruning during subsequent issuance. The rule's shorter `max_age_s` also applies.
+
+The portal supplies a server-owned registry of action/route pairs and predicates;
+the client cannot invent an action or declare `is_initial_post`. Issuance validates
+the active rule, action, canonical hash syntax, and attestation. Invalid bindings
+return HTTP 400 (`invalid_action` or `invalid_binding`); a user with no registered
+credential receives `409 registration_required` and must visit `/register`.
+Successful issuance writes one `presence-requested` event. Its authentication
+options allow only credentials belonging to the signed-in user.
 
 ### Governed form submission
 
@@ -156,6 +190,19 @@ HTTP 403  { "error": "countersign_required", "reason": "no_assertion" | "expired
 ```
 
 and writes a `blocked` event. The ungoverned instance (`COUNTERSIGN=off`) skips all of this and writes nothing.
+
+Binding checks also compare the signed-in user/session, concrete action, rule ID,
+and attestation. A cross-user/session attempt returns `verification_failed`;
+rule/action/form/attestation mismatches return `form_mismatch`. Expiration is
+checked again after asynchronous signature verification. Each submission has one
+`allowed` or `blocked` decision; the additional advisory attestation decisions in
+§7 are separate events. Cancellation in the browser sends no submission, leaving
+only the challenge's `presence-requested` event.
+
+The quiz's JSON success response is `{ "ok": true, "message": "…", "assertion_id": "asr_…" }`;
+`assertion_id` is null for an unrestricted/ungoverned submission. The client shows
+the success message in the form. Signal delivery failures never prevent the
+presence ceremony, and editing a form during confirmation requires a new ceremony.
 
 ### Signals and masking
 
@@ -242,7 +289,7 @@ Collected per text field by `countersign.js`, sent in `countersign.telemetry` on
 
 ## 6. Canonical form hash
 
-`form_hash = "sha256:" + hex(sha256(canonical))` where `canonical` is the form's fields (excluding the `countersign` object) sorted by name, JSON-serialized with no whitespace. Client computes it at challenge time; server recomputes from the submitted body. Mismatch → `form_mismatch`. This binds the assertion to the exact submission.
+`form_hash = "sha256:" + hex(sha256(canonical))` where `canonical` is the form's fields (excluding the top-level `countersign` object) sorted by name, JSON-serialized with no whitespace. Nested object keys are recursively sorted with the same JavaScript serialization on client and server; array order and value types are preserved. Client computes it at challenge time; server recomputes from the submitted body. Mismatch → `form_mismatch`. This binds the assertion to the exact submission.
 
 ---
 

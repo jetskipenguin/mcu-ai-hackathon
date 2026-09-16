@@ -1,107 +1,187 @@
-import type { NextFunction, Request, RequestHandler, Response } from "express";
+import type { Request, RequestHandler, Response } from "express";
+import type { AuthenticationResponseJSON } from "@simplewebauthn/server";
 
+import { formHash, isRecord } from "./canonical.js";
 import { appendProvenanceEvent } from "./log.js";
-import type { PortalUser } from "./types.js";
+import { loadPolicy, matchRule, requiresPresence } from "./policy.js";
+import type { ActorClass, Attestation, NewProvenanceEvent, PolicyRule, PortalUser, PresenceProof } from "./types.js";
+import {
+  PresenceError,
+  type ActionChallenge,
+  type GovernedAction,
+  type GovernanceServices,
+  type PresenceFailure,
+} from "./webauthn.js";
 
-export function matchGovernedRule(
-  _request: Request,
-  _response: Response,
-  next: NextFunction,
-): void {
-  // TODO(track-a): match the request to the active policy rule.
-  next();
-}
-
-export function compareCanonicalFormHash(
-  _request: Request,
-  _response: Response,
-  next: NextFunction,
-): void {
-  // TODO(track-a): recompute submitted fields and compare the stored form hash.
-  next();
-}
-
-export function verifyPresenceAssertion(
-  _request: Request,
-  _response: Response,
-  next: NextFunction,
-): void {
-  // TODO(track-a): consume the challenge and verify its WebAuthn assertion.
-  next();
-}
-
-export function enforcePresenceRequirements(
-  _request: Request,
-  _response: Response,
-  next: NextFunction,
-): void {
-  // TODO(track-a): enforce UP, UV, challenge age, and rule max_age_s.
-  next();
-}
-
-export function deriveActorClass(
-  _request: Request,
-  _response: Response,
-  next: NextFunction,
-): void {
-  // TODO(track-a): derive actor_class in the order defined by the contract.
-  next();
-}
-
-export function writeGovernedEvent(
-  _request: Request,
-  _response: Response,
-  next: NextFunction,
-): void {
-  // TODO(track-a): append the single allowed or blocked action event.
-  next();
+interface SubmissionState {
+  rule?: PolicyRule;
+  formHash: string;
+  challenge?: ActionChallenge;
+  assertion?: AuthenticationResponseJSON;
+  presence: PresenceProof | null;
+  attestation: Attestation;
+  actorClass: ActorClass;
+  threshold: number;
+  notes: string;
 }
 
 const bypass: RequestHandler = (_request, _response, next) => next();
 
-export function governedSubmission(enabled: boolean): RequestHandler[] {
-  if (!enabled) {
-    return [bypass];
+export function governedSubmission(
+  enabled: boolean, action: GovernedAction, services: GovernanceServices,
+): RequestHandler[] {
+  if (!enabled) return [bypass];
+  const { webAuthn, provenancePath } = services;
+  const stateFor = (response: Response) => response.locals.governance as SubmissionState;
+
+  function eventFor(request: Request, response: Response): NewProvenanceEvent {
+    const state = stateFor(response);
+    return {
+      session_id: response.locals.sessionId,
+      user: response.locals.user,
+      route: action.route,
+      action: action.action,
+      rule_id: state.rule?.id ?? "default-unrestricted",
+      class: state.rule?.class ?? "unrestricted",
+      decision: "allowed",
+      actor_class: state.actorClass,
+      presence: state.presence,
+      attestation: state.attestation,
+      signals: response.locals.signals ?? { score: 0, flags: [] },
+      telemetry: state.rule?.class === "attested" ? request.body?.countersign?.telemetry ?? null : null,
+      form_hash: state.formHash,
+      notes: state.notes,
+    };
   }
 
-  return [
-    matchGovernedRule,
-    compareCanonicalFormHash,
-    verifyPresenceAssertion,
-    enforcePresenceRequirements,
-    deriveActorClass,
-    writeGovernedEvent,
-  ];
+  function actorFor(request: Request, response: Response): ActorClass {
+    if (stateFor(response).presence) return "human-verified";
+    if (request.get("Countersign-Agent") || response.locals.agentDeclared) return "agent-declared";
+    if ((response.locals.signals?.score ?? 0) >= stateFor(response).threshold) return "automation-suspected";
+    return "unverified";
+  }
+
+  async function blocked(request: Request, response: Response, reason: PresenceFailure) {
+    stateFor(response).actorClass = actorFor(request, response);
+    await appendProvenanceEvent({
+      ...eventFor(request, response), decision: "blocked", notes: reason,
+    }, provenancePath);
+    response.status(403).json({ error: "countersign_required", reason });
+  }
+
+  const matchGovernedRule: RequestHandler = (_request, response, next) => {
+    const policy = loadPolicy();
+    const user = response.locals.user as PortalUser;
+    response.locals.governance = {
+      rule: matchRule(action.route, action.action, action.context?.(user), policy),
+      formHash: formHash(isRecord(_request.body) ? _request.body : {}),
+      presence: null, attestation: null, actorClass: "unverified", notes: "",
+      threshold: policy.defaults.signals.suspect_threshold,
+    } satisfies SubmissionState;
+    next();
+  };
+
+  const compareCanonicalFormHash: RequestHandler = async (request, response, next) => {
+    const state = stateFor(response);
+    if (!requiresPresence(state.rule)) return next();
+    const cs = isRecord(request.body?.countersign) ? request.body.countersign : {};
+    const stored = typeof cs.challenge_id === "string" ? webAuthn.consume(cs.challenge_id) : undefined;
+    if (!stored || !isRecord(cs.assertion)) return blocked(request, response, "no_assertion");
+    if (stored.user !== response.locals.user.id || stored.session_id !== response.locals.sessionId) {
+      return blocked(request, response, "verification_failed");
+    }
+    try {
+      webAuthn.checkAge(stored, state.rule);
+    } catch (error) {
+      if (!(error instanceof PresenceError)) throw error;
+      return blocked(request, response, error.reason);
+    }
+    if (stored.rule_id !== state.rule.id || stored.action !== action.action ||
+        stored.form_hash !== state.formHash || stored.attestation !== (cs.attestation ?? null)) {
+      return blocked(request, response, "form_mismatch");
+    }
+    state.challenge = stored;
+    state.assertion = cs.assertion as unknown as AuthenticationResponseJSON;
+    state.attestation = stored.attestation;
+    next();
+  };
+
+  const verifyPresenceAssertion: RequestHandler = async (request, response, next) => {
+    const state = stateFor(response);
+    if (!requiresPresence(state.rule)) return next();
+    try {
+      const result = await webAuthn.verify(state.challenge!, state.rule, state.assertion!);
+      state.presence = result.presence;
+      state.notes = result.notes;
+    } catch (error) {
+      if (!(error instanceof PresenceError)) throw error;
+      return blocked(request, response, error.reason);
+    }
+    next();
+  };
+
+  const enforcePresenceRequirements: RequestHandler = async (request, response, next) => {
+    const state = stateFor(response);
+    if (requiresPresence(state.rule)) {
+      try {
+        state.presence!.age_ms = webAuthn.checkAge(state.challenge!, state.rule);
+      } catch (error) {
+        if (!(error instanceof PresenceError)) throw error;
+        state.presence = null;
+        return blocked(request, response, error.reason);
+      }
+    }
+    next();
+  };
+
+  const deriveActorClass: RequestHandler = (request, response, next) => {
+    stateFor(response).actorClass = actorFor(request, response);
+    next();
+  };
+
+  const writeGovernedEvent: RequestHandler = async (request, response, next) => {
+    const event = eventFor(request, response);
+    await appendProvenanceEvent(event, provenancePath);
+    // The contract explicitly calls for separate advisory attestation decisions.
+    // They never stop the portal action from executing.
+    if (event.class === "attested") {
+      const fields = Array.isArray(event.telemetry) ? event.telemetry : [event.telemetry];
+      const contradiction = fields.some((field) => isRecord(field) &&
+        (field.single_event_fill === true ||
+          (typeof field.keystrokes === "number" && typeof field.final_length === "number" &&
+            field.keystrokes < field.final_length * 0.1)));
+      if (event.attestation === "own-work" && contradiction) {
+        await appendProvenanceEvent({ ...event, decision: "contradiction", notes: "Attestation and composition telemetry disagree." }, provenancePath);
+      }
+      if (stateFor(response).rule?.ai_use === "prohibited" && event.attestation === "ai-assisted") {
+        await appendProvenanceEvent({ ...event, decision: "flagged", notes: "AI assistance disclosed under an AI-prohibited policy." }, provenancePath);
+      }
+    }
+    response.locals.presence = event.presence;
+    next();
+  };
+
+  return [matchGovernedRule, compareCanonicalFormHash, verifyPresenceAssertion,
+    enforcePresenceRequirements, deriveActorClass, writeGovernedEvent];
 }
 
-export function governedPageVisit(enabled: boolean): RequestHandler {
-  if (!enabled) {
-    return bypass;
-  }
-
+export function governedPageVisit(enabled: boolean, provenancePath?: string): RequestHandler {
+  if (!enabled) return bypass;
   return async (request, response, next) => {
-    try {
-      const user = response.locals.user as PortalUser;
-      const sessionId = response.locals.sessionId as string;
-      await appendProvenanceEvent({
-        session_id: sessionId,
-        user,
-        route: request.path,
-        action: `GET ${request.path}`,
-        rule_id: "scaffold-route-visit",
-        class: "unrestricted",
-        decision: "allowed",
-        actor_class: "unverified",
-        presence: null,
-        attestation: null,
-        signals: { score: 0.0, flags: [] },
-        telemetry: null,
-        form_hash: null,
-        notes: "Scaffold route-visit event.",
-      });
-      next();
-    } catch (error) {
-      next(error);
-    }
+    await appendProvenanceEvent({
+      session_id: response.locals.sessionId,
+      user: response.locals.user,
+      route: request.path,
+      action: `GET ${request.path}`,
+      rule_id: "scaffold-route-visit",
+      class: "unrestricted",
+      decision: "allowed",
+      actor_class: "unverified",
+      presence: null, attestation: null,
+      signals: { score: 0, flags: [] },
+      telemetry: null, form_hash: null,
+      notes: "Portal page visit; record masking is separate Track A work.",
+    }, provenancePath);
+    next();
   };
 }

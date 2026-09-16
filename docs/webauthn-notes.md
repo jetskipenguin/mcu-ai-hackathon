@@ -133,6 +133,15 @@ What the library checks for you: signature over `authenticatorData || sha256(cli
 
 `age_ms` for the event = `Date.now() - stored.created`. Enforce `rule.presence.max_age_s` against that.
 
+**Installed v14 implementation detail:** SimpleWebAuthn throws on non-increasing
+counters before returning a verification result. To implement the demo's advisory
+counter policy, Countersign supplies `counter: 0` to that verifier, then compares
+the verified `newCounter` with the persisted counter itself. A regression is
+recorded in event `notes`, and the persisted counter never decreases. Signature,
+challenge, origin, RP ID, UP, and required UV checks remain enabled; single-use
+server challenges remain the replay defense. No `advancedFIDOConfig` is supplied,
+so the library always enforces UP, including for `uv: preferred` rules.
+
 ---
 
 ## 4. Why an agent cannot pass this
