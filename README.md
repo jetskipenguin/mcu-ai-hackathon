@@ -1,55 +1,58 @@
-# OpenCode governance: hour-one compatibility probe
+# OpenCode Governance
 
-A minimal OpenCode plugin and a localhost fake model provider, built to answer two
-questions:
+An OpenCode plugin that blocks configured banned phrases in conversation content,
+system prompts, and tool definitions using case-insensitive substring matching.
+The included launcher runs OpenCode with DeepSeek (`deepseek/deepseek-flash`).
 
-1. Do OpenCode's message/system transform hooks run?
-2. Does throwing from a hook keep protected content from reaching the provider?
+## Set up the environment
 
-Two source files: `plugin/governance.ts` (the plugin) and `scripts/probe.ts` (the test
-harness). The probe uses one synthetic marker, `GOVERNANCE_PROBE_SECRET_48291`, matched as
-a case-sensitive substring. No real credentials or sensitive input are involved.
+Requires **Bun 1.4.2 or newer**, **Node.js**, and a **DeepSeek API key** with available
+credit. These commands work on Windows and macOS from the project root.
 
-**Result:** conditional GO for a fixed-title, single-turn demo; NO-GO for default behavior,
-because automatic title generation is a separate request that the hooks do not cover.
-
-## Development environment
-
-- Windows, with **Bun 1.4.2** on PATH.
-- **OpenCode 1.18.31** is pinned as a local dependency, so no global install is needed.
-- The first `bun install` needs internet access for provider adapter resolution.
-
-```powershell
+```text
 bun install
-bun run lint
-& ".\node_modules\opencode-ai\bin\opencode.exe" --version   # expect 1.18.31
+bun run setup
 ```
 
-## Run the probe tests
+Setup creates `.env` and `governance.policy.json` without overwriting existing files.
+OpenCode is installed locally; no global installation is needed.
 
-Each invocation starts a loopback OpenAI-compatible endpoint on an ephemeral port,
-launches the pinned CLI in its own config and data directory, records what the endpoint
-receives, and asserts the outcome. Three scenarios run per invocation: `clean`,
-`message-block`, and `system-block`.
+Set your API key in `.env` (this file is gitignored):
 
-```powershell
-bun run probe --fixed-title   # scoped demo path - expect exit code 0
-bun run probe                 # default title generation - expect exit code 1
+```dotenv
+DEEPSEEK_API_KEY=your-deepseek-api-key
 ```
 
-- With `--fixed-title`: every scenario `passed: true`; both blocked scenarios report
-  `requestsReceived: 0`; `clean` receives the fake answer `LOCAL_PROBE_OK` with both hooks
-  observed; all scenarios report `protectedValueReceived: false`.
-- Without it: `message-block` reports `passed: false`, `requestsReceived: 1`,
-  `protectedValueReceived: true` - a title-generation request carrying the marker reaches
-  the local endpoint before the main turn is blocked.
-- A child CLI `exitCode: 1` for a blocked scenario is expected; stopping the CLI is the
-  behavior under test.
-- Throwing from the message hook can surface as a generic `UnknownError` instead of the
-  plugin's error text, so use `audit.jsonl` to see which hook blocked.
-- Every run prints an `Evidence:` directory under `.probe/<timestamp>/` containing
-  `results.json` and, per scenario, `audit.jsonl` (hook decisions), `captured.json` (the
-  bodies the endpoint received), `stdout.jsonl`, `stderr.txt`, and the generated
-  `opencode.json`. In the default-mode failure `message-block/captured.json` shows the
-  marker; with `--fixed-title` it is `[]` for both blocked scenarios. These files hold
-  synthetic test traffic only - do not put real secrets in this probe. `.probe/`
+Edit `governance.policy.json` to specify at least one nonblank banned phrase:
+
+```json
+{
+  "bannedPhrases": ["Project Copper Secret", "ACCT-DEMO-48291"]
+}
+```
+
+## Run it
+
+Check setup and model availability without sending a model-generation request:
+
+```text
+bun run real --check
+```
+
+Send a prompt:
+
+```text
+bun run real "Hello there"
+```
+
+Try a phrase blocked by the example policy:
+
+```text
+bun run real "Please repeat project COPPER secret."
+```
+
+Blocked requests exit with an error. Check `governance.audit.jsonl` for the blocking
+decision if OpenCode displays a generic error.
+
+Each command starts a fresh session and reloads `.env` and the policy. The launcher
+automatically uses a fixed session title to avoid the known automatic-title bypass.
