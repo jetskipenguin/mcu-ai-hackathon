@@ -1,0 +1,30 @@
+{
+  "name": "countersign",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "dev": "COUNTERSIGN=on PORT=3000 tsx watch portal/server.ts",
+    "dev:ungoverned": "COUNTERSIGN=off PORT=3001 tsx watch portal/server.ts",
+    "generate": "tsx countersign/generate/index.ts",
+    "test": "tsx --test countersign/server/__tests__/*.test.ts",
+    "build": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@aws-sdk/client-bedrock-runtime": "3.1133.0",
+    "@simplewebauthn/browser": "14.0.0",
+    "@simplewebauthn/server": "14.0.2",
+    "cookie-parser": "1.4.7",
+    "express": "5.2.1"
+  },
+  "devDependencies": {
+    "@types/cookie-parser": "1.4.10",
+    "@types/express": "5.0.6",
+    "@types/node": "22.20.3",
+    "tsx": "4.23.13",
+    "typescript": "7.0.2"
+  }
+}

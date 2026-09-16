@@ -1,0 +1,25 @@
+Timestamp: 2026-09-15T22:45:36-04:00
+
+npm install
+- 140 packages installed
+- 0 vulnerabilities
+
+npm test
+- 2 passing tests
+- 7 required WebAuthn test.todo cases
+- 0 failures
+
+npm run build
+- TypeScript compilation passed
+
+npm run generate
+- Draft policy copied to countersign/policy/countersign.policy.draft.json
+
+Runtime smoke test
+- :3000 /login, /quiz/1, /discussion/2, /record/1, /countersign/policy, and /countersign/ returned success responses
+- Governed route visits appended exactly three unrestricted/unverified events
+- /record/1 emitted the Countersign-Marking header and three marked fields
+- :3001 served /login and all three portal routes without loading countersign.js
+- A direct ungoverned quiz submission succeeded and no provenance event was appended
+- independent_first hid peer posts before the demo student's initial post and revealed them afterward
+- Contract endpoint stubs returned their documented JSON shapes; unmask verification returned the documented 501 not_implemented error

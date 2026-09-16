@@ -1,0 +1,62 @@
+{
+  "version": "0.1",
+  "app": "mcu-learning-portal",
+  "defaults": {
+    "class": "unrestricted",
+    "signals": {
+      "suspect_threshold": 0.6,
+      "webdriver": 0.4,
+      "fill_without_focus": 0.2,
+      "uniform_timing": 0.2,
+      "hidden_during_input": 0.2
+    }
+  },
+  "rules": [
+    {
+      "id": "quiz-submit",
+      "match": { "route": "/quiz/*", "action": "POST /quiz/:id/submit" },
+      "class": "human-required",
+      "presence": { "uv": "required", "max_age_s": 60 },
+      "rationale": "Exam submission. Academic integrity requires the enrolled student to perform this.",
+      "citations": []
+    },
+    {
+      "id": "discussion-initial-post",
+      "match": {
+        "route": "/discussion/*",
+        "action": "POST /discussion/:id/post",
+        "when": { "is_initial_post": true }
+      },
+      "class": "attested",
+      "ai_use": "disclosed",
+      "presence": { "uv": "preferred", "max_age_s": 60 },
+      "rationale": "Q&A forum, independent_first: the initial post must be the learner's own thinking.",
+      "citations": []
+    },
+    {
+      "id": "student-record",
+      "match": { "route": "/record/*" },
+      "class": "marking",
+      "markings": [
+        { "selector": "[data-field=ssn]", "marking": "PLACEHOLDER-CUI-PII", "categories": ["PII"] },
+        { "selector": "[data-field=dod-id]", "marking": "PLACEHOLDER-CUI-PII", "categories": ["PII"] },
+        { "selector": "[data-field=medical]", "marking": "PLACEHOLDER-CUI-PHI", "categories": ["PHI"] }
+      ],
+      "page_marking": "PLACEHOLDER-CUI-PII",
+      "mask_when": "automation-suspected",
+      "unmask": {
+        "rule_id": "student-record.unmask",
+        "class": "human-required",
+        "presence": { "uv": "required", "max_age_s": 300 }
+      },
+      "rationale": "Personnel and medical data; not authorized for third-party models.",
+      "citations": [
+        {
+          "source": "cui-registry",
+          "ref": "PLACEHOLDER-CUI-PII",
+          "excerpt": "Placeholder citation; replace when the Registry dataset is extracted."
+        }
+      ]
+    }
+  ]
+}

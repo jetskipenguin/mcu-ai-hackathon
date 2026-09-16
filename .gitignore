@@ -1,0 +1,7 @@
+.env
+data/provenance.jsonl
+data/credentials.json
+dist/
+node_modules/
+*.pdf
+.DS_Store

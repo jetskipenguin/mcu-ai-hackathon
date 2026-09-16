@@ -1,0 +1,48 @@
+{
+  "id": "2",
+  "ifd": 2,
+  "title": "Does Autonomy Change the Nature of War, or Only Its Character?",
+  "faculty_prompt": "Explain whether autonomous systems change the enduring nature of war or alter only its character. Support your position and address one implication for professional military education.",
+  "synthetic_data_notice": "SYNTHETIC - AI GENERATED. This scaffold fixture contains no real student work.",
+  "roster": [
+    { "user_id": "stu-0003", "name": "Maj Rowan Vector", "tier": "1" },
+    { "user_id": "stu-0006", "name": "Capt Mira North", "tier": "1" },
+    { "user_id": "stu-0009", "name": "1stLt Theo Lantern", "tier": "2" },
+    { "user_id": "stu-0011", "name": "Capt J. Demo", "tier": "-" }
+  ],
+  "posts": [
+    {
+      "post_id": "post-2001",
+      "ifd": 2,
+      "parent_id": null,
+      "depth": 0,
+      "user_id": "stu-0003",
+      "author": "Maj Rowan Vector",
+      "timestamp": "2026-09-14T14:05:00Z",
+      "subject": "Enduring purpose, changing means",
+      "body": "The political and human purposes of war endure, while autonomy changes tempo, reach, and the distribution of risk. Education therefore has to emphasize judgment about delegation as much as technical employment."
+    },
+    {
+      "post_id": "post-2002",
+      "ifd": 2,
+      "parent_id": null,
+      "depth": 0,
+      "user_id": "stu-0006",
+      "author": "Capt Mira North",
+      "timestamp": "2026-09-14T15:12:00Z",
+      "subject": "Accountability remains human",
+      "body": "Autonomous tools can alter the character of conflict without removing human responsibility. Commanders still decide objectives, acceptable risk, and the conditions under which a system may act."
+    },
+    {
+      "post_id": "post-2003",
+      "ifd": 2,
+      "parent_id": "post-2001",
+      "depth": 1,
+      "user_id": "stu-0009",
+      "author": "1stLt Theo Lantern",
+      "timestamp": "2026-09-14T16:40:00Z",
+      "subject": "Re: Enduring purpose, changing means",
+      "body": "The compression of decision time is the most important change for education. Leaders need practice recognizing when speed creates an advantage and when it hides a flawed assumption."
+    }
+  ]
+}

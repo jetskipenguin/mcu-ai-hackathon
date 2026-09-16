@@ -1,0 +1,34 @@
+[
+  {
+    "id": "stu-0003",
+    "name": "Maj Rowan Vector",
+    "email": "rowan.vector@example.invalid",
+    "ssn": "900-12-3403",
+    "dod_id": "7301946285",
+    "medical_note": "Fabricated note: temporary light-duty restriction through the end of the month."
+  },
+  {
+    "id": "stu-0006",
+    "name": "Capt Mira North",
+    "email": "mira.north@example.invalid",
+    "ssn": "900-12-3406",
+    "dod_id": "4817205936",
+    "medical_note": "Fabricated note: cleared for normal training with a routine follow-up."
+  },
+  {
+    "id": "stu-0009",
+    "name": "1stLt Theo Lantern",
+    "email": "theo.lantern@example.invalid",
+    "ssn": "900-12-3409",
+    "dod_id": "6259031748",
+    "medical_note": "Fabricated note: no current duty limitations."
+  },
+  {
+    "id": "stu-0011",
+    "name": "Capt J. Demo",
+    "email": "j.demo@example.invalid",
+    "ssn": "900-12-3411",
+    "dod_id": "1948267305",
+    "medical_note": "Fabricated note: limited running for fourteen days following a routine evaluation."
+  }
+]
