@@ -1,0 +1,25 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "model": "deepseek/deepseek-flash",
+  "small_model": "deepseek/deepseek-flash",
+  "enabled_providers": ["deepseek"],
+  "plugin": [
+    [
+      "./plugin/governance.ts",
+      {
+        "policyPath": "./governance.policy.json",
+        "auditPath": "./governance.audit.jsonl"
+      }
+    ]
+  ],
+  "provider": {
+    "deepseek": {
+      "options": {
+        "apiKey": "{env:DEEPSEEK_API_KEY}"
+      }
+    }
+  },
+  "share": "disabled",
+  "autoupdate": false,
+  "permission": "deny"
+}

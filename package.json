@@ -3,6 +3,10 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "setup": "bun scripts/setup.ts",
+    "real": "bun --env-file=.env scripts/real.ts",
+    "opencode:version": "opencode --version",
+    "test": "bun test ./tests",
     "probe": "bun scripts/probe.ts",
     "lint": "biome check .",
     "lint:fix": "biome check --write .",

@@ -25,12 +25,16 @@ const results: {
   protectedValueReceived: boolean
   hooks: { hook: string; decision: string }[]
 }[] = []
-for (const scenario of ["clean", "message-block", "system-block"]) {
+for (const scenario of ["clean", "message-block", "system-block", "invalid-policy"]) {
   const directory = path.join(run, scenario)
   await mkdir(directory, { recursive: true })
   await copyFile(path.join(root, "plugin", "governance.ts"), path.join(directory, "governance.ts"))
   const audit = path.join(directory, "audit.jsonl")
   await Bun.write(audit, "")
+  await Bun.write(
+    path.join(directory, "governance.policy.json"),
+    JSON.stringify({ bannedPhrases: scenario === "invalid-policy" ? [] : [marker.toLowerCase()] }),
+  )
   const captured: { path: string; body: unknown }[] = []
   const server = Bun.serve({
     hostname: "127.0.0.1",
@@ -66,7 +70,12 @@ for (const scenario of ["clean", "message-block", "system-block"]) {
     model: "governance/probe",
     small_model: "governance/probe",
     enabled_providers: ["governance"],
-    plugin: [pathToFileURL(path.join(directory, "governance.ts")).href],
+    plugin: [
+      [
+        pathToFileURL(path.join(directory, "governance.ts")).href,
+        { policyPath: path.join(directory, "governance.policy.json"), auditPath: audit },
+      ],
+    ],
     share: "disabled",
     autoupdate: false,
     permission: "deny",
@@ -99,7 +108,6 @@ for (const scenario of ["clean", "message-block", "system-block"]) {
     OPENCODE_DISABLE_EXTERNAL_SKILLS: "1",
     OPENCODE_DISABLE_CLAUDE_CODE_SKILLS: "1",
     OPENCODE_DISABLE_MODELS_FETCH: "1",
-    GOVERNANCE_PROBE_AUDIT: audit,
   }
   // Pure mode suppresses the very external plugin this test needs.
   delete env.OPENCODE_PURE
@@ -154,10 +162,12 @@ for (const scenario of ["clean", "message-block", "system-block"]) {
         ["experimental.chat.messages.transform", "experimental.chat.system.transform"].every((hook) =>
           events.some((event) => event.hook === hook && event.decision === "allow"),
         )
-      : (!fixedTitle || captured.length === 0) &&
-        events.some((event) => event.hook === expectedHook && event.decision === "block") &&
-        exitCode !== 0 &&
-        (stdout.includes('"type":"error"') || stderr.includes("GOVERNANCE_BLOCKED")))
+      : scenario === "invalid-policy"
+        ? captured.length === 0 && exitCode !== 0 && stdout.includes('"type":"error"')
+        : (!fixedTitle || captured.length === 0) &&
+          events.some((event) => event.hook === expectedHook && event.decision === "block") &&
+          exitCode !== 0 &&
+          (stdout.includes('"type":"error"') || stderr.includes("GOVERNANCE_BLOCKED")))
   const result = {
     scenario,
     passed,
