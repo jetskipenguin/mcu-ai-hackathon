@@ -36,19 +36,3 @@ jobs:
 
       - name: Run tests
         run: npm test
-
-      - name: Package local demo
-        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
-        run: |
-          tar --exclude='__tests__' -czf countersign-demo.tar.gz \
-            dist portal/data countersign/client countersign/policy data/cui \
-            package.json package-lock.json .env.example README.md docs/github-actions.md
-
-      - name: Upload local demo package
-        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
-        uses: actions/upload-artifact@v4
-        with:
-          name: countersign-demo-${{ github.sha }}
-          path: countersign-demo.tar.gz
-          if-no-files-found: error
-          retention-days: 14
