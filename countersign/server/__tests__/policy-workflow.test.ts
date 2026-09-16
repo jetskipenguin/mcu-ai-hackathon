@@ -119,6 +119,7 @@ test("generation uses rendered HTML and bounded vocabulary, grounds citations, a
       const input = JSON.parse(prompt);
       assert.equal(input.pages.length, 3);
       assert.equal(input.vocabulary.categories.length, 2);
+      assert.deepEqual(input.allowed_marking_identifiers, h.store.vocabulary().entries.map((entry) => entry.id));
       assert.match(options!.system!, /untrusted source data/);
       assert.ok(!prompt.includes(source.cookie));
       return `\`\`\`json\n${JSON.stringify(h.draft)}\n\`\`\``;
@@ -146,6 +147,54 @@ test("invalid model output and provider failure preserve the previous draft and 
   await assert.rejects(generatePolicy({ ...options, complete: async () => { throw new Error("Provider failed"); } }), /Provider failed/);
   assert.equal(await readFile(h.paths.draftPath, "utf8"), oldDraft);
   assert.equal(await readFile(h.paths.policyPath, "utf8"), oldActive);
+});
+
+test("generation corrects unknown marking IDs once and saves only a fully validated result", async (t) => {
+  const h = await fixture(t);
+  const source = await h.start(false);
+  h.save();
+  const oldActive = await readFile(h.paths.policyPath, "utf8");
+  const oldDraft = await readFile(h.paths.draftPath, "utf8");
+  const oldMetadata = await readFile(h.paths.metadataPath, "utf8");
+  const invalid = structuredClone(h.draft);
+  invalid.rules[2].markings![0].marking = "UNKNOWN-TEST-IDENTIFIER";
+  let calls = 0;
+  const result = await generatePolicy({ store: h.store, baseUrl: source.base,
+    model: { provider: "deepseek", model: "fixture-model", timeoutMs: 1000 },
+    complete: async (prompt, options) => {
+      calls++;
+      assert.deepEqual(JSON.parse(prompt).allowed_marking_identifiers, h.store.vocabulary().entries.map((entry) => entry.id));
+      if (calls === 1) return JSON.stringify(invalid);
+      assert.equal(calls, 2);
+      assert.match(options!.system!, /previous attempt failed/);
+      assert.equal(await readFile(h.paths.draftPath, "utf8"), oldDraft);
+      assert.equal(await readFile(h.paths.metadataPath, "utf8"), oldMetadata);
+      return JSON.stringify(h.draft);
+    } });
+  assert.equal(calls, 2);
+  assert.equal(result.metadata.provider, "deepseek");
+  assert.equal(await readFile(h.paths.policyPath, "utf8"), oldActive);
+});
+
+test("marking correction stops after one retry and preserves draft, metadata, and active policy on failure", async (t) => {
+  const h = await fixture(t);
+  const source = await h.start(false);
+  h.save();
+  const paths = [h.paths.policyPath, h.paths.draftPath, h.paths.metadataPath];
+  const before = await Promise.all(paths.map((path) => readFile(path, "utf8")));
+  const invalid = structuredClone(h.draft);
+  invalid.rules[2].page_marking = "UNKNOWN-TEST-IDENTIFIER";
+  const weakened = structuredClone(h.draft);
+  weakened.rules[0].class = "unrestricted";
+  for (const second of [invalid, weakened]) {
+    let calls = 0;
+    await assert.rejects(generatePolicy({ store: h.store, baseUrl: source.base,
+      model: { provider: "deepseek", model: "fixture-model", timeoutMs: 1000 },
+      complete: async () => JSON.stringify(++calls === 1 ? invalid : second),
+    }), /validation failed after one marking-correction retry/);
+    assert.equal(calls, 2);
+    assert.deepEqual(await Promise.all(paths.map((path) => readFile(path, "utf8"))), before);
+  }
 });
 
 test("draft validation rejects unknown IDs, fabricated citations, and a disabled quiz wall", async (t) => {

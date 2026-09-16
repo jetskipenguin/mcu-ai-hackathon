@@ -1,6 +1,6 @@
 import { BedrockRuntimeClient, ConverseCommand } from "@aws-sdk/client-bedrock-runtime";
 
-export type Provider = "bedrock" | "openai" | "anthropic";
+export type Provider = "bedrock" | "openai" | "anthropic" | "deepseek";
 export interface ModelConfiguration {
   provider: Provider;
   model: string;
@@ -16,8 +16,11 @@ function required(name: string, env: NodeJS.ProcessEnv): string {
 
 export function modelConfiguration(env: NodeJS.ProcessEnv = process.env): ModelConfiguration {
   const provider = env.LLM_PROVIDER ?? "openai";
-  if (!["bedrock", "openai", "anthropic"].includes(provider)) throw new Error("Unsupported LLM_PROVIDER. Use openai, bedrock, or anthropic.");
-  const model = required(provider === "bedrock" ? "BEDROCK_MODEL_ID" : provider === "openai" ? "OPENAI_MODEL" : "ANTHROPIC_MODEL", env);
+  if (!["bedrock", "openai", "anthropic", "deepseek"].includes(provider)) throw new Error("Unsupported LLM_PROVIDER. Use openai, bedrock, anthropic, or deepseek.");
+  const modelVariables: Record<Provider, string> = {
+    bedrock: "BEDROCK_MODEL_ID", openai: "OPENAI_MODEL", anthropic: "ANTHROPIC_MODEL", deepseek: "DEEPSEEK_MODEL",
+  };
+  const model = required(modelVariables[provider as Provider], env);
   const timeoutMs = Number(env.LLM_TIMEOUT_MS ?? 60_000);
   if (!Number.isInteger(timeoutMs) || timeoutMs < 1000 || timeoutMs > 120_000) {
     throw new Error("LLM_TIMEOUT_MS must be an integer between 1000 and 120000.");
@@ -68,17 +71,22 @@ export async function complete(prompt: string, options: {
   }
 
   const openai = config.provider === "openai";
-  const key = required(openai ? "OPENAI_API_KEY" : "ANTHROPIC_API_KEY", env);
+  const deepseek = config.provider === "deepseek";
+  const chatCompletions = openai || deepseek;
+  const key = required(openai ? "OPENAI_API_KEY" : deepseek ? "DEEPSEEK_API_KEY" : "ANTHROPIC_API_KEY", env);
+  const endpoint = openai ? "https://api.openai.com/v1/chat/completions"
+    : deepseek ? "https://api.deepseek.com/chat/completions" : "https://api.anthropic.com/v1/messages";
   let response: Response;
   try {
-    response = await llmTransport.fetch(openai ? "https://api.openai.com/v1/chat/completions" : "https://api.anthropic.com/v1/messages", {
+    response = await llmTransport.fetch(endpoint, {
       method: "POST", signal,
-      headers: openai
+      headers: chatCompletions
         ? { authorization: `Bearer ${key}`, "content-type": "application/json" }
         : { "x-api-key": key, "anthropic-version": "2023-06-01", "content-type": "application/json" },
-      body: JSON.stringify(openai ? {
+      body: JSON.stringify(chatCompletions ? {
         model: config.model, messages: [{ role: "system", content: system }, { role: "user", content: prompt }],
-        response_format: { type: "json_object" }, max_completion_tokens: 8192,
+        response_format: { type: "json_object" },
+        ...(deepseek ? { max_tokens: 8192 } : { max_completion_tokens: 8192 }),
       } : {
         model: config.model, system, messages: [{ role: "user", content: prompt }], max_tokens: 8192,
       }),
@@ -99,6 +107,6 @@ export async function complete(prompt: string, options: {
   if (payload.choices?.[0]?.finish_reason === "length" || payload.stop_reason === "max_tokens") {
     throw new Error(`${config.provider} output was truncated; no draft was saved.`);
   }
-  return nonEmpty(openai ? payload.choices?.[0]?.message?.content
+  return nonEmpty(chatCompletions ? payload.choices?.[0]?.message?.content
     : payload.content?.filter((item) => item.type === "text").map((item) => item.text ?? "").join(""), config.provider);
 }

@@ -60,8 +60,23 @@ export async function generatePolicy(options: GenerationOptions = {}): Promise<{
   const vocabulary = store.vocabulary();
   const pages = await (options.crawl ?? crawlPortal)({ baseUrl: options.baseUrl, userId: options.userId });
   const prompt = buildPrompt(pages, vocabulary, store.active().defaults);
-  const text = await (options.complete ?? complete)(prompt, { system: GENERATOR_SYSTEM });
-  const draft = parseDraft(text, vocabulary, pages);
+  const request = options.complete ?? complete;
+  const text = await request(prompt, { system: GENERATOR_SYSTEM });
+  let draft: CountersignPolicy;
+  try {
+    draft = parseDraft(text, vocabulary, pages);
+  } catch (error) {
+    if (!(error instanceof Error) || !error.message.startsWith("unknown marking identifier:")) throw error;
+    // One fresh attempt for models that confuse Registry IDs with display banners.
+    // Keep model output out of system instructions and validate the entire result again.
+    const corrected = await request(prompt, { system: `${GENERATOR_SYSTEM}\nThe previous attempt failed because a marking was not in allowed_marking_identifiers. Generate the complete policy again, copying each markings[].marking and page_marking directly from the supplied list. Do not format these IDs as CUI banners.` });
+    try {
+      draft = parseDraft(corrected, vocabulary, pages);
+    } catch (retryError) {
+      throw new Error("Policy validation failed after one marking-correction retry; no draft was saved. " +
+        (retryError instanceof Error ? retryError.message : "Invalid policy output."), { cause: retryError });
+    }
+  }
   const metadata = store.saveDraft(draft, {
     generated_at: new Date().toISOString(), provider: model.provider, model: model.model,
     ...(model.region ? { region: model.region } : {}), source_urls: pages.map((page) => page.url),
