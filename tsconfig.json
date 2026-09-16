@@ -1,0 +1,24 @@
+{
+  "compilerOptions": {
+    // Bun runtime
+    "lib": ["ESNext"],
+    "target": "ESNext",
+    "module": "Preserve",
+    "moduleResolution": "bundler",
+    "moduleDetection": "force",
+    "allowImportingTsExtensions": true,
+    "verbatimModuleSyntax": true,
+    "noEmit": true,
+
+    // Type packages are NOT auto-discovered by TypeScript 6, list them explicitly.
+    // "bun-types" supplies the Bun global, "node" supplies process/node:* modules.
+    "types": ["bun-types", "node"],
+
+    // Best practices
+    "strict": true,
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true
+  },
+  "include": ["plugin/**/*.ts", "scripts/**/*.ts"]
+}

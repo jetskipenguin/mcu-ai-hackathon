@@ -1,0 +1,13 @@
+{
+  "name": "governance-hook-probe",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "probe": "bun scripts/probe.ts"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.3",
+    "bun-types": "^1.4.2",
+    "opencode-ai": "1.18.31"
+  }
+}
