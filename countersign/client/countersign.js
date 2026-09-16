@@ -121,16 +121,11 @@ function collectSignals() {
   };
 }
 
-async function sendSignals() {
-  const response = await fetch("/countersign/signals", {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify({ route: location.pathname, signals: collectSignals() }),
+function sendSignals() {
+  return postJson("/countersign/signals", {
+    route: location.pathname,
+    signals: collectSignals(),
   });
-  if (!response.ok) {
-    throw new Error(`Signal endpoint returned ${response.status}`);
-  }
-  return response.json();
 }
 
 function setNestedField(target, name, value) {
@@ -299,26 +294,17 @@ if (record) {
   const registerButton = document.querySelector("[data-record-register]");
   let generation = 0;
 
-  function maskRecord() {
+  function renderRecord(fields = {}) {
     for (const field of record.querySelectorAll("[data-field]")) {
-      field.textContent = "[Hidden — verify presence to view]";
-    }
-  }
-
-  function showFields(fields) {
-    for (const field of record.querySelectorAll("[data-field]")) {
-      if (typeof fields?.[field.dataset.field] === "string") {
-        field.textContent = fields[field.dataset.field];
-      }
+      field.textContent = fields[field.dataset.field] ?? "[Hidden — verify presence to view]";
     }
   }
 
   async function checkRecord() {
     const current = ++generation;
-    maskRecord();
+    renderRecord();
     try {
-      // Signals and the release decision are one server request. Never download
-      // plaintext first and then try to conceal it with CSS or DOM replacement.
+      // The server evaluates signals before returning any field values.
       const result = await postJson("/countersign/record-fields", { signals: collectSignals() });
       if (current !== generation) return;
       if (result.masked) {
@@ -326,7 +312,7 @@ if (record) {
           ? "Automation suspected. Sensitive content hidden — verify presence to view."
           : "Sensitive content hidden — verify presence to view.";
       } else {
-        showFields(result.fields);
+        renderRecord(result.fields);
         status.textContent = "No automation signals above threshold. This is not proof of human presence.";
       }
     } catch {
@@ -360,7 +346,7 @@ if (record) {
       const assertion = await startAuthentication({ optionsJSON: challenge.options });
       const result = await postJson("/countersign/unmask/verify", { challenge_id: challenge.challenge_id, assertion });
       if (current !== generation) return;
-      showFields(result.fields);
+      renderRecord(result.fields);
       status.textContent = "Human presence verified. Record revealed for this view.";
     } catch (error) {
       if (current === generation) status.textContent = error.name === "NotAllowedError"
@@ -372,7 +358,7 @@ if (record) {
 
   // Do not leave revealed fields in a background tab or a back/forward-cache
   // snapshot. An older in-flight response must not reveal a now-hidden page.
-  window.addEventListener("pagehide", () => { generation += 1; maskRecord(); });
+  window.addEventListener("pagehide", () => { generation += 1; renderRecord(); });
   window.addEventListener("pageshow", (event) => { if (event.persisted) checkRecord(); });
   document.addEventListener("visibilitychange", () => { if (document.hidden) checkRecord(); });
   checkRecord();

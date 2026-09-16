@@ -379,18 +379,12 @@ export function createApp(options: AppOptions = {}): express.Express {
       const student = students.find((candidate) => candidate.id === response.locals.user.id)!;
       const rule = matchRule("/record/1", "GET /record/1");
       const value = (raw: string) => enabled ? "[Hidden — verify presence to view]" : escapeHtml(raw);
-      if (enabled && rule?.page_marking) {
-        response.set(
-          "Countersign-Marking",
-          `${rule.page_marking}; categories=PII,PHI`,
-        );
-      }
       response.type("html").send(
         page(
           "Student record",
           `<h1>Student record</h1>
            <p class="notice">All values on this page are fabricated.</p>
-           ${enabled ? `<section class="notice" data-record-controls>
+           ${enabled ? `<section class="notice">
              <p role="status" data-record-status>${response.locals.recordSignals?.flagged ? "Automation suspected. Sensitive content hidden — verify presence to view." : "Sensitive content hidden while browser signals are checked."}</p>
              <button type="button" data-record-reveal>Verify presence to view</button>
              <button type="button" data-record-register>Register a passkey</button>

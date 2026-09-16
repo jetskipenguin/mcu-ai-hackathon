@@ -68,13 +68,11 @@ Record masking, deterministic signal scoring, passkey registration, and action-b
 
 ### Student-record protection (A6–A8)
 
-- The governed record's initial HTML contains no record values, including the name. A server-side field endpoint evaluates signals before returning data. Incomplete checks leave the fields hidden.
-- The observed BrowserOS neo workflow opens a hidden, unfocused tab while reporting `navigator.webdriver=false`. That background record read contributes `0.6`, meeting the active policy threshold and logging `masked / automation-suspected` with `background-record-read` evidence. Suspicion persists across later clean samples in that login session.
-- This is a heuristic, not a reliable browser identity detector: human background tabs can be flagged and foreground agents or spoofed client telemetry can evade it. Unflagged foreground sessions can view records normally. The proof protecting **flagged** reveals is WebAuthn, not the score.
-- Register the demo user's passkey in the demo browser, then select **Verify presence to view**. The server checks the signature, origin, RP, UP/UV, session/user binding, nonce, and age. Challenges are single-use. The reveal is logged with an assertion ID, and does not clear the session's suspicion. The page remasks when hidden or restored from browser history.
-- Responses are `no-store`; plaintext is never hidden in CSS, DOM attributes, or inline scripts. Fields already revealed to a human can still be read by a co-resident extension—the app cannot retract data already delivered.
+- Record HTML contains only placeholders. The server evaluates signals before releasing fields; suspected automation stays masked until WebAuthn verification. Responses are `no-store` and every decision is logged.
+- Hidden, unfocused record reads score `0.6`, reaching the policy threshold. This catches the observed BrowserOS workflow despite `webdriver=false`. Suspicion persists for the login session; verified reveals do not clear it.
+- This is a heuristic: background human tabs can be flagged, while foreground agents or spoofed telemetry can evade it. See `docs/contracts.md` for the endpoints and presence-verification rules.
 
-`npm test` includes record-route tests and a real cryptographic WebAuthn assertion test (temporary test keys), alongside mocked verifier tests for binding and expiry. A physical Touch ID / Windows Hello check still needs a human on the demo machine.
+`npm test` exercises record access and WebAuthn with temporary signed assertions. Physical Touch ID / Windows Hello confirmation needs a human on the demo machine.
 
 ## Datasets
 

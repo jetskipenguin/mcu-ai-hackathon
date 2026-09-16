@@ -17,7 +17,6 @@ export function createRecordGovernance(options: RecordOptions) {
   const presence = new RecordPresence(options.credentialsPath);
   const writeEvent = options.writeEvent ?? appendProvenanceEvent;
   const sessions = new Map<string, SignalResult & { user: PortalUser; first_seen: string }>();
-  const clean = (): SignalResult => ({ score: 0, flags: [], flagged: false, actor_class: "unverified" });
 
   function observe(request: Request, response: Response, route: string, signals: Partial<ClientSignals> = {}) {
     const sessionId = response.locals.sessionId as string;
@@ -151,7 +150,7 @@ export function createRecordGovernance(options: RecordOptions) {
   router.post("/unmask/verify", authenticated, async (request, response) => {
     headers(response);
     const rule = recordRule().unmask!;
-    const signals = sessions.get(response.locals.sessionId) ?? clean();
+    const signals = observe(request, response, "/record/1");
     let proof: PresenceProof;
     try {
       proof = await presence.verify(response.locals.user, response.locals.sessionId, rule.rule_id,

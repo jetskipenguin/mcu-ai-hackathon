@@ -8,16 +8,23 @@ import test, { type TestContext } from "node:test";
 import { createApp } from "../../../portal/app.js";
 import { loadPolicy } from "../policy.js";
 import { scoreSignals } from "../signals.js";
-import { simpleWebAuthn, RP } from "../webauthn.js";
+import { RP } from "../webauthn.js";
 import type { NewProvenanceEvent } from "../types.js";
 
 const visible = { webdriver: false, document_hidden: false, document_has_focus: true };
 const background = { ...visible, document_hidden: true, document_has_focus: false };
 
-async function setup(context: TestContext, enabled = true, publicKey = "AA") {
+async function setup(context: TestContext, enabled = true) {
+  const { publicKey, privateKey } = generateKeyPairSync("ec", { namedCurve: "prime256v1" });
+  const jwk = publicKey.export({ format: "jwk" });
+  // COSE EC2/P-256 key: {1:2, 3:-7, -1:1, -2:x, -3:y}.
+  const cose = Buffer.concat([
+    Buffer.from([0xa5, 0x01, 0x02, 0x03, 0x26, 0x20, 0x01, 0x21, 0x58, 0x20]),
+    Buffer.from(jwk.x!, "base64url"), Buffer.from([0x22, 0x58, 0x20]), Buffer.from(jwk.y!, "base64url"),
+  ]);
   const directory = await mkdtemp(join(tmpdir(), "countersign-record-"));
   const credentialsPath = join(directory, "credentials.json");
-  await writeFile(credentialsPath, JSON.stringify({ "stu-0011": [{ id: "test-credential", publicKey, counter: 0 }] }));
+  await writeFile(credentialsPath, JSON.stringify({ "stu-0011": [{ id: "test-credential", publicKey: cose.toString("base64url"), counter: 0 }] }));
   const events: NewProvenanceEvent[] = [];
   const app = createApp({ countersignEnabled: enabled, sessionSecret: "test-record-secret", recordOptions: {
     credentialsPath, writeEvent: async (event) => { events.push(event); },
@@ -40,7 +47,22 @@ async function setup(context: TestContext, enabled = true, publicKey = "AA") {
     headers: { "content-type": "application/json", cookie: session },
     ...(body === undefined ? {} : { body: JSON.stringify(body) }),
   });
-  return { request, login, events, credentialsPath };
+  async function signedReveal(flags = 0x05, origin: string = RP.origin, corrupt = false) {
+    const challenge = await (await request("/countersign/unmask", unmaskRequest)).json();
+    const hash = (value: string | Buffer) => createHash("sha256").update(value).digest();
+    const clientData = Buffer.from(JSON.stringify({ type: "webauthn.get", challenge: challenge.options.challenge, origin }));
+    const authenticatorData = Buffer.concat([hash(RP.rpID), Buffer.from([flags, 0, 0, 0, 1])]);
+    const signature = sign("sha256", Buffer.concat([authenticatorData, hash(clientData)]), privateKey);
+    if (corrupt) signature[signature.length - 1] ^= 1;
+    return {
+      challenge_id: challenge.challenge_id,
+      assertion: {
+        id: "test-credential", rawId: "test-credential", type: "public-key", clientExtensionResults: {},
+        response: { clientDataJSON: clientData.toString("base64url"), authenticatorData: authenticatorData.toString("base64url"), signature: signature.toString("base64url") },
+      },
+    };
+  }
+  return { request, login, events, credentialsPath, signedReveal };
 }
 
 test("scores read-only background automation; visible and incomplete samples stay finite", () => {
@@ -125,63 +147,25 @@ test("missing/fabricated assertions never unmask; registration is not a placehol
   assert.equal((await request("/countersign/webauthn/register/verify", {})).status, 403);
 });
 
-test("verified reveal logs proof, persists counter, consumes challenge, and keeps session suspicion", async (context) => {
-  const { request, events, credentialsPath } = await setup(context);
-  context.mock.method(simpleWebAuthn, "verifyAuthenticationResponse", async (input: Parameters<typeof simpleWebAuthn.verifyAuthenticationResponse>[0]) => {
-    assert.equal(input.expectedOrigin, RP.origin);
-    assert.equal(input.expectedRPID, RP.rpID);
-    assert.equal(input.requireUserVerification, true);
-    assert.ok(input.expectedChallenge);
-    return { verified: true, authenticationInfo: { userVerified: true, newCounter: 1 } };
-  });
-  await request("/countersign/record-fields", { signals: background });
-  const challenge = await (await request("/countersign/unmask", unmaskRequest)).json();
-  assert.equal(challenge.options.userVerification, "required");
-  const body = { challenge_id: challenge.challenge_id, assertion: { id: "test-credential" } };
-  const response = await request("/countersign/unmask/verify", body);
-  assert.equal(response.status, 200);
-  assert.equal((await response.json()).fields.ssn, "900-12-3411");
-  const event = events.at(-1)!;
-  assert.equal(event.decision, "unmasked");
-  assert.equal(event.actor_class, "human-verified");
-  assert.match(event.presence!.assertion_id, /^asr_/);
-  assert.equal(event.presence!.uv, true);
-  assert.equal(JSON.parse(await readFile(credentialsPath, "utf8"))["stu-0011"][0].counter, 1);
-  assert.equal((await request("/countersign/unmask/verify", body)).status, 403);
-  assert.equal((await (await request("/countersign/record-fields", { signals: visible })).json()).masked, true);
-});
-
-test("reveal rejects cross-session challenges, expiry, and missing UV", async (context) => {
-  const { request, login } = await setup(context);
+test("reveal rejects and consumes cross-session and expired challenges", async (context) => {
+  const { request, login, signedReveal } = await setup(context);
   const second = await login();
-  const verifier = context.mock.method(simpleWebAuthn, "verifyAuthenticationResponse", async () => ({
-    verified: true, authenticationInfo: { userVerified: false, newCounter: 0 },
-  }));
-  const first = await (await request("/countersign/unmask", unmaskRequest)).json();
-  const response = await request("/countersign/unmask/verify", { challenge_id: first.challenge_id, assertion: { id: "test-credential" } }, second);
+  const first = await signedReveal();
+  const response = await request("/countersign/unmask/verify", first, second);
   assert.equal((await response.json()).reason, "binding_mismatch");
-  assert.equal(verifier.mock.callCount(), 0);
-  const expired = await (await request("/countersign/unmask", unmaskRequest)).json();
+  assert.equal((await request("/countersign/unmask/verify", first)).status, 403);
+  const expired = await signedReveal();
   const now = Date.now();
   const clock = context.mock.method(Date, "now", () => now + 121_000);
-  const expiry = await request("/countersign/unmask/verify", { challenge_id: expired.challenge_id, assertion: { id: "test-credential" } });
+  const expiry = await request("/countersign/unmask/verify", expired);
   assert.equal((await expiry.json()).reason, "expired");
   clock.mock.restore();
-  const noUv = await (await request("/countersign/unmask", unmaskRequest)).json();
-  const rejected = await request("/countersign/unmask/verify", { challenge_id: noUv.challenge_id, assertion: { id: "test-credential" } });
-  assert.equal((await rejected.json()).reason, "uv_required");
+  assert.equal((await request("/countersign/unmask/verify", expired)).status, 403);
 });
 
 test("real WebAuthn verifier requires signed UP/UV, correct origin, and valid signature", async (context) => {
-  const { publicKey, privateKey } = generateKeyPairSync("ec", { namedCurve: "prime256v1" });
-  const jwk = publicKey.export({ format: "jwk" });
-  // COSE EC2/P-256 key: {1:2, 3:-7, -1:1, -2:x, -3:y}.
-  const cose = Buffer.concat([
-    Buffer.from([0xa5, 0x01, 0x02, 0x03, 0x26, 0x20, 0x01, 0x21, 0x58, 0x20]),
-    Buffer.from(jwk.x!, "base64url"), Buffer.from([0x22, 0x58, 0x20]), Buffer.from(jwk.y!, "base64url"),
-  ]);
-  const { request, events } = await setup(context, true, cose.toString("base64url"));
-  const hash = (value: string | Buffer) => createHash("sha256").update(value).digest();
+  const { request, events, credentialsPath, signedReveal } = await setup(context);
+  await request("/countersign/record-fields", { signals: background });
   for (const scenario of [
     { flags: 0x04, origin: RP.origin, corrupt: false, expected: 403 }, // No UP
     { flags: 0x01, origin: RP.origin, corrupt: false, expected: 403 }, // No UV
@@ -189,22 +173,23 @@ test("real WebAuthn verifier requires signed UP/UV, correct origin, and valid si
     { flags: 0x05, origin: RP.origin, corrupt: true, expected: 403 },
     { flags: 0x05, origin: RP.origin, corrupt: false, expected: 200 },
   ]) {
-    const challenge = await (await request("/countersign/unmask", unmaskRequest)).json();
-    const clientData = Buffer.from(JSON.stringify({ type: "webauthn.get", challenge: challenge.options.challenge, origin: scenario.origin }));
-    const authenticatorData = Buffer.concat([hash(RP.rpID), Buffer.from([scenario.flags, 0, 0, 0, 1])]);
-    const signature = sign("sha256", Buffer.concat([authenticatorData, hash(clientData)]), privateKey);
-    if (scenario.corrupt) signature[signature.length - 1] ^= 1;
-    const response = await request("/countersign/unmask/verify", {
-      challenge_id: challenge.challenge_id,
-      assertion: {
-        id: "test-credential", rawId: "test-credential", type: "public-key", clientExtensionResults: {},
-        response: { clientDataJSON: clientData.toString("base64url"), authenticatorData: authenticatorData.toString("base64url"), signature: signature.toString("base64url") },
-      },
-    });
+    const body = await signedReveal(scenario.flags, scenario.origin, scenario.corrupt);
+    const response = await request("/countersign/unmask/verify", body);
     assert.equal(response.status, scenario.expected);
     const result = await response.json();
-    if (scenario.expected === 403) assert.equal(result.fields, undefined);
-    else assert.equal(result.fields.name, "Capt J. Demo");
+    if (scenario.expected === 403) {
+      assert.equal(result.fields, undefined);
+    } else {
+      assert.equal(result.fields.ssn, "900-12-3411");
+      const event = events.at(-1)!;
+      assert.equal(event.decision, "unmasked");
+      assert.equal(event.actor_class, "human-verified");
+      assert.match(event.presence!.assertion_id, /^asr_/);
+      assert.equal(event.presence!.uv, true);
+      assert.equal(JSON.parse(await readFile(credentialsPath, "utf8"))["stu-0011"][0].counter, 1);
+    }
+    assert.equal((await request("/countersign/unmask/verify", body)).status, 403);
   }
   assert.equal(events.filter((event) => event.decision === "unmasked").length, 1);
+  assert.equal((await (await request("/countersign/record-fields", { signals: visible })).json()).masked, true);
 });

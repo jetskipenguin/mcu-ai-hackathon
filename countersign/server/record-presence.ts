@@ -16,8 +16,6 @@ interface Challenge {
 
 export class PresenceError extends Error {}
 
-// No bypass: both registration and record reveal use the real verifier. Tests
-// substitute only the library's verifier, never a production HTTP switch.
 export class RecordPresence {
   private credentials: Record<string, StoredCredential[]>;
   private registrations = new Map<string, Challenge>();
@@ -59,11 +57,9 @@ export class RecordPresence {
   }
 
   async register(user: PortalUser, sessionId: string, response: RegistrationResponseJSON) {
-    const stored = this.registrations.get(sessionId);
-    this.registrations.delete(sessionId);
-    this.check(stored, user, sessionId, "registration", 120);
+    const stored = this.consume(this.registrations, sessionId, user, sessionId, "registration", 120);
     const result = await simpleWebAuthn.verifyRegistrationResponse({
-      response, expectedChallenge: stored!.challenge, expectedOrigin: RP.origin,
+      response, expectedChallenge: stored.challenge, expectedOrigin: RP.origin,
       expectedRPID: RP.rpID, requireUserVerification: true,
     });
     if (!result.verified || !result.registrationInfo) throw new PresenceError("verification_failed");
@@ -92,23 +88,25 @@ export class RecordPresence {
     return { challenge_id: id, options, expires_at: created + 120_000 };
   }
 
-  private check(stored: Challenge | undefined, user: PortalUser, sessionId: string, ruleId: string, maxAge: number) {
+  private consume(challenges: Map<string, Challenge>, id: string, user: PortalUser,
+    sessionId: string, ruleId: string, maxAge: number): Challenge {
+    const stored = challenges.get(id);
+    challenges.delete(id); // Single-use, including failed verification attempts.
     if (!stored) throw new PresenceError("no_assertion");
     if (stored.userId !== user.id || stored.sessionId !== sessionId || stored.ruleId !== ruleId) {
       throw new PresenceError("binding_mismatch");
     }
     if (Date.now() - stored.created > Math.min(120, maxAge) * 1000) throw new PresenceError("expired");
+    return stored;
   }
 
   async verify(user: PortalUser, sessionId: string, ruleId: string, presence: PolicyPresence,
     challengeId: string, response: AuthenticationResponseJSON): Promise<PresenceProof> {
-    const stored = this.assertions.get(challengeId);
-    this.assertions.delete(challengeId); // Consume before any validation, including failures.
-    this.check(stored, user, sessionId, ruleId, presence.max_age_s);
+    const stored = this.consume(this.assertions, challengeId, user, sessionId, ruleId, presence.max_age_s);
     const credential = (this.credentials[user.id] ?? []).find((item) => item.id === response?.id);
     if (!credential) throw new PresenceError("verification_failed");
     const result = await simpleWebAuthn.verifyAuthenticationResponse({
-      response, expectedChallenge: stored!.challenge, expectedOrigin: RP.origin,
+      response, expectedChallenge: stored.challenge, expectedOrigin: RP.origin,
       expectedRPID: RP.rpID, requireUserVerification: presence.uv === "required",
       credential: { ...credential, publicKey: Buffer.from(credential.publicKey, "base64url") },
     });
@@ -119,7 +117,7 @@ export class RecordPresence {
     this.persist();
     return {
       assertion_id: `asr_${randomUUID()}`, credential_id: credential.id, up: true,
-      uv: result.authenticationInfo.userVerified, age_ms: Date.now() - stored!.created,
+      uv: result.authenticationInfo.userVerified, age_ms: Date.now() - stored.created,
     };
   }
 }
