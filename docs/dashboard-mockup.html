@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Countersign dashboard — mockup</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  :root {
+    --bg: #f6f7fa; --card: #ffffff; --panel: #f0f2f7;
+    --text: #1b2130; --muted: #5d6678; --hint: #8b93a5;
+    --line: #dfe3ec; --line-strong: #c8cedb;
+    --green-bg: #e6f4ea; --green-fg: #1e6b3a;
+    --yellow-bg: #fbf1d6; --yellow-fg: #7a5306;
+    --purple-bg: #eeecfb; --purple-fg: #4a3f9a;
+    --blue-bg: #e7f0fb; --blue-fg: #1c5aa3; --blue-line: #b9d2f2;
+    --red-fg: #a63b32;
+    --radius: 8px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, "Helvetica Neue", Arial, sans-serif; background: var(--bg); color: var(--text); font-size: 14px; line-height: 1.45; padding: 32px 16px; }
+  .wrap { max-width: 880px; margin: 0 auto; }
+  .note { font-size: 12px; color: var(--hint); margin-bottom: 14px; }
+
+  .topbar { display: flex; align-items: center; justify-content: space-between; padding-bottom: 12px; border-bottom: 1px solid var(--line); }
+  .topbar .title { font-size: 17px; font-weight: 600; }
+  .topbar .sub { font-size: 13px; color: var(--muted); }
+  .status { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); }
+  .status .dot { width: 8px; height: 8px; border-radius: 50%; background: #2e9e5b; }
+
+  .metrics { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin: 16px 0; }
+  .metric { background: var(--panel); border-radius: var(--radius); padding: 12px 14px; }
+  .metric .label { font-size: 13px; color: var(--muted); }
+  .metric .value { font-size: 26px; font-weight: 600; margin-top: 2px; }
+  .metric .value.green { color: var(--green-fg); }
+  .metric .value.yellow { color: var(--yellow-fg); }
+  .metric .value.purple { color: var(--purple-fg); }
+
+  .banner { background: var(--blue-bg); border: 1px solid var(--blue-line); color: var(--blue-fg); border-radius: var(--radius); padding: 10px 14px; display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; }
+  .banner button { font: inherit; font-size: 13px; padding: 6px 12px; border-radius: 6px; border: 1px solid var(--blue-fg); background: #fff; color: var(--blue-fg); cursor: pointer; }
+
+  h2 { font-size: 14px; font-weight: 600; margin-bottom: 8px; }
+  .table { border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; background: var(--card); font-size: 13px; }
+  .row { display: grid; grid-template-columns: 70px 1fr 170px 120px; gap: 10px; padding: 10px 12px; border-top: 1px solid var(--line); align-items: center; }
+  .row.head { background: var(--panel); color: var(--muted); border-top: 0; }
+  .row .time { color: var(--hint); font-variant-numeric: tabular-nums; }
+  .row .meta { color: var(--hint); }
+  .row.flag { background: var(--purple-bg); }
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 6px; font-size: 12px; white-space: nowrap; }
+  .badge.green { background: var(--green-bg); color: var(--green-fg); }
+  .badge.yellow { background: var(--yellow-bg); color: var(--yellow-fg); }
+  .d-ok { color: var(--green-fg); } .d-warn { color: var(--yellow-fg); } .d-muted { color: var(--muted); } .d-flag { color: var(--purple-fg); } .d-block { color: var(--red-fg); }
+
+  .cards { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 16px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; }
+  .card h3 { font-size: 14px; font-weight: 600; margin-bottom: 6px; }
+  .card p { font-size: 13px; color: var(--muted); line-height: 1.6; }
+  .card p strong { color: var(--text); font-weight: 500; }
+
+  @media (max-width: 640px) {
+    .metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .row { grid-template-columns: 60px 1fr; }
+    .row .col3, .row .col4 { grid-column: 2; }
+    .row.head .col3, .row.head .col4 { display: none; }
+    .cards { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="note">Mockup — static reference for the dashboard track. Field names match docs/contracts.md.</div>
+
+  <div class="topbar">
+    <div>
+      <div class="title">Countersign</div>
+      <div class="sub">MCU Learning Portal · governed instance on localhost:3000</div>
+    </div>
+    <div class="status"><span class="dot"></span>Policy v0.1 active</div>
+  </div>
+
+  <div class="metrics">
+    <div class="metric"><div class="label">Governed actions</div><div class="value">6</div></div>
+    <div class="metric"><div class="label">Human-verified</div><div class="value green">3</div></div>
+    <div class="metric"><div class="label">Masked or held</div><div class="value yellow">3</div></div>
+    <div class="metric"><div class="label">Flagged for faculty</div><div class="value purple">1</div></div>
+  </div>
+
+  <div class="banner">
+    <div>Policy draft ready: 3 rules proposed by the generator, each with a Registry citation</div>
+    <button type="button">Review draft</button>
+  </div>
+
+  <h2>Provenance timeline</h2>
+  <div class="table">
+    <div class="row head"><div>Time</div><div>Action</div><div class="col3">Actor</div><div class="col4">Decision</div></div>
+
+    <div class="row">
+      <div class="time">13:02:07</div>
+      <div>Submit quiz 1 <span class="meta">· stu-0011</span></div>
+      <div class="col3"><span class="badge yellow">automation-suspected</span></div>
+      <div class="col4 d-muted">presence requested</div>
+    </div>
+    <div class="row">
+      <div class="time">13:02:11</div>
+      <div>Submit quiz 1 <span class="meta">· assertion 7f3a…</span></div>
+      <div class="col3"><span class="badge green">human-verified</span></div>
+      <div class="col4 d-ok">allowed</div>
+    </div>
+    <div class="row">
+      <div class="time">13:03:40</div>
+      <div>View record 1 <span class="meta">· PII, PHI</span></div>
+      <div class="col3"><span class="badge yellow">automation-suspected</span></div>
+      <div class="col4 d-warn">masked</div>
+    </div>
+    <div class="row">
+      <div class="time">13:03:58</div>
+      <div>Unmask record 1 <span class="meta">· assertion 2c91…</span></div>
+      <div class="col3"><span class="badge green">human-verified</span></div>
+      <div class="col4 d-ok">unmasked</div>
+    </div>
+    <div class="row">
+      <div class="time">13:05:12</div>
+      <div>Post to IFD 2 <span class="meta">· initial post</span></div>
+      <div class="col3"><span class="badge yellow">automation-suspected</span></div>
+      <div class="col4 d-muted">presence requested</div>
+    </div>
+    <div class="row flag">
+      <div class="time">13:05:20</div>
+      <div>Post to IFD 2 <span class="meta">· attested own work · 0 keystrokes, 1,774 chars in one event</span></div>
+      <div class="col3"><span class="badge green">human-verified</span></div>
+      <div class="col4 d-flag">contradiction</div>
+    </div>
+  </div>
+
+  <div class="cards">
+    <div class="card">
+      <h3>Flagged session</h3>
+      <p>stu-0011 · Capt J. Demo<br>Score 0.82 · fill-without-focus, uniform-timing<br>First seen 13:01:52 · 3 governed actions</p>
+    </div>
+    <div class="card">
+      <h3>For faculty review</h3>
+      <p>IFD 2 initial post by stu-0011<br>Attested own work; composition telemetry says otherwise<br><strong>Post was published. No action taken by Countersign.</strong></p>
+    </div>
+  </div>
+</div>
+</body>
+</html>

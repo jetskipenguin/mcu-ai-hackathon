@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Countersign</title>
+<style>
+  @page { size: letter; margin: 0; }
+  :root {
+    --ink: #14213a;
+    --ink-soft: #3a4967;
+    --paper: #ffffff;
+    --wash: #f4f6fb;
+    --line: #d9dfec;
+    --accent: #b8860b;
+    --accent-deep: #8a6408;
+    --sign: #1f6f54;
+    --sign-wash: #e7f2 ;
+    --block: #b23a2e;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--ink); background: #fff; }
+  .page {
+    width: 8.5in; height: 11in; padding: 0; margin: 0 auto;
+    display: flex; flex-direction: column;
+    -webkit-print-color-adjust: exact; print-color-adjust: exact;
+  }
+
+  /* Header */
+  header {
+    background: var(--ink); color: #fff;
+    padding: 0.42in 0.55in 0.34in;
+  }
+  .eyebrow { font-size: 8.5pt; letter-spacing: 0.14em; text-transform: uppercase; color: #9db0d6; font-weight: 600; }
+  h1 { font-size: 33pt; font-weight: 700; letter-spacing: -0.01em; margin-top: 4px; line-height: 1; }
+  .tagline { margin-top: 9px; font-size: 11.5pt; color: #cdd8ee; font-weight: 400; }
+  .tagline b { color: #fff; font-weight: 600; }
+
+  .body { padding: 0.34in 0.55in 0; flex: 1; display: flex; flex-direction: column; }
+
+  /* Problem */
+  .lead { font-size: 11pt; line-height: 1.5; color: var(--ink-soft); max-width: 7.4in; }
+  .lead b { color: var(--ink); font-weight: 600; }
+
+  h2 {
+    font-size: 9.5pt; letter-spacing: 0.10em; text-transform: uppercase;
+    color: var(--accent-deep); font-weight: 700;
+    margin: 0.26in 0 0.12in; padding-bottom: 5px; border-bottom: 1.5px solid var(--line);
+  }
+
+  /* Before / after */
+  .ba { display: flex; gap: 0.28in; }
+  .ba .col { flex: 1; }
+  .ba .head { display: flex; align-items: center; gap: 7px; font-size: 10pt; font-weight: 700; margin-bottom: 7px; }
+  .dot { width: 11px; height: 11px; border-radius: 50%; flex: none; }
+  .before .dot { background: var(--block); }
+  .after .dot { background: var(--sign); }
+  .before .head { color: var(--block); }
+  .after .head { color: var(--sign); }
+  .ba p { font-size: 9.7pt; line-height: 1.46; color: var(--ink-soft); }
+  .ba .card { background: var(--wash); border: 1px solid var(--line); border-radius: 8px; padding: 12px 13px; height: 100%; }
+  .after .card { background: #eef5f1; border-color: #cbe2d7; }
+
+  /* Three modes */
+  .modes { display: flex; gap: 0.24in; }
+  .mode { flex: 1; }
+  .mode .m-top { font-size: 10pt; font-weight: 700; color: var(--ink); margin-bottom: 5px; }
+  .mode .m-tag { font-size: 7.8pt; letter-spacing: 0.06em; text-transform: uppercase; color: var(--accent-deep); font-weight: 700; }
+  .mode .m-body { font-size: 9.4pt; line-height: 1.42; color: var(--ink-soft); margin-top: 6px; }
+  .mode .m-rule { height: 3px; border-radius: 2px; background: var(--accent); width: 34px; margin-bottom: 8px; }
+
+  /* How + AI row */
+  .split { display: flex; gap: 0.4in; margin-top: 2px; }
+  .split .half { flex: 1; }
+  .split p { font-size: 9.7pt; line-height: 1.5; color: var(--ink-soft); }
+  .split p b { color: var(--ink); font-weight: 600; }
+  ul { list-style: none; margin-top: 4px; }
+  li { font-size: 9.7pt; line-height: 1.5; color: var(--ink-soft); padding-left: 15px; position: relative; margin-bottom: 2px; }
+  li::before { content: ""; position: absolute; left: 0; top: 7px; width: 5px; height: 5px; border-radius: 50%; background: var(--accent); }
+  li b { color: var(--ink); font-weight: 600; }
+
+  /* Applications strip */
+  .apps { display: flex; gap: 0.24in; margin-top: 4px; }
+  .app { flex: 1; background: var(--wash); border-left: 3px solid var(--ink); border-radius: 0 6px 6px 0; padding: 9px 11px; }
+  .app .a-h { font-size: 9.3pt; font-weight: 700; color: var(--ink); }
+  .app .a-b { font-size: 8.7pt; line-height: 1.36; color: var(--ink-soft); margin-top: 3px; }
+
+  footer {
+    margin-top: auto; background: var(--ink); color: #cdd8ee;
+    padding: 0.16in 0.55in; font-size: 8.6pt;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  footer b { color: #fff; font-weight: 600; }
+  footer .right { color: #9db0d6; }
+</style>
+</head>
+<body>
+<div class="page">
+  <header>
+    <div class="eyebrow">MCU&ndash;NPS AI Learning Initiatives &middot; Browser-Based Agent Governance</div>
+    <h1>Countersign</h1>
+    <div class="tagline"><b>AI where it's allowed. Humans where it's required.</b> Proof of which was which.</div>
+  </header>
+
+  <div class="body">
+    <p class="lead">
+      A student takes a distance-education course from a personal laptop. Their browser has an AI assistant &mdash; built in, like Perplexity Comet, or added as an extension. They ask it to &ldquo;finish this,&rdquo; and it does: it completes the quiz, writes the discussion post, and reads the personnel record on screen &mdash; sending that data to a commercial model in someone else's cloud. <b>The learning system saw a logged-in student doing normal things. It has no way to know an agent did the work, or that sensitive data just left.</b> Countersign is a governance layer any web application can adopt to close that gap.
+    </p>
+
+    <h2>The problem, and the fix</h2>
+    <div class="ba">
+      <div class="col before">
+        <div class="head"><span class="dot"></span> Without Countersign</div>
+        <div class="card"><p>The agent carries the student's logged-in session &mdash; the right cookies, the right credentials. To the application, its clicks are indistinguishable from a human's. It submits the exam, ghost-writes the graded post, and scrapes the record. No exam proctor is watching a browser; no vendor guardrail pauses on a quiz.</p></div>
+      </div>
+      <div class="col after">
+        <div class="head"><span class="dot"></span> With Countersign</div>
+        <div class="card"><p>At the moment an action matters, the app demands a countersign: a fingerprint, security key, or CAC touch that cryptographically proves a human is physically present, bound to that exact action. The agent can use the session. It cannot press the sensor. It stalls &mdash; and every action is logged with proof of who did it.</p></div>
+      </div>
+    </div>
+
+    <h2>Three ways to govern &mdash; the app decides, per action</h2>
+    <div class="modes">
+      <div class="mode">
+        <div class="m-rule"></div>
+        <div class="m-tag">Require the human</div>
+        <div class="m-top">Exam submission, payment approval</div>
+        <div class="m-body">A hardware presence proof is required to complete the action. No proof, no submit. This is the guarantee an agent cannot forge.</div>
+      </div>
+      <div class="mode">
+        <div class="m-rule"></div>
+        <div class="m-tag">Make the record honest</div>
+        <div class="m-top">Discussion posts, written work</div>
+        <div class="m-body">AI use isn't blocked &mdash; it's disclosed. The author attests, keystroke telemetry is recorded, and contradictions surface to faculty. Governance, not surveillance.</div>
+      </div>
+      <div class="mode">
+        <div class="m-rule"></div>
+        <div class="m-tag">Protect the data</div>
+        <div class="m-top">PII, PHI, CUI on the page</div>
+        <div class="m-body">Sensitive fields carry machine-readable CUI markings and are masked from suspected-agent sessions until a human verifies presence.</div>
+      </div>
+    </div>
+
+    <div class="split">
+      <div class="half">
+        <h2>How it works</h2>
+        <ul>
+          <li><b>Presence, not detection.</b> Built on WebAuthn / FIDO2 &mdash; the same standard behind the CAC. The proof is a signature over the specific action, not a guess about whether a bot is present.</li>
+          <li><b>Two ways to deploy.</b> A script and a policy file for apps you own, or a reverse proxy in front of a legacy system &mdash; no code changes.</li>
+          <li><b>Provenance you can audit.</b> Every governed action is logged with the actor, the rule, and the presence proof.</li>
+        </ul>
+      </div>
+      <div class="half">
+        <h2>Where AI helps build it</h2>
+        <p>An LLM reads an application's pages and <b>drafts the governance policy</b> &mdash; identifying exam submissions, sensitive fields, and where disclosure is needed &mdash; choosing only from the 126 official CUI Registry categories, with a citation for each rule. A human approves before anything takes effect. It runs in GovCloud, so the model that reads your pages is authorized for what it sees. That's how a legacy system gets governed without hand-writing rules.</p>
+      </div>
+    </div>
+
+    <h2>Beyond the classroom</h2>
+    <div class="apps">
+      <div class="app"><div class="a-h">Education</div><div class="a-b">Exam integrity and honor-code attestations that hold up on unmanaged devices.</div></div>
+      <div class="app"><div class="a-h">Finance</div><div class="a-b">Proof that a human &mdash; not an agent with the session &mdash; authorized a payment or voucher.</div></div>
+      <div class="app"><div class="a-h">Health &amp; personnel</div><div class="a-b">PII and PHI protected from third-party models, with a break-glass reveal for verified humans.</div></div>
+    </div>
+  </div>
+
+  <footer>
+    <div><b>Countersign</b> &mdash; a two-person hackathon prototype, built in a day and a half.</div>
+    <div class="right">The agent can use your session. It can't give the countersign.</div>
+  </footer>
+</div>
+</body>
+</html>
