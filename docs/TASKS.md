@@ -44,8 +44,8 @@ Stable IDs preserve the ordering and grouping in `docs/countersign-plan.md` sect
 ## Track A - Afternoon
 
 - [ ] **A6** Render record markings and the `Countersign-Marking` response header.
-- [ ] **A7** Implement browser signals, deterministic scoring, and page-load/pre-submit delivery.
-- [ ] **A8** Mask marked fields at the threshold, implement step-up reveal, and log `unmask`.
+- [x] **A7** Implement browser signals, deterministic scoring, and page-load/pre-submit delivery. BrowserOS background record reads verified; evidence is advisory and retained per session.
+- [x] **A8** Mask marked fields at the threshold, implement step-up reveal, and log `unmask`. Initial HTML withholds all record fields; record WebAuthn verification and automated tests implemented. Physical Touch ID / Windows Hello rehearsal still pending.
 - [ ] **A9** Detect discussion actor class and store/render the AI-assisted tag.
 - [ ] **A10** Finalize the provenance event schema.
 

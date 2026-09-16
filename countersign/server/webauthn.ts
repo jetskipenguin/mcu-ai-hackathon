@@ -42,36 +42,6 @@ export function placeholderChallengeResponse(
 export function createWebAuthnRouter(): Router {
   const router = Router();
 
-  router.post("/webauthn/register/options", (_request, response) => {
-    // TODO(track-a): issue and persist per-user registration options.
-    response.json({
-      challenge: PLACEHOLDER_CHALLENGE,
-      rp: { name: RP.rpName, id: RP.rpID },
-      user: {
-        id: Buffer.from("stu-placeholder").toString("base64url"),
-        name: "stu-placeholder",
-        displayName: "Placeholder User",
-      },
-      pubKeyCredParams: [
-        { alg: -7, type: "public-key" },
-        { alg: -257, type: "public-key" },
-      ],
-      timeout: 60_000,
-      attestation: "none",
-      authenticatorSelection: {
-        authenticatorAttachment: "platform",
-        residentKey: "preferred",
-        userVerification: "required",
-      },
-      excludeCredentials: [],
-    });
-  });
-
-  router.post("/webauthn/register/verify", (_request, response) => {
-    // TODO(track-a): verify registration and persist the credential.
-    response.json({ ok: true, credential_id: "cred_placeholder" });
-  });
-
   router.post("/challenge", (request, response) => {
     // TODO(track-a): generate and persist a single-use, action-bound challenge.
     const userVerification =

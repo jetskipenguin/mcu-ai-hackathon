@@ -5,7 +5,8 @@
     "class": "unrestricted",
     "signals": {
       "suspect_threshold": 0.6,
-      "webdriver": 0.4,
+      "webdriver": 0.6,
+      "background_record_read": 0.6,
       "fill_without_focus": 0.2,
       "uniform_timing": 0.2,
       "hidden_during_input": 0.2
@@ -38,6 +39,7 @@
       "match": { "route": "/record/*" },
       "class": "marking",
       "markings": [
+        { "selector": "[data-field=name]", "marking": "PLACEHOLDER-CUI-PII", "categories": ["PII"] },
         { "selector": "[data-field=ssn]", "marking": "PLACEHOLDER-CUI-PII", "categories": ["PII"] },
         { "selector": "[data-field=dod-id]", "marking": "PLACEHOLDER-CUI-PII", "categories": ["PII"] },
         { "selector": "[data-field=medical]", "marking": "PLACEHOLDER-CUI-PHI", "categories": ["PHI"] }

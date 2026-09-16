@@ -61,10 +61,18 @@ The generator currently copies the validated active policy to `countersign/polic
 2. Open `http://localhost:3000/login`, choose the same user, and repeat the flow with the Countersign client and middleware active.
 3. On `/quiz/1`, the `human-required` rule demonstrates the action-time WebAuthn boundary at submission.
 4. On `/discussion/2`, `independent_first` hides peer posts until the learner submits an initial response; the `attested` rule records disclosure and composition telemetry.
-5. On `/record/1`, the `marking` rule identifies synthetic PII and PHI fields and supplies the page-level `Countersign-Marking` header.
+5. On `/record/1`, the `marking` rule withholds record fields until signal evaluation. A suspected-agent session sees placeholders and an **Automation suspected** banner. Register a passkey and select **Verify presence to view** to reveal the record using WebAuthn.
 6. Open `/countersign/` on port 3000 to watch the provenance timeline and `/countersign/policy/review` to compare active and draft policies.
 
-The scaffold has complete route, client, logging, policy-validation, and interface plumbing. WebAuthn verification, masking, signal scoring, attestation presentation, and LLM policy generation remain explicit track work.
+Record masking, deterministic signal scoring, passkey registration, and action-bound record reveal are implemented. Quiz/discussion assertion enforcement, attestation presentation, and LLM policy generation remain scaffold work; the seven original quiz/WebAuthn tests are still TODOs.
+
+### Student-record protection (A6–A8)
+
+- Record HTML contains only placeholders. The server evaluates signals before releasing fields; suspected automation stays masked until WebAuthn verification. Responses are `no-store` and every decision is logged.
+- Hidden, unfocused record reads score `0.6`, reaching the policy threshold. This catches the observed BrowserOS workflow despite `webdriver=false`. Suspicion persists for the login session; verified reveals do not clear it.
+- This is a heuristic: background human tabs can be flagged, while foreground agents or spoofed telemetry can evade it. See `docs/contracts.md` for the endpoints and presence-verification rules.
+
+`npm test` exercises record access and WebAuthn with temporary signed assertions. Physical Touch ID / Windows Hello confirmation needs a human on the demo machine.
 
 ## Datasets
 

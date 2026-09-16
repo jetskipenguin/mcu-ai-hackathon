@@ -13,6 +13,7 @@ import express, {
 import { governedPageVisit, governedSubmission } from "../countersign/server/middleware.js";
 import { matchRule } from "../countersign/server/policy.js";
 import { createCountersignRouter } from "../countersign/server/routes.js";
+import { createRecordGovernance, type RecordOptions } from "../countersign/server/records.js";
 import type { PolicyRule, PortalUser } from "../countersign/server/types.js";
 
 interface Student extends PortalUser {
@@ -151,6 +152,7 @@ function markingFor(rule: PolicyRule | undefined, field: string): string {
 export interface AppOptions {
   countersignEnabled?: boolean;
   sessionSecret?: string;
+  recordOptions?: Pick<RecordOptions, "credentialsPath" | "writeEvent">;
 }
 
 export function createApp(options: AppOptions = {}): express.Express {
@@ -164,6 +166,14 @@ export function createApp(options: AppOptions = {}): express.Express {
   const posts = [...forum.posts];
   const postedUsers = new Set(posts.map((post) => post.user_id));
   const app = express();
+  const records = createRecordGovernance({
+    ...options.recordOptions,
+    enabled,
+    fieldsForUser(userId) {
+      const student = students.find((candidate) => candidate.id === userId)!;
+      return { name: student.name, ssn: student.ssn, "dod-id": student.dod_id, medical: student.medical_note };
+    },
+  });
 
   app.disable("x-powered-by");
   app.use(express.json({ limit: "100kb" }));
@@ -188,7 +198,7 @@ export function createApp(options: AppOptions = {}): express.Express {
     "/assets",
     express.static(resolve(process.cwd(), "countersign/client")),
   );
-  app.use("/countersign", createCountersignRouter());
+  app.use("/countersign", records.router, createCountersignRouter());
 
   app.get("/", (_request, response) => response.redirect(302, "/login"));
 
@@ -364,26 +374,26 @@ export function createApp(options: AppOptions = {}): express.Express {
   app.get(
     "/record/1",
     requireUser(),
-    governedPageVisit(enabled),
+    records.visit,
     (_request, response) => {
-      const student = students.find((candidate) => candidate.id === "stu-0011")!;
+      const student = students.find((candidate) => candidate.id === response.locals.user.id)!;
       const rule = matchRule("/record/1", "GET /record/1");
-      if (enabled && rule?.page_marking) {
-        response.set(
-          "Countersign-Marking",
-          `${rule.page_marking}; categories=PII,PHI`,
-        );
-      }
+      const value = (raw: string) => enabled ? "[Hidden — verify presence to view]" : escapeHtml(raw);
       response.type("html").send(
         page(
           "Student record",
           `<h1>Student record</h1>
            <p class="notice">All values on this page are fabricated.</p>
-           <dl class="panel record">
-             <dt>Name</dt><dd data-field="name">${escapeHtml(student.name)}</dd>
-             <dt>SSN</dt><dd data-field="ssn" data-marking="${escapeHtml(markingFor(rule, "ssn"))}" data-categories="PII">${escapeHtml(student.ssn)}</dd>
-             <dt>DoD ID</dt><dd data-field="dod-id" data-marking="${escapeHtml(markingFor(rule, "dod-id"))}" data-categories="PII">${escapeHtml(student.dod_id)}</dd>
-             <dt>Medical / limited-duty note</dt><dd data-field="medical" data-marking="${escapeHtml(markingFor(rule, "medical"))}" data-categories="PHI">${escapeHtml(student.medical_note)}</dd>
+           ${enabled ? `<section class="notice">
+             <p role="status" data-record-status>${response.locals.recordSignals?.flagged ? "Automation suspected. Sensitive content hidden — verify presence to view." : "Sensitive content hidden while browser signals are checked."}</p>
+             <button type="button" data-record-reveal>Verify presence to view</button>
+             <button type="button" data-record-register>Register a passkey</button>
+           </section>` : ""}
+           <dl class="panel record" ${enabled ? 'data-protected-record' : ""}>
+             <dt>Name</dt><dd data-field="name" data-marking="${escapeHtml(markingFor(rule, "name"))}" data-categories="PII">${value(student.name)}</dd>
+             <dt>SSN</dt><dd data-field="ssn" data-marking="${escapeHtml(markingFor(rule, "ssn"))}" data-categories="PII">${value(student.ssn)}</dd>
+             <dt>DoD ID</dt><dd data-field="dod-id" data-marking="${escapeHtml(markingFor(rule, "dod-id"))}" data-categories="PII">${value(student.dod_id)}</dd>
+             <dt>Medical / limited-duty note</dt><dd data-field="medical" data-marking="${escapeHtml(markingFor(rule, "medical"))}" data-categories="PHI">${value(student.medical_note)}</dd>
            </dl>`,
           enabled,
         ),
