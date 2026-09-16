@@ -1,4 +1,4 @@
-import { randomUUID } from "node:crypto";
+import { createHmac, randomUUID, timingSafeEqual } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
@@ -17,7 +17,7 @@ import { createRecordGovernance, type RecordOptions } from "../countersign/serve
 import { appendProvenanceEvent } from "../countersign/server/log.js";
 import type { CountersignPolicy, PolicyRule, PortalUser, SubmissionProvenance } from "../countersign/server/types.js";
 import { PolicyStore, type PolicyStorePaths } from "../countersign/server/policy-store.js";
-import { WebAuthnService, type GovernedAction, type WebAuthnOptions } from "../countersign/server/webauthn.js";
+import { RP, WebAuthnService, type GovernedAction, type WebAuthnOptions } from "../countersign/server/webauthn.js";
 
 interface Student extends PortalUser {
   email: string;
@@ -213,6 +213,14 @@ export function createApp(options: AppOptions = {}): express.Express {
   const forum = readJson<ForumFixture>("portal/data/forum.json");
   const posts = [...forum.posts];
   const postedUsers = new Set(posts.map((post) => post.user_id));
+  const seededPostIds = new Set(posts.map((post) => post.post_id));
+  const demoUserId = "stu-0011";
+  const resetInstance = randomUUID();
+  let discussionGeneration = 0;
+  let discussionResetting = false;
+  const resetToken = (sessionId: string) => createHmac("sha256", sessionSecret)
+    .update(JSON.stringify([resetInstance, enabled, sessionId, discussionGeneration, "discussion-demo-reset"]))
+    .digest("base64url");
   const webAuthn = new WebAuthnService({
     ...options, credentialsPath: options.credentialsPath ?? options.recordOptions?.credentialsPath,
   });
@@ -385,7 +393,19 @@ export function createApp(options: AppOptions = {}): express.Express {
     governedPageVisit(enabled, options.provenancePath, readPolicy),
     (_request, response) => {
       const user = response.locals.user as PortalUser;
+      response.set("Cache-Control", "no-store");
       const hasPosted = postedUsers.has(user.id);
+      const resetControls = user.id === demoUserId ? `<details class="panel" data-demo-controls>
+        <summary>Demo controls</summary>
+        <p>Reset Capt J. Demo's discussion on this ${enabled ? "governed" : "ungoverned"} instance for another rehearsal.
+        This removes only this student's runtime-added responses and hides peers again on reload.
+        Seeded posts, passkeys, and audit history are retained. A reset entry is added to the audit.</p>
+        <form method="post" action="/discussion/2/reset">
+          <input type="hidden" name="reset_token" value="${escapeHtml(resetToken(response.locals.sessionId))}">
+          <label><input type="checkbox" name="confirmation" value="reset-discussion" required> I want to reset this discussion demo.</label>
+          <button type="submit">Reset discussion demo</button>
+        </form>
+      </details>` : "";
       const postMarkup = hasPosted
         ? posts
             .filter((post) => post.post_id !== forum.faculty_prompt_post_id)
@@ -413,7 +433,9 @@ export function createApp(options: AppOptions = {}): express.Express {
            `<h1>${escapeHtml(forum.title)}</h1>
             <section class="panel"><h2>Faculty prompt</h2><p class="forum-text">${escapeHtml(forum.faculty_prompt)}</p></section>
             ${enabled ? '<p class="notice">Presence verification confirms a human was present at submission. Authorship disclosures and composition signals are recorded separately.</p>' : ""}
-           ${form}
+            ${_request.query.reset === "1" && !hasPosted ? '<p class="notice" role="status">Discussion demo reset. Submit a new initial response to reveal peers again.</p>' : ""}
+            ${resetControls}
+            ${form}
            <section><h2>Peer discussion</h2>${postMarkup}</section>`,
           enabled,
           forum.synthetic_data_notice,
@@ -425,9 +447,23 @@ export function createApp(options: AppOptions = {}): express.Express {
   app.post(
     "/discussion/2/post",
     requireUser(),
+    (_request, response, next) => {
+      if (response.locals.user.id === demoUserId && discussionResetting) {
+        response.status(409).json({ error: "discussion_reset", message: "Discussion reset is in progress. Reload and try again." });
+        return;
+      }
+      response.locals.discussionGeneration = discussionGeneration;
+      next();
+    },
     ...governedSubmission(enabled, discussionAction, services),
     (request, response) => {
       const user = response.locals.user as PortalUser;
+      // Governance/logging can await I/O. A pre-reset request must not publish
+      // into the next run, including one that matched unrestricted before reset.
+      if (user.id === demoUserId && (discussionResetting || response.locals.discussionGeneration !== discussionGeneration)) {
+        response.status(409).json({ error: "discussion_reset", message: "Discussion was reset. Reload and submit a new initial response." });
+        return;
+      }
       const body = typeof request.body.body === "string" ? request.body.body.trim() : "";
       if (!body) {
         response.status(400).json({ error: "body_required", message: "Post body is required." });
@@ -464,6 +500,66 @@ export function createApp(options: AppOptions = {}): express.Express {
       response.redirect(303, redirect);
     },
   );
+
+  app.post("/discussion/2/reset", requireUser(), async (request, response) => {
+    response.set("Cache-Control", "no-store");
+    const user = response.locals.user as PortalUser;
+    if (user.id !== demoUserId) {
+      response.status(403).json({ error: "demo_user_required", message: "Only Capt J. Demo's rehearsal response can be reset." });
+      return;
+    }
+    if (request.get("origin") && request.get("origin") !== (enabled ? RP.origin : "http://localhost:3001")) {
+      response.status(403).json({ error: "origin_mismatch", message: "Reset from this portal instance's discussion page." });
+      return;
+    }
+    if (!request.is("application/json") && !request.is("application/x-www-form-urlencoded")) {
+      response.status(415).json({ error: "unsupported_content_type" });
+      return;
+    }
+    const supplied = Buffer.from(typeof request.body?.reset_token === "string" ? request.body.reset_token : "");
+    const expected = Buffer.from(resetToken(response.locals.sessionId));
+    if (supplied.length !== expected.length || !timingSafeEqual(supplied, expected)) {
+      response.status(403).json({ error: "invalid_reset_token", message: "Reload the discussion page before resetting." });
+      return;
+    }
+    if (request.body?.confirmation !== "reset-discussion") {
+      response.status(400).json({ error: "confirmation_required", message: "Confirm the demo reset." });
+      return;
+    }
+    if (discussionResetting) {
+      response.status(409).json({ error: "reset_in_progress", message: "A reset is already in progress." });
+      return;
+    }
+    discussionResetting = true;
+    try {
+      const removed = posts.filter(post => post.user_id === demoUserId && !seededPostIds.has(post.post_id));
+      const signals = response.locals.signals ?? { score: 0, flags: [] };
+      // Administrative reset is audited even with COUNTERSIGN=off. Record first:
+      // a failed write must never silently remove the rehearsal's visible state.
+      await appendProvenanceEvent({
+        session_id: response.locals.sessionId, user, route: "/discussion/2", action: "POST /discussion/2/reset",
+        rule_id: "demo-discussion-reset", class: "unrestricted", decision: "allowed",
+        actor_class: request.get("Countersign-Agent") || response.locals.agentDeclared ? "agent-declared" :
+          signals.score >= readPolicy().defaults.signals.suspect_threshold ? "automation-suspected" : "unverified",
+        presence: null, attestation: null, signals, telemetry: null, form_hash: null,
+        notes: `Demo discussion reset; COUNTERSIGN=${enabled ? "on" : "off"}; removed_posts=${removed.length}; removed_post_ids=${JSON.stringify(removed.map(post => post.post_id))}. Passkeys and prior audit retained.`,
+      }, options.provenancePath);
+      webAuthn.revokeActionChallenges(demoUserId, discussionAction.action);
+      discussionGeneration++;
+      for (let index = posts.length - 1; index >= 0; index--) {
+        if (posts[index].user_id === demoUserId && !seededPostIds.has(posts[index].post_id)) posts.splice(index, 1);
+      }
+      if (posts.some(post => post.user_id === demoUserId)) postedUsers.add(demoUserId);
+      else postedUsers.delete(demoUserId);
+      const redirect = "/discussion/2?reset=1";
+      if (request.is("application/json")) response.json({ ok: true, removed_posts: removed.length, redirect });
+      else response.redirect(303, redirect);
+    } catch {
+      response.status(500).json({ error: "reset_not_recorded", message: "Reset could not be recorded. No posts were removed; try again." });
+    } finally {
+      discussionResetting = false;
+    }
+  });
 
   app.get(
     "/record/1",

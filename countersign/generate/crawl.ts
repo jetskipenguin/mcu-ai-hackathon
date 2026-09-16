@@ -14,9 +14,10 @@ function attribute(attributes: string, name: string): string | undefined {
 }
 
 export function snapshot(route: string, origin: string, raw: string): PageSnapshot {
-  // These are server-rendered demo pages. Remove executable/style content, not
-  // labels or field values. The remaining HTML is data, never instructions.
-  const html = raw.replace(/<(script|style)\b[^>]*>[\s\S]*?<\/\1>/gi, "");
+  // These are server-rendered demo pages. Maintenance controls (including their
+  // CSRF tokens) must not become model inputs or proposed governance actions.
+  const html = raw.replace(/<(script|style)\b[^>]*>[\s\S]*?<\/\1>/gi, "")
+    .replace(/<details\b[^>]*\bdata-demo-controls\b[^>]*>[\s\S]*?<\/details\s*>/gi, "");
   const forms: PageSnapshot["forms"] = [];
   for (const match of html.matchAll(/<form\b([^>]*)>([\s\S]*?)<\/form>/gi)) {
     const destination = new URL(attribute(match[1], "action") ?? route, origin);
@@ -59,7 +60,7 @@ export async function crawlPortal(options: { baseUrl?: string; userId?: string }
   }
   if (!pages[0].forms.some((form) => form.action === "POST /quiz/1/submit") ||
       !pages[1].forms.some((form) => form.action === "POST /discussion/2/post")) {
-    throw new Error("Expected initial-post/quiz forms are missing. Use the demo student on a fresh ungoverned server.");
+    throw new Error("Expected initial-post/quiz forms are missing. Use Capt J. Demo on the ungoverned server and reset its discussion demo if needed.");
   }
   return pages;
 }

@@ -7,6 +7,7 @@ The interfaces Track A (portal + enforcement) and Track B (dashboard + generator
 ## 1. Provenance log event
 
 One JSONL line per governed decision, appended to `data/provenance.jsonl`. Never rewritten.
+The demo-only administrative discussion reset (§3) also appends an event in both modes.
 The schema is finalized for this demo. Ellipses in the example below abbreviate
 identifiers/hashes; they are not literal runtime values.
 
@@ -75,8 +76,9 @@ Field semantics:
   action, while record challenge/verification events use their respective
   `/countersign/unmask` and `/countersign/unmask/verify` action paths. Signal
   observations carry a client-reported route (possibly empty), not proof of a
-  navigation. `scaffold-route-visit`, `session-signals`, and `default-unrestricted`
-  are synthetic rule IDs, not entries that must appear in the policy file.
+  navigation. `scaffold-route-visit`, `session-signals`, `default-unrestricted`, and
+  `demo-discussion-reset` are synthetic rule IDs, not entries that must appear in
+  the policy file.
 - `allowed` records a governance authorization, not the outcome of later portal
   validation/persistence. One submission has one `allowed` or `blocked` decision;
   attestation findings produce separate linked `contradiction`/`flagged` events.
@@ -157,7 +159,7 @@ Field notes:
 
 ## 3. Server endpoints
 
-All under `/countersign/`. JSON in, JSON out. Errors: `{ "error": "<code>", "message": "…" }`.
+Service endpoints are under `/countersign/`; portal action routes are named below. JSON in, JSON out; errors: `{ "error": "<code>", "message": "…" }`, except where noted.
 
 ### WebAuthn — registration (once per user, first login)
 
@@ -198,7 +200,7 @@ challenges, verifying credentials, or writing provenance.
 |---|---|---|
 | `POST /countersign/challenge` | `{ "rule_id", "action", "form_hash", "attestation"?: "own-work"\|"ai-assisted" }` | `{ "challenge_id", "options": PublicKeyCredentialRequestOptionsJSON, "expires_at" }` |
 
-The server stores `{challenge_id → {challenge, user, session_id, rule_id, action, form_hash, attestation, created}}`. It consumes the entry synchronously before verification, whether the attempt succeeds or fails. Entries expire after 120 seconds and are removed on consumption or expiry pruning during subsequent issuance. The rule's shorter `max_age_s` also applies.
+The server stores `{challenge_id → {challenge, user, session_id, rule_id, action, form_hash, attestation, created, generation}}`. It consumes the entry synchronously before verification, whether the attempt succeeds or fails. Entries expire after 120 seconds and are removed on consumption, action revocation, or expiry pruning during subsequent issuance. The rule's shorter `max_age_s` also applies.
 
 The portal supplies a server-owned registry of action/route pairs and predicates;
 the client cannot invent an action or declare `is_initial_post`. Issuance validates
@@ -230,15 +232,16 @@ Middleware order on a governed route: match rule → recompute `form_hash` from 
 HTTP 403  { "error": "countersign_required", "reason": "no_assertion" | "expired" | "form_mismatch" | "verification_failed" | "uv_required" }
 ```
 
-and writes a `blocked` event. The ungoverned instance (`COUNTERSIGN=off`) skips all of this and writes nothing.
+and writes a `blocked` event. Ordinary submissions on the ungoverned instance (`COUNTERSIGN=off`) skip all of this and write nothing. The demo-only administrative reset below is an explicit audit exception.
 
 Binding checks also compare the signed-in user/session, concrete action, rule ID,
 and attestation. A cross-user/session attempt returns `verification_failed`;
-rule/action/form/attestation mismatches return `form_mismatch`. Expiration is
-checked again after asynchronous signature verification. Each submission has one
-`allowed` or `blocked` decision; the additional advisory attestation decisions in
-§7 are separate events. Cancellation in the browser sends no submission, leaving
-only the challenge's `presence-requested` event.
+rule/action/form/attestation mismatches return `form_mismatch`. Expiration and the
+per-user/action generation are checked again after asynchronous signature
+verification. Each submission has one `allowed` or `blocked` decision; the
+additional advisory attestation decisions in §7 are separate events. Cancellation
+in the browser sends no submission, leaving only the challenge's
+`presence-requested` event.
 
 The quiz's JSON success response is `{ "ok": true, "message": "…", "assertion_id": "asr_…" }`;
 `assertion_id` is null for an unrestricted/ungoverned submission. The client shows
@@ -291,6 +294,83 @@ the published post and returns it in the JSON success response:
   they survive reloads/logins, not server restarts. The JSONL audit remains durable.
   The `posted` query parameter forces a page reload; the fragment then scrolls to
   the new post. A fragment-only redirect would leave the old form on screen.
+
+### Demo-only discussion reset
+
+Only signed-in Capt J. Demo (`stu-0011`) sees the initially collapsed **Demo
+controls** on `/discussion/2`, on both governed and ungoverned instances. Its native
+**Reset discussion demo** form includes a hidden `reset_token` and a required
+confirmation checkbox. This is a synthetic-demo affordance, not production
+administrator authorization or a human-only guarantee; reset requires no WebAuthn
+assertion or attestation.
+
+`POST /discussion/2/reset` accepts `application/json` or
+`application/x-www-form-urlencoded` with `reset_token` and
+`confirmation: "reset-discussion"`. The CSRF token is HMAC-bound to the current
+session, instance, mode, and reset generation. Successful reset advances the
+generation, invalidating old tokens even in the same session. If supplied, Origin
+must exactly equal `http://localhost:3000` in governed mode or
+`http://localhost:3001` in ungoverned mode.
+
+A JSON request returns the removed-post count, for example:
+
+```json
+{ "ok": true, "removed_posts": 1, "redirect": "/discussion/2?reset=1" }
+```
+
+A URL-encoded native form submission instead returns HTTP 303 to
+`/discussion/2?reset=1`. The standard `requireUser` behavior applies before reset
+validation: without a signed-in session, clients accepting HTML receive HTTP 303
+to `/login`; requests with `Accept: application/json` receive `401 login_required`.
+
+| Condition | Response |
+|---|---|
+| Signed-in user is not `stu-0011` | `403 demo_user_required` |
+| Supplied Origin differs from the mode's canonical origin | `403 origin_mismatch` |
+| Unsupported media type | `415`, body `{ "error": "unsupported_content_type" }` |
+| Missing/invalid token, including another session/instance/mode or a pre-reset token | `403 invalid_reset_token` |
+| Missing or incorrect confirmation | `400 confirmation_required` |
+| Otherwise-valid concurrent reset while one is in progress | `409 reset_in_progress` |
+| Audit append unavailable | `500 reset_not_recorded`; no posts removed |
+
+Reset removes only this user's runtime-added discussion posts on the current
+instance. Seeded posts, other users' runtime posts, and the other instance's posts
+are retained. It clears the demo user's initial-post status, so the next page
+response server-hides peers and restores the initial-response composer. The next
+governed initial submission requires a fresh attestation and WebAuthn proof.
+Credentials, login session, observed signals, policies, and prior JSONL history
+are retained; no restart, new dependency, or environment flag is required.
+
+After the audit append, the WebAuthn service advances the generation for this
+user and `POST /discussion/2/post` only. It revokes pending discussion challenges
+and invalidates in-flight verification and challenge-option generation. Quiz,
+record-reveal, registration, and other users' challenges are unaffected. The
+portal also checks its discussion generation at the final post commit: this
+user's submissions during reset or stale in-flight submissions reaching that
+check return `409 discussion_reset`, including requests that matched unrestricted
+before reset. A prior `allowed` governance event may remain even when this final
+portal check prevents publication (§1).
+
+Each successful reset first appends one administrative event, **even with
+`COUNTERSIGN=off`**, before deleting posts. This narrow exception does not enable
+governance logging for ordinary ungoverned actions. The event uses the existing
+schema: `route: "/discussion/2"`, `action: "POST /discussion/2/reset"`,
+`rule_id: "demo-discussion-reset"`, `class: "unrestricted"`, and
+`decision: "allowed"`. `presence`, `attestation`, `form_hash`, and `telemetry` are
+null; signals remain as observed, and actor class follows §7 without an accepted
+proof. Notes include `COUNTERSIGN=on` or `COUNTERSIGN=off`, `removed_posts`, and
+`removed_post_ids`, never post bodies or the CSRF token. No decision enum or policy
+rule is added, and old timeline events are never removed.
+
+Reload other open discussion tabs after reset. Reset cannot make a person or agent
+forget peers already seen; use a fresh agent context for a clean independent-first
+measurement.
+
+The policy crawler omits the server-rendered `data-demo-controls` section,
+including its token and reset form, before building model input. Administrative
+reset is not a proposed policy action. If an initial form is missing because the
+crawler's demo student has already posted, it reports an error with reset guidance
+rather than performing any reset itself.
 
 ### Signals and masking
 

@@ -58,6 +58,7 @@ export interface ActionChallenge extends RegistrationChallenge {
   action: string;
   form_hash: string;
   attestation: Attestation;
+  generation: number;
 }
 
 export interface WebAuthnOptions {
@@ -70,10 +71,22 @@ export class WebAuthnService {
   readonly now: () => number;
   private registrations = new Map<string, RegistrationChallenge>();
   private challenges = new Map<string, ActionChallenge>();
+  private actionGenerations = new Map<string, number>();
 
   constructor(options: WebAuthnOptions = {}) {
     this.credentials = new CredentialStore(options.credentialsPath);
     this.now = options.now ?? (() => Date.now());
+  }
+
+  private generation(userId: string, action: string): number {
+    return this.actionGenerations.get(JSON.stringify([userId, action])) ?? 0;
+  }
+
+  revokeActionChallenges(userId: string, action: string): void {
+    this.actionGenerations.set(JSON.stringify([userId, action]), this.generation(userId, action) + 1);
+    for (const [id, challenge] of this.challenges) {
+      if (challenge.user === userId && challenge.action === action) this.challenges.delete(id);
+    }
   }
 
   private prune(): void {
@@ -144,17 +157,19 @@ export class WebAuthnService {
     this.prune();
     const credentials = this.credentials.forUser(user.id);
     if (credentials.length === 0) throw new PresenceError("no_assertion");
+    const generation = this.generation(user.id, action);
     const options = await simpleWebAuthn.generateAuthenticationOptions({
       rpID: RP.rpID,
       allowCredentials: credentials.map(({ id, transports }) => ({ id, transports })),
       userVerification: rule.presence!.uv,
       timeout: 60_000,
     });
+    if (generation !== this.generation(user.id, action)) throw new PresenceError("expired");
     const challenge_id = `chg_${randomUUID()}`;
     const created = this.now();
     this.challenges.set(challenge_id, {
       challenge: options.challenge, user: user.id, session_id: sessionId,
-      rule_id: rule.id, action, form_hash, attestation, created,
+      rule_id: rule.id, action, form_hash, attestation, created, generation,
     });
     return { challenge_id, options, expires_at: created + CHALLENGE_TTL_MS };
   }
@@ -168,7 +183,8 @@ export class WebAuthnService {
 
   checkAge(stored: ActionChallenge, rule: PolicyRule): number {
     const age = this.now() - stored.created;
-    if (age < 0 || age > CHALLENGE_TTL_MS || age > rule.presence!.max_age_s * 1000) {
+    if (stored.generation !== this.generation(stored.user, stored.action) ||
+        age < 0 || age > CHALLENGE_TTL_MS || age > rule.presence!.max_age_s * 1000) {
       throw new PresenceError("expired");
     }
     return age;
@@ -279,7 +295,14 @@ export function createWebAuthnRouter(
       response.status(409).json({ error: "registration_required", message: "Register a passkey at /register before submitting." });
       return;
     }
-    const challenge = await webAuthn.challenge(user, sessionId, rule, action.action, body.form_hash, attestation as Attestation);
+    let challenge;
+    try {
+      challenge = await webAuthn.challenge(user, sessionId, rule, action.action, body.form_hash, attestation as Attestation);
+    } catch (error) {
+      if (!(error instanceof PresenceError)) throw error;
+      response.status(409).json({ error: error.reason, message: "Action changed while requesting presence. Reload and try again." });
+      return;
+    }
     const signals = response.locals.signals ?? { score: 0, flags: [] };
     await appendProvenanceEvent({
       session_id: sessionId, user, route: action.route, action: action.action,
