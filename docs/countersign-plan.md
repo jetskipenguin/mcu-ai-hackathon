@@ -4,6 +4,8 @@
 **Time:** Tue evening (scope + docs + repo) · Wed 08:00 de-risk, then build · Thu half day (polish + rehearse) · presentations after.
 **Governing rule:** the presentation is the product. Every task below exists because a slide or a demo beat needs it. If a task doesn't map to §3 of the pitch outline, it doesn't get done.
 
+Implementation/adversary checkboxes are synchronized with [TASKS.md](TASKS.md); that file links the detailed outcomes and verification evidence. Live/recorded demo checkpoints are tracked separately from automated implementation checks.
+
 ---
 
 ## 0. Principles
@@ -36,8 +38,8 @@ Then split into tracks.
 - [ ] Create a fresh macOS user account for demo work. Enroll Touch ID for it.
 - [ ] Install Comet in that account. Sign in to nothing real.
 - [ ] Throwaway HTML page with a 3-question quiz + submit; another with a fake SSN and "clinical note." Serve on `localhost`.
-- [ ] **Test A:** does Comet complete and submit the quiz? Try 2–3 phrasings ("help me finish this," "complete this quiz," "answer these and submit").
-- [ ] **Test B:** does Comet read and summarize the sensitive page?
+- [x] **Test A:** does Comet complete and submit the quiz? Try 2–3 phrasings ("help me finish this," "complete this quiz," "answer these and submit"). Outcome: two refusals; recorded in `NOTES.md`.
+- [x] **Test B:** does Comet read and summarize the sensitive page? Outcome: reproduced the requested synthetic fields.
 - [ ] **Test C:** does a WebAuthn prompt fire inside Comet on `localhost`? (Use webauthn.io or a 20-line SimpleWebAuthn demo.) Does Touch ID complete it?
 - [ ] Record the outcome of each test in `NOTES.md` — pass/fail and the phrasing that worked.
 - [ ] Check whether the ChatGPT Chrome extension is available on your account and whether it will act on a page. If yes → extension adversary chosen. If no → buy the cheapest Manus tier with Browser Operator; time-box setup to 60 min; try Tests A and B.
@@ -48,13 +50,13 @@ Then split into tracks.
 - C fails (no WebAuthn in Comet) → live adversary moves to Chrome + extension (WebAuthn certainly works in Chrome); Comet becomes a recorded Act 1 clip. **Test this before assuming.**
 
 ### 1.2 Scaffold — Collin (after the token checks)
-- [ ] Repo: `countersign/` with `portal/`, `countersign/{client,server,policy,generate}/`, `dashboard/`, `docs/` (drop the three markdown docs in `docs/`).
-- [ ] Decide Node/TS vs Python (§10.2 of spec). Default: Node + Express + SimpleWebAuthn.
+- [x] Repo: `countersign/` with `portal/`, `countersign/{client,server,policy,generate}/`, `dashboard/`, `docs/` (drop the three markdown docs in `docs/`).
+- [x] Decide Node/TS vs Python (§10.2 of spec). Default: Node + Express + SimpleWebAuthn.
 - [ ] Confirm Codex CLI and OpenCode are installed and authenticated against the free OpenAI access; run one trivial task in each to make sure the tokens actually flow. Note which model each is using in `NOTES.md`.
-- [ ] Write `AGENTS.md` at the repo root (both tools read it): stack, directory layout, the `COUNTERSIGN=off|on` toggle, "fake data only," and a pointer to `docs/contracts.md`. Ten minutes now saves both of us re-explaining the project to every fresh session tomorrow.
-- [ ] Use Codex/OpenCode to scaffold: Express app, fake-SSO login (pick a user), three empty routes, static `countersign.js`, `COUNTERSIGN=off|on` env toggle, JSONL log writer.
-- [ ] Fake data file: 3 students, obviously fictional, 900-series SSNs, fabricated notes.
-- [ ] Confirm the app runs on two ports (`:3000` governed, `:3001` ungoverned) from one command.
+- [x] Write `AGENTS.md` at the repo root (both tools read it): stack, directory layout, the `COUNTERSIGN=off|on` toggle, "fake data only," and a pointer to `docs/contracts.md`. Ten minutes now saves both of us re-explaining the project to every fresh session tomorrow.
+- [x] Use Codex/OpenCode to scaffold: Express app, fake-SSO login (pick a user), three empty routes, static `countersign.js`, `COUNTERSIGN=off|on` env toggle, JSONL log writer.
+- [x] Fake data file: 3 students, obviously fictional, 900-series SSNs, fabricated notes.
+- [x] Confirm the app runs on two ports (`:3000` governed, `:3001` ungoverned) using `npm run dev` and `npm run dev:ungoverned`.
 - [ ] Bedrock GovCloud smoke test: one call from the hackathon credentials, ask for a small JSON object, see which model returns it cleanly. Note the model ID and region in `NOTES.md`. Stub the `LLM_PROVIDER` switch with the OpenAI fallback wired.
 
 ### 1.3 Together (before splitting)
@@ -82,17 +84,17 @@ Then split into tracks.
 
 ### Track A — Portal + enforcement — Collin *(iterate: or Chris)*
 **Morning (to 13:00)**
-- [ ] Portal pages with real (fake) content: `/quiz/1` (5 MCQ), `/discussion/1`, `/record/1`. Plain, readable, clearly a learning portal. Bootstrap-level styling is enough.
-- [ ] WebAuthn: registration on first login (Touch ID), assertion endpoint. Store credentials in memory/JSON.
-- [ ] `countersign.js` v1: intercept form submits matching policy; request challenge; call `navigator.credentials.get`; POST assertion + form together.
-- [ ] Middleware v1: load `countersign.policy.json` (hand-written); for `human-required` verify assertion (signature, challenge binding, UP/UV flags, max age) before executing; write log event.
+- [ ] Portal pages with real (fake) content: `/quiz/1` (5 MCQ), `/discussion/2`, `/record/1`. Plain, readable, clearly a learning portal. Bootstrap-level styling is enough.
+- [x] WebAuthn: registration on first login (Touch ID), assertion endpoint. Store credentials in memory/JSON.
+- [x] `countersign.js` v1: intercept form submits matching policy; request challenge; call `navigator.credentials.get`; POST assertion + form together.
+- [x] Middleware v1: load `countersign.policy.json` (hand-written); for `human-required` verify assertion (signature, challenge binding, UP/UV flags, max age) before executing; write log event.
 - [ ] **Run Comet against it. This is the 13:00 checkpoint. Record it the moment it works.**
 
 **Afternoon (to 16:00)**
-- [ ] Markings: render `data-marking` / `data-categories` attributes and `Countersign-Marking` header on `/record/1`.
-- [ ] Signals in `countersign.js`: `navigator.webdriver`; fill-without-focus; timing; score computation; send to server on page load and on submit.
-- [ ] Masking: when score ≥ threshold, replace marked fields with placeholders + banner; step-up reveal via the same WebAuthn path; log `unmask`.
-- [ ] Discussion post: detect actor class; store and render "AI-assisted" tag.
+- [x] Markings: render `data-marking` / `data-categories` attributes and `Countersign-Marking` header on `/record/1`.
+- [x] Signals in `countersign.js`: `navigator.webdriver`; fill-without-focus; timing; score computation; send to server on page load and on submit.
+- [x] Masking: when score ≥ threshold, replace marked fields with placeholders + banner; step-up reveal via the same WebAuthn path; log `unmask`.
+- [x] Discussion post: detect actor class; store and render "AI-assisted" tag. Disclosure, verified presence, and advisory review flags are separate; see [A9 evidence](build-log/a9-verification.md).
 - [ ] Log event schema finalized (spec §5.7).
 
 **Evening**

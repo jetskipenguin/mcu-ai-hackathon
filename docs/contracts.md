@@ -204,6 +204,53 @@ The quiz's JSON success response is `{ "ok": true, "message": "…", "assertion_
 the success message in the form. Signal delivery failures never prevent the
 presence ceremony, and editing a form during confirmation requires a new ceremony.
 
+### Discussion post provenance (A9)
+
+`POST /discussion/2/post` saves the server-generated `SubmissionProvenance` with
+the published post and returns it in the JSON success response:
+
+```json
+{
+  "ok": true,
+  "post_id": "post_…",
+  "message": "Discussion response published.",
+  "redirect": "/discussion/2?posted=post_…#post_…",
+  "provenance": {
+    "event_id": "evt_…",
+    "actor_class": "human-verified",
+    "attestation": "own-work",
+    "presence": {
+      "assertion_id": "asr_…",
+      "credential_id": "…",
+      "up": true,
+      "uv": true,
+      "age_ms": 1840
+    },
+    "review_flags": [
+      { "decision": "contradiction", "event_id": "evt_…", "notes": "Attestation and composition telemetry disagree." }
+    ]
+  }
+}
+```
+
+- `event_id` identifies the actual `allowed` JSONL event. Each review flag
+  identifies a separately written `contradiction` or `flagged` event. A normal
+  post has `review_flags: []`. A9 does not add or duplicate log decisions.
+- This metadata is generated only after server verification/logging. Client
+  `provenance`, actor labels, presence claims, and review flags are ignored.
+- Rendering distinguishes **AI-assisted (disclosed)** or **Own work (declared)**
+  from **Human presence verified at submit**. Presence does not certify authorship.
+  Review flags are displayed as **Flagged for review** without preventing publication.
+  The details disclosure shows actor class, assertion properties, and event IDs.
+- Seeded posts without recorded metadata show **Provenance not recorded**.
+  Governed unrestricted posts without proof show **Presence not verified** and
+  **AI use not attested**. Ungoverned posts return `provenance: null` and display
+  no Countersign badges.
+- Posts and their metadata share the portal's existing in-memory lifetime:
+  they survive reloads/logins, not server restarts. The JSONL audit remains durable.
+  The `posted` query parameter forces a page reload; the fragment then scrolls to
+  the new post. A fragment-only redirect would leave the old form on screen.
+
 ### Signals and masking
 
 | Endpoint | Body | Returns |

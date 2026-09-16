@@ -55,6 +55,20 @@ export interface ProvenanceEvent {
 
 export type NewProvenanceEvent = Omit<ProvenanceEvent, "ts" | "event_id">;
 
+// Server-generated metadata saved with a published discussion post. Disclosures
+// and advisory findings are distinct from the verified presence at submission.
+export interface SubmissionProvenance {
+  event_id: string;
+  actor_class: ActorClass;
+  attestation: Attestation;
+  presence: PresenceProof | null;
+  review_flags: Array<{
+    decision: "contradiction" | "flagged";
+    event_id: string;
+    notes: string;
+  }>;
+}
+
 export interface PolicyMatch {
   route: string;
   action?: string;

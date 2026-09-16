@@ -4,7 +4,7 @@ import type { AuthenticationResponseJSON } from "@simplewebauthn/server";
 import { formHash, isRecord } from "./canonical.js";
 import { appendProvenanceEvent } from "./log.js";
 import { loadPolicy, matchRule, requiresPresence } from "./policy.js";
-import type { ActorClass, Attestation, NewProvenanceEvent, PolicyRule, PortalUser, PresenceProof } from "./types.js";
+import type { ActorClass, Attestation, NewProvenanceEvent, PolicyRule, PortalUser, PresenceProof, SubmissionProvenance } from "./types.js";
 import {
   PresenceError,
   type ActionChallenge,
@@ -141,7 +141,14 @@ export function governedSubmission(
 
   const writeGovernedEvent: RequestHandler = async (request, response, next) => {
     const event = eventFor(request, response);
-    await appendProvenanceEvent(event, provenancePath);
+    const allowed = await appendProvenanceEvent(event, provenancePath);
+    const provenance: SubmissionProvenance = {
+      event_id: allowed.event_id,
+      actor_class: allowed.actor_class,
+      attestation: allowed.attestation,
+      presence: allowed.presence,
+      review_flags: [],
+    };
     // The contract explicitly calls for separate advisory attestation decisions.
     // They never stop the portal action from executing.
     if (event.class === "attested") {
@@ -151,12 +158,15 @@ export function governedSubmission(
           (typeof field.keystrokes === "number" && typeof field.final_length === "number" &&
             field.keystrokes < field.final_length * 0.1)));
       if (event.attestation === "own-work" && contradiction) {
-        await appendProvenanceEvent({ ...event, decision: "contradiction", notes: "Attestation and composition telemetry disagree." }, provenancePath);
+        const review = await appendProvenanceEvent({ ...event, decision: "contradiction", notes: "Attestation and composition telemetry disagree." }, provenancePath);
+        provenance.review_flags.push({ decision: "contradiction", event_id: review.event_id, notes: review.notes });
       }
       if (stateFor(response).rule?.ai_use === "prohibited" && event.attestation === "ai-assisted") {
-        await appendProvenanceEvent({ ...event, decision: "flagged", notes: "AI assistance disclosed under an AI-prohibited policy." }, provenancePath);
+        const review = await appendProvenanceEvent({ ...event, decision: "flagged", notes: "AI assistance disclosed under an AI-prohibited policy." }, provenancePath);
+        provenance.review_flags.push({ decision: "flagged", event_id: review.event_id, notes: review.notes });
       }
     }
+    response.locals.submissionProvenance = provenance;
     response.locals.presence = event.presence;
     next();
   };

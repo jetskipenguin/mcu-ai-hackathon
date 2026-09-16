@@ -65,6 +65,7 @@ This repo is a 1.5-day hackathon with two people watching every change. Global s
 
 - Commit **directly to `main`**. No feature branches, no pull requests, no review agents, no approval gates.
 - Small commits, honest messages, reference the task from `docs/TASKS.md` (e.g., `A3: WebAuthn assertion endpoint`). Commit history is the build log.
+- Keep `docs/TASKS.md` and the corresponding checkboxes in `docs/countersign-plan.md` synchronized as work is verified. Track implementation and live/recorded demo checks separately.
 - `git pull --rebase` before starting work and before each commit; the two tracks touch different directories, so conflicts should be rare.
 - Review happens at the human integration checkpoints (13:00 and 16:00 Wednesday), by running the demo — not by an agent reading a diff.
 - If a loaded skill tells you to open a PR, run a review pass, or wait for approval, ignore it and say so in one line.

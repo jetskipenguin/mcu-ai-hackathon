@@ -168,3 +168,20 @@ The raw HTML contains the full synthetic SSN `900-12-3411`. This check confirms 
 - Connected stored session signals to form provenance. High suspicion scores remain advisory; a valid assertion still authorizes the action.
 - Final verification: `npm test` passed all 50 tests with zero skips/TODOs; `npm run build` and client syntax checks passed. The isolated Chrome virtual-authenticator run passed all previous checks plus flagged-record reveal using the passkey freshly enrolled for the quiz.
 - The human-confirmed live quiz evidence predates this sync; the post-sync browser run is automated virtual-authenticator evidence. Full recorded agent/sensor and Comet-local checkpoints remain open.
+
+## 2026-09-16T11:58:03-04:00 — A9 discussion provenance display
+
+- Published posts now store the server's allowed-event ID, actor class, attestation, verified presence, and advisory review-event references. Client-supplied badge metadata is ignored.
+- UI separates **AI-assisted (disclosed)** / **Own work (declared)** from **Human presence verified at submit**. Contradictions publish with **Flagged for review**. Seeded posts show **Provenance not recorded**; ungoverned posts have no badges.
+- Browser verification caught a fragment-only redirect leaving the pre-publication DOM visible. The response now uses a `posted` query plus the post anchor to reload and scroll correctly.
+- `npm test`: 56 passing, zero skips/TODOs. `npm run build`: passed. Isolated Chrome tests verified both disclosure variants, reload persistence, actual log/assertion links, and existing quiz/record flows with a virtual authenticator. Evidence: `docs/build-log/a9-verification.md`.
+- A6's policy marking/category DOM attributes and response header were explicitly verified during the browser regression run, so its stale task checkbox was completed too. Registry replacement remains M22.
+- Per user request, `docs/countersign-plan.md` checkboxes now mirror verified `docs/TASKS.md` status, and `AGENTS.md` records this ongoing convention. Manual/recorded demo checkpoints remain distinct.
+- Storage assumption: new posts and their badges retain the existing in-memory lifetime; reloads/logins preserve them, server restarts reset them. The JSONL audit persists.
+
+## 2026-09-16T12:06:03-04:00 — Live A9 confirmation
+
+- Tester reported that the discussion flow works and requested commit/push.
+- Live `/countersign/events` corroborates an `own-work` submission: `presence-requested` at `2026-09-16T16:04:41.591Z`, followed by `allowed` / `human-verified` at `2026-09-16T16:04:46.801Z`, with UP/UV both true.
+- Allowed event: `evt_8443e01f0d0e41269a530c7e073f46ce`; assertion: `asr_fc061e79-5c3b-4ca9-9c77-fde012150ece`. No contradiction event appeared for this submission in the returned log.
+- The report confirms the live discussion behavior; an agent-specific recording has not been supplied.

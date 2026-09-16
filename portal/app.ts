@@ -15,7 +15,7 @@ import { matchRule, requiresPresence } from "../countersign/server/policy.js";
 import { createCountersignRouter } from "../countersign/server/routes.js";
 import { createRecordGovernance, type RecordOptions } from "../countersign/server/records.js";
 import { appendProvenanceEvent } from "../countersign/server/log.js";
-import type { PolicyRule, PortalUser } from "../countersign/server/types.js";
+import type { PolicyRule, PortalUser, SubmissionProvenance } from "../countersign/server/types.js";
 import { WebAuthnService, type GovernedAction, type WebAuthnOptions } from "../countersign/server/webauthn.js";
 
 interface Student extends PortalUser {
@@ -49,6 +49,7 @@ interface ForumPost {
   timestamp: string;
   subject: string;
   body: string;
+  provenance?: SubmissionProvenance;
 }
 
 interface ForumFixture {
@@ -104,6 +105,8 @@ function page(
     button { padding: .65rem 1rem; background: #24382b; color: white; border: 0; cursor: pointer; }
     .mode { float: right; font-family: ui-monospace, monospace; color: #e4d28d; }
     .notice { border-left: .35rem solid #a16c20; padding: .75rem 1rem; background: #fff7dc; }
+    .provenance-tag { display: inline-block; border: 1px solid #bbb6a7; padding: .2rem .45rem; margin: 0 .4rem .4rem 0; font-family: sans-serif; font-size: .85rem; }
+    .post-provenance details { margin: .35rem 0 1rem; overflow-wrap: anywhere; }
     .record dt { font-weight: bold; margin-top: .8rem; }
     .record dd { margin: .2rem 0 .7rem; }
     [data-marking] { outline: 1px dotted #8a5c13; outline-offset: .15rem; }
@@ -157,6 +160,36 @@ function presenceAttributes(enabled: boolean, action: GovernedAction, user: Port
   const rule = matchRule(action.route, action.action, action.context?.(user));
   if (!requiresPresence(rule)) return "";
   return `data-countersign-rule="${escapeHtml(rule.id)}" data-countersign-class="${escapeHtml(rule.class)}" data-countersign-action="${escapeHtml(action.action)}"`;
+}
+
+function postProvenance(provenance: SubmissionProvenance | undefined): string {
+  if (!provenance) return '<p class="post-provenance" data-provenance="unrecorded">Provenance not recorded.</p>';
+  const actorLabels: Record<SubmissionProvenance["actor_class"], string> = {
+    "human-verified": "Human presence verified at submit",
+    "agent-declared": "Agent declared; presence not verified",
+    "automation-suspected": "Automation suspected; presence not verified",
+    "unverified": "Presence not verified",
+  };
+  const disclosure = provenance.attestation === "ai-assisted" ? "AI-assisted (disclosed)"
+    : provenance.attestation === "own-work" ? "Own work (declared)" : "AI use not attested";
+  const proof = provenance.presence;
+  return `<section class="post-provenance" aria-label="Submission provenance" data-actor-class="${escapeHtml(provenance.actor_class)}" data-attestation="${escapeHtml(provenance.attestation ?? "")}">
+    <span class="provenance-tag" data-disclosure>${disclosure}</span>
+    <span class="provenance-tag" data-presence-status>${actorLabels[provenance.actor_class]}</span>
+    ${provenance.review_flags.length ? `<aside class="notice" data-review-flag>
+      <strong>Flagged for review</strong>
+      <ul>${provenance.review_flags.map((flag) => `<li>${escapeHtml(flag.notes)}</li>`).join("")}</ul>
+      <p>Published for faculty review. Composition signals do not establish authorship.</p>
+    </aside>` : ""}
+    <details>
+      <summary>Provenance details</summary>
+      <p>Actor class: <code>${escapeHtml(provenance.actor_class)}</code></p>
+      <p>Submission event: <code>${escapeHtml(provenance.event_id)}</code></p>
+      ${proof ? `<p>Assertion: <code>${escapeHtml(proof.assertion_id)}</code><br>
+        UP: ${proof.up}; UV: ${proof.uv}; age at submission: ${proof.age_ms} ms</p>` : ""}
+      ${provenance.review_flags.map((flag) => `<p>Review event (${escapeHtml(flag.decision)}): <code>${escapeHtml(flag.event_id)}</code></p>`).join("")}
+    </details>
+  </section>`;
 }
 
 export interface AppOptions extends WebAuthnOptions {
@@ -349,9 +382,10 @@ export function createApp(options: AppOptions = {}): express.Express {
       const postMarkup = hasPosted
         ? posts
             .map(
-              (post) => `<article>
+              (post) => `<article id="${escapeHtml(post.post_id)}" data-post-id="${escapeHtml(post.post_id)}">
                 <h2>${escapeHtml(post.subject)}</h2>
                 <p><strong>${escapeHtml(post.author)}</strong> &middot; <time>${escapeHtml(post.timestamp)}</time></p>
+                ${enabled ? postProvenance(post.provenance) : ""}
                 <p>${escapeHtml(post.body)}</p>
               </article>`,
             )
@@ -368,8 +402,9 @@ export function createApp(options: AppOptions = {}): express.Express {
       response.type("html").send(
         page(
           forum.title,
-          `<h1>${escapeHtml(forum.title)}</h1>
-           <section class="panel"><h2>Faculty prompt</h2><p>${escapeHtml(forum.faculty_prompt)}</p></section>
+           `<h1>${escapeHtml(forum.title)}</h1>
+            <section class="panel"><h2>Faculty prompt</h2><p>${escapeHtml(forum.faculty_prompt)}</p></section>
+            ${enabled ? '<p class="notice">Presence verification confirms a human was present at submission. Authorship disclosures and composition signals are recorded separately.</p>' : ""}
            ${form}
            <section><h2>Peer discussion</h2>${postMarkup}</section>`,
           enabled,
@@ -400,19 +435,25 @@ export function createApp(options: AppOptions = {}): express.Express {
         timestamp: new Date().toISOString(),
         subject: "Initial response",
         body,
+        // Only the middleware's logged result is authoritative. Never accept
+        // provenance badges or review flags supplied in the request body.
+        provenance: response.locals.submissionProvenance,
       };
       posts.push(post);
       postedUsers.add(user.id);
+      // A fragment-only change would leave the pre-publication DOM in place.
+      const redirect = `/discussion/2?posted=${post.post_id}#${post.post_id}`;
       if (request.is("application/json")) {
         response.json({
           ok: true,
           post_id: post.post_id,
           message: "Discussion response published.",
-          redirect: "/discussion/2",
+          redirect,
+          provenance: post.provenance ?? null,
         });
         return;
       }
-      response.redirect(303, "/discussion/2");
+      response.redirect(303, redirect);
     },
   );
 
