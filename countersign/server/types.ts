@@ -34,6 +34,22 @@ export interface PresenceProof {
   age_ms: number;
 }
 
+// Advisory, client-reported measurements; partial samples are accepted. Never
+// infer authorship or waive presence requirements from these fields.
+export interface CompositionTelemetry {
+  field?: string;
+  final_length?: number;
+  keystrokes?: number;
+  input_events?: number;
+  input_types?: Record<string, number>;
+  single_event_fill?: boolean;
+  time_on_field_ms?: number;
+  first_input_ts?: string | null;
+  last_input_ts?: string | null;
+}
+
+export type Telemetry = CompositionTelemetry | CompositionTelemetry[];
+
 export interface ProvenanceEvent {
   ts: string;
   event_id: string;
@@ -48,12 +64,12 @@ export interface ProvenanceEvent {
   presence: PresenceProof | null;
   attestation: Attestation;
   signals: { score: number; flags: string[] };
-  telemetry: unknown | null;
+  telemetry: Telemetry | null;
   form_hash: string | null;
   notes: string;
 }
 
-export type NewProvenanceEvent = Omit<ProvenanceEvent, "ts" | "event_id">;
+export type NewProvenanceEvent = Omit<ProvenanceEvent, "ts" | "event_id" | "telemetry"> & { telemetry: unknown };
 
 // Server-generated metadata saved with a published discussion post. Disclosures
 // and advisory findings are distinct from the verified presence at submission.

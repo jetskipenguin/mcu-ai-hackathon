@@ -49,7 +49,7 @@ Stable IDs preserve the ordering and grouping in `docs/countersign-plan.md` sect
 - [x] **A7** Implement browser signals, deterministic scoring, and page-load/pre-submit delivery. BrowserOS background record reads verified; evidence is advisory and retained per session.
 - [x] **A8** Mask marked fields at the threshold, implement step-up reveal, and log `unmask`. Initial HTML withholds all record fields; record WebAuthn verification and automated tests implemented. Physical Touch ID / Windows Hello rehearsal still pending.
 - [x] **A9** Detect discussion actor class and store/render the AI-assisted tag. Published posts retain server-generated disclosure, presence, event IDs, and advisory review flags. Six new integration tests and both disclosure variants passed browser checks (see [A9 evidence](build-log/a9-verification.md)).
-- [ ] **A10** Finalize the provenance event schema.
+- [x] **A10** Finalize the provenance event schema. Typed/normalized advisory telemetry, metadata validation, null/proof semantics, page-visit attribution, cursor/read-error behavior, and flagged-session fields are documented and verified; 97 tests and virtual-authenticator browser regressions pass (see [evidence](build-log/dashboard-provenance-verification.md)).
 
 ## Track A - Evening
 
@@ -57,7 +57,7 @@ Stable IDs preserve the ordering and grouping in `docs/countersign-plan.md` sect
 
 ## Track B - Morning
 
-- [ ] **B1** Build dashboard v1 with one-second JSONL polling, actor-class colors, and per-user drill-down.
+- [x] **B1** Build dashboard v1 with one-second JSONL polling, actor-class colors, and per-user drill-down. Exact-ID user links/filter, shareable URLs, expandable event/proof details, stable focus/expanded rows, and polling failure recovery passed Chrome checks (see [evidence](build-log/dashboard-provenance-verification.md)).
 - [x] **B2** Draft and hand-test the policy generator prompt against all three pages. Live GPT-6 generation used the source-derived localhost pages and all 126 categories/10 LDCs, producing a validated draft with rationales and exact Registry-definition citations.
 - [ ] **B3** Draft pitch slides 2, 3, 8, 9, and 10.
 

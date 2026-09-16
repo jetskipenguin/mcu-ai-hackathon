@@ -97,14 +97,14 @@ Then split into tracks.
 - [x] Signals in `countersign.js`: `navigator.webdriver`; fill-without-focus; timing; score computation; send to server on page load and on submit.
 - [x] Masking: when score ≥ threshold, replace marked fields with placeholders + banner; step-up reveal via the same WebAuthn path; log `unmask`.
 - [x] Discussion post: detect actor class; store and render "AI-assisted" tag. Disclosure, verified presence, and advisory review flags are separate; see [A9 evidence](build-log/a9-verification.md).
-- [ ] Log event schema finalized (spec §5.7).
+- [x] Log event schema finalized (spec §5.7). Typed/normalized advisory telemetry, metadata validation, null/proof semantics, page-visit attribution, cursor/read-error behavior, and flagged-session fields are documented and verified; 97 tests and virtual-authenticator browser regressions pass (see [evidence](build-log/dashboard-provenance-verification.md)).
 
 **Evening**
 - [ ] Bug fixes from the integrated run. Nothing new.
 
 ### Track B — Dashboard, policy generator, demo assets — Chris *(iterate)*
 **Morning (to 13:00)**
-- [ ] Dashboard v1: live timeline reading the JSONL log (poll every 1s); event rows colored by actor class; per-user drill-down.
+- [x] Dashboard v1: live timeline reading the JSONL log (poll every 1s); event rows colored by actor class; per-user drill-down. Exact-ID user links/filter, shareable URLs, expandable event/proof details, stable focus/expanded rows, and polling failure recovery passed Chrome checks (see [evidence](build-log/dashboard-provenance-verification.md)).
 - [x] Draft the policy generator prompt: input = rendered HTML of each route + list of form actions; output = policy JSON per spec §7 with rationale strings. Live GPT-6 generation against all three source-derived local pages passed with all 126 categories/10 LDCs and exact Registry-definition citations.
 - [ ] Pitch slides 2, 3, 8, 9, 10 first-draft (the ones that don't depend on the build).
 

@@ -42,12 +42,15 @@ export function createCountersignRouter(
   });
 
   router.get("/events", async (request, response) => {
-    const events = await readProvenanceEvents(services.provenancePath);
-    const since = typeof request.query.since === "string" ? request.query.since : null;
-    const index = since
-      ? events.findIndex((event) => event.event_id === since)
-      : -1;
-    response.json({ events: index >= 0 ? events.slice(index + 1) : events });
+    response.set("Cache-Control", "no-store");
+    try {
+      const events = await readProvenanceEvents(services.provenancePath);
+      const since = typeof request.query.since === "string" ? request.query.since : null;
+      const index = since ? events.findIndex((event) => event.event_id === since) : -1;
+      response.json({ events: index >= 0 ? events.slice(index + 1) : events });
+    } catch {
+      response.status(500).json({ error: "provenance_unavailable", message: "The provenance log could not be read." });
+    }
   });
 
   router.get("/policy", (_request, response) => {

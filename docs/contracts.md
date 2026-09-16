@@ -7,6 +7,8 @@ The interfaces Track A (portal + enforcement) and Track B (dashboard + generator
 ## 1. Provenance log event
 
 One JSONL line per governed decision, appended to `data/provenance.jsonl`. Never rewritten.
+The schema is finalized for this demo. Ellipses in the example below abbreviate
+identifiers/hashes; they are not literal runtime values.
 
 ```json
 {
@@ -44,7 +46,46 @@ Enums:
 | `actor_class` | `human-verified` · `agent-declared` · `automation-suspected` · `unverified` |
 | `attestation` | `own-work` · `ai-assisted` · `null` |
 
-`presence` is `null` when no assertion was presented. `telemetry` is non-null only for `attested` actions (see §5). `form_hash` is the SHA-256 of the canonical form (§6).
+Field semantics:
+
+- All shown top-level fields are present. Unavailable `presence`, `attestation`,
+  `telemetry`, and `form_hash` are explicitly `null`; `notes` may be empty.
+- The writer assigns `ts` (UTC ISO timestamp) and an opaque, unique `event_id`.
+  IDs are not sortable timestamps. JSONL append order is the event order, even
+  across clock corrections. The current ID implementation is `evt_` plus UUID hex.
+- `session_id` and `user` come from server authentication context, never submitted
+  identity claims. This portal uses selectable synthetic identities, not real SSO.
+- `presence: null` means **no accepted action-time presence proof for this
+  decision**. This includes missing, rejected, and expired assertions as well as
+  visits, signal observations, and challenge requests. An accepted proof has UP
+  true, UV as verified (false is valid for `preferred`), and finite nonnegative age.
+  `human-verified` requires that accepted proof; a previous login or action does
+  not confer this classification on a later page visit.
+- `attestation` is the declaration bound to the challenge. It can remain null on
+  failures before binding succeeds. It is not an authorship determination.
+- `signals.score` is finite and in `[0,1]`; `flags` is a string array. Signals are
+  advisory, including when attached to `human-verified` decisions. On page visits,
+  known session evidence and request declarations retain the precedence in §7.
+- `telemetry` is normalized advisory data, non-null only for `attested` actions
+  (see §5). It is never a substitute for presence or a reason to reject valid proof.
+- `form_hash` is the SHA-256 of canonical editable form fields (§6). Visits,
+  signal observations, and record decisions use null. Record reveal internally
+  binds the empty form but has no editable form hash to report.
+- `route` names the governed page. Form challenge events use the target submit
+  action, while record challenge/verification events use their respective
+  `/countersign/unmask` and `/countersign/unmask/verify` action paths. Signal
+  observations carry a client-reported route (possibly empty), not proof of a
+  navigation. `scaffold-route-visit`, `session-signals`, and `default-unrestricted`
+  are synthetic rule IDs, not entries that must appear in the policy file.
+- `allowed` records a governance authorization, not the outcome of later portal
+  validation/persistence. One submission has one `allowed` or `blocked` decision;
+  attestation findings produce separate linked `contradiction`/`flagged` events.
+  A signal observation may independently produce a `flagged` event.
+
+The writer normalizes advisory telemetry and validates metadata shape, enums,
+numeric ranges, and actor/presence consistency before appending. That validation
+does not perform cryptographic verification; the WebAuthn service does. Audit
+write failures propagate rather than silently authorize an unrecorded action.
 
 Events the demo must produce, in order, for Act 3:
 
@@ -283,6 +324,34 @@ Countersign-Marking: <page_marking>; categories=PII,PHI
 | `POST /countersign/policy/generate` | `{}` → `{ "ok": true, "draft_version", "generated_at", "provider", "model", "source_urls", "vocabulary", "draft_revision" }` (`region` also present for Bedrock) |
 | `POST /countersign/policy/approve` | `{ "rule_ids": ["…"] }` or `{ "all": true }` → `{ "ok": true, "active_version", "active_revision", "approved_rule_ids" }` |
 
+Timeline/read semantics:
+
+- `/events` returns append order with `Cache-Control: no-store`. `since` is an
+  exclusive event-ID cursor: omit the matched event and return subsequent lines.
+  An absent, empty, or unknown cursor returns the full log. A missing/empty log
+  returns `events: []`.
+- A syntactically incomplete final line without its terminating newline is
+  deferred until the next poll. A malformed completed line or invalid event
+  metadata fails the read: HTTP 500 with `error: "provenance_unavailable"` and a
+  generic message, never raw record contents. A valid final JSON record is readable
+  even without its newline. Reads normalize historical advisory telemetry using
+  §5's rules and annotate discards; the stored JSONL is never rewritten.
+- Dashboard `/countersign/?user=<id>` filters the full snapshot by exact user ID,
+  not display name. It polls every second with no overlapping request, preserves
+  open event evidence/focus across updates, and retains the last displayed events
+  with an error notice while retrying after failure. Details show the complete
+  event, including session/event/assertion IDs, proof flags/age, attestation,
+  signals, telemetry, hash, and notes. User/event text is rendered as text, not HTML.
+- `/sessions/flagged` requires a signed-in governed session. Its five response
+  fields are exactly those shown above. It lists in-memory signal-suspect sessions
+  for this process, not a historical aggregation of all contradiction events.
+  `first_seen` is the first signal observation, not the first flag; restarting the
+  server resets that view while the JSONL timeline persists. A presence verification
+  does not erase retained advisory suspicion.
+
+The timeline is a local synthetic-demo read interface, not a production
+administrator authorization system.
+
 Generation and approval require the governed instance, a signed-in demo session,
 JSON, and the expected browser Origin when supplied (`http://localhost:3000`).
 They return 404 on the ungoverned instance, 401 without a session, 415 for non-JSON,
@@ -361,6 +430,11 @@ The active policy gives `webdriver` and `background_record_read` weights of `0.6
 
 Collected per text field by `countersign.js`, sent in `countersign.telemetry` on submit.
 
+Shape: one field object, an array of field objects, or null. Current clients send
+all the example's metrics; partial samples are accepted for compatibility, and
+omitted metrics are not imputed as zeros. `first_input_ts` and `last_input_ts` may
+be null when no input occurred. Missing/empty telemetry normalizes to null.
+
 ```json
 {
   "field": "body",
@@ -376,6 +450,16 @@ Collected per text field by `countersign.js`, sent in `countersign.telemetry` on
 ```
 
 `single_event_fill` is true when ≥ 80% of `final_length` arrived in one `input` event.
+
+Only the listed field names are retained. Counts and `time_on_field_ms` must be
+nonnegative safe integers, `input_types` maps input-type strings to such counts,
+`single_event_fill` is boolean, and non-null input timestamps must be parseable
+timestamps. Unknown keys (including arbitrary text payloads) are removed; a
+malformed known metric discards that field's entire sample. Valid samples in an
+array are retained; no valid samples yields null. Discards are noted in event
+`notes`. Contradiction checks use this normalized data, never coerced or malformed
+metrics, and remain advisory. Telemetry is client-reported and does not establish
+authorship.
 
 ---
 

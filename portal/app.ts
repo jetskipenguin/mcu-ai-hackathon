@@ -325,7 +325,7 @@ export function createApp(options: AppOptions = {}): express.Express {
   app.get(
     "/quiz/1",
     requireUser(),
-    governedPageVisit(enabled, options.provenancePath),
+    governedPageVisit(enabled, options.provenancePath, readPolicy),
     (_request, response) => {
       const questions = quiz.questions
         .map(
@@ -382,7 +382,7 @@ export function createApp(options: AppOptions = {}): express.Express {
   app.get(
     "/discussion/2",
     requireUser(),
-    governedPageVisit(enabled, options.provenancePath),
+    governedPageVisit(enabled, options.provenancePath, readPolicy),
     (_request, response) => {
       const user = response.locals.user as PortalUser;
       const hasPosted = postedUsers.has(user.id);
