@@ -7,3 +7,4 @@ node_modules/
 *.pdf
 .DS_Store
 governance.audit.jsonl
+public-reference-corpus
