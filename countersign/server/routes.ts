@@ -6,12 +6,8 @@ import { Router } from "express";
 import { renderDashboard, renderPolicyReview } from "../../dashboard/index.js";
 import { readProvenanceEvents } from "./log.js";
 import { loadPolicy, validatePolicy } from "./policy.js";
-import { scoreSignals, type ClientSignals } from "./signals.js";
 import type { CountersignPolicy } from "./types.js";
-import {
-  createWebAuthnRouter,
-  placeholderChallengeResponse,
-} from "./webauthn.js";
+import { createWebAuthnRouter } from "./webauthn.js";
 
 const DRAFT_PATH = resolve(
   process.cwd(),
@@ -56,25 +52,6 @@ export function createCountersignRouter(): Router {
     response.type("html").send(renderPolicyReview(loadPolicy(), readDraftPolicy()));
   });
 
-  router.post("/signals", (request, response) => {
-    const policy = loadPolicy();
-    const signals = (request.body?.signals ?? {}) as ClientSignals;
-    response.json(scoreSignals(signals, policy.defaults.signals));
-  });
-
-  router.post("/unmask", (_request, response) => {
-    // TODO(track-a): persist an unmask challenge bound to the current user.
-    response.json(placeholderChallengeResponse("required"));
-  });
-
-  router.post("/unmask/verify", (_request, response) => {
-    // TODO(track-a): verify presence before returning any marked field values.
-    response.status(501).json({
-      error: "not_implemented",
-      message: "Unmask verification is implemented by Track A.",
-    });
-  });
-
   router.get("/events", async (request, response) => {
     const events = await readProvenanceEvents();
     const since = typeof request.query.since === "string" ? request.query.since : null;
@@ -82,11 +59,6 @@ export function createCountersignRouter(): Router {
       ? events.findIndex((event) => event.event_id === since)
       : -1;
     response.json({ events: index >= 0 ? events.slice(index + 1) : events });
-  });
-
-  router.get("/sessions/flagged", (_request, response) => {
-    // TODO(track-a): aggregate sessions whose deterministic score is flagged.
-    response.json({ sessions: [] });
   });
 
   router.get("/policy", (_request, response) => {

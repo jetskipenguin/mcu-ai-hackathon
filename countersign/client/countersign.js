@@ -1,4 +1,4 @@
-import { startAuthentication } from "./vendor/simplewebauthn-browser.js";
+import { startAuthentication, startRegistration } from "./vendor/simplewebauthn-browser.js";
 
 const governedForms = [...document.querySelectorAll("form[data-countersign-rule]")];
 const composition = new Map();
@@ -109,6 +109,8 @@ function collectSignals() {
   const last = signalState.lastInputAt;
   return {
     webdriver: navigator.webdriver === true,
+    document_hidden: document.hidden,
+    document_has_focus: document.hasFocus(),
     pointer_events_before_input: signalState.pointerEventsBeforeInput,
     keydown_events: signalState.keydownEvents,
     fields_filled: filledFields.size,
@@ -290,6 +292,92 @@ for (const form of governedForms) {
   });
 }
 
-sendSignals().catch(() => {
-  // Signals are advisory; an unavailable signal endpoint must not block a page.
-});
+const record = document.querySelector("[data-protected-record]");
+if (record) {
+  const status = document.querySelector("[data-record-status]");
+  const revealButton = document.querySelector("[data-record-reveal]");
+  const registerButton = document.querySelector("[data-record-register]");
+  let generation = 0;
+
+  function maskRecord() {
+    for (const field of record.querySelectorAll("[data-field]")) {
+      field.textContent = "[Hidden — verify presence to view]";
+    }
+  }
+
+  function showFields(fields) {
+    for (const field of record.querySelectorAll("[data-field]")) {
+      if (typeof fields?.[field.dataset.field] === "string") {
+        field.textContent = fields[field.dataset.field];
+      }
+    }
+  }
+
+  async function checkRecord() {
+    const current = ++generation;
+    maskRecord();
+    try {
+      // Signals and the release decision are one server request. Never download
+      // plaintext first and then try to conceal it with CSS or DOM replacement.
+      const result = await postJson("/countersign/record-fields", { signals: collectSignals() });
+      if (current !== generation) return;
+      if (result.masked) {
+        status.textContent = result.flagged
+          ? "Automation suspected. Sensitive content hidden — verify presence to view."
+          : "Sensitive content hidden — verify presence to view.";
+      } else {
+        showFields(result.fields);
+        status.textContent = "No automation signals above threshold. This is not proof of human presence.";
+      }
+    } catch {
+      if (current === generation) status.textContent = "Sensitive content hidden. Signal check unavailable — verify presence to view.";
+    }
+  }
+
+  registerButton.addEventListener("click", async () => {
+    registerButton.disabled = true;
+    try {
+      status.textContent = "A human must register a passkey using the device authenticator.";
+      const options = await postJson("/countersign/webauthn/register/options", {});
+      const registration = await startRegistration({ optionsJSON: options });
+      await postJson("/countersign/webauthn/register/verify", registration);
+      status.textContent = "Passkey registered. Select Verify presence to view the record.";
+    } catch (error) {
+      status.textContent = error.name === "NotAllowedError" ? "A human must confirm passkey registration." : error.message;
+    } finally {
+      registerButton.disabled = false;
+    }
+  });
+
+  revealButton.addEventListener("click", async () => {
+    revealButton.disabled = true;
+    const current = ++generation;
+    try {
+      status.textContent = "Waiting for a human presence check...";
+      const challenge = await postJson("/countersign/unmask", {
+        rule_id: "student-record.unmask", action: "POST /countersign/unmask/verify",
+      });
+      const assertion = await startAuthentication({ optionsJSON: challenge.options });
+      const result = await postJson("/countersign/unmask/verify", { challenge_id: challenge.challenge_id, assertion });
+      if (current !== generation) return;
+      showFields(result.fields);
+      status.textContent = "Human presence verified. Record revealed for this view.";
+    } catch (error) {
+      if (current === generation) status.textContent = error.name === "NotAllowedError"
+        ? "A human must confirm this action. Sensitive content remains hidden." : error.message;
+    } finally {
+      revealButton.disabled = false;
+    }
+  });
+
+  // Do not leave revealed fields in a background tab or a back/forward-cache
+  // snapshot. An older in-flight response must not reveal a now-hidden page.
+  window.addEventListener("pagehide", () => { generation += 1; maskRecord(); });
+  window.addEventListener("pageshow", (event) => { if (event.persisted) checkRecord(); });
+  document.addEventListener("visibilitychange", () => { if (document.hidden) checkRecord(); });
+  checkRecord();
+} else {
+  sendSignals().catch(() => {
+    // Signals are advisory; an unavailable signal endpoint must not block a form.
+  });
+}

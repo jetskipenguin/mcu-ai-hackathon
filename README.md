@@ -61,10 +61,20 @@ The generator currently copies the validated active policy to `countersign/polic
 2. Open `http://localhost:3000/login`, choose the same user, and repeat the flow with the Countersign client and middleware active.
 3. On `/quiz/1`, the `human-required` rule demonstrates the action-time WebAuthn boundary at submission.
 4. On `/discussion/2`, `independent_first` hides peer posts until the learner submits an initial response; the `attested` rule records disclosure and composition telemetry.
-5. On `/record/1`, the `marking` rule identifies synthetic PII and PHI fields and supplies the page-level `Countersign-Marking` header.
+5. On `/record/1`, the `marking` rule withholds record fields until signal evaluation. A suspected-agent session sees placeholders and an **Automation suspected** banner. Register a passkey and select **Verify presence to view** to reveal the record using WebAuthn.
 6. Open `/countersign/` on port 3000 to watch the provenance timeline and `/countersign/policy/review` to compare active and draft policies.
 
-The scaffold has complete route, client, logging, policy-validation, and interface plumbing. WebAuthn verification, masking, signal scoring, attestation presentation, and LLM policy generation remain explicit track work.
+Record masking, deterministic signal scoring, passkey registration, and action-bound record reveal are implemented. Quiz/discussion assertion enforcement, attestation presentation, and LLM policy generation remain scaffold work; the seven original quiz/WebAuthn tests are still TODOs.
+
+### Student-record protection (A6–A8)
+
+- The governed record's initial HTML contains no record values, including the name. A server-side field endpoint evaluates signals before returning data. Incomplete checks leave the fields hidden.
+- The observed BrowserOS neo workflow opens a hidden, unfocused tab while reporting `navigator.webdriver=false`. That background record read contributes `0.6`, meeting the active policy threshold and logging `masked / automation-suspected` with `background-record-read` evidence. Suspicion persists across later clean samples in that login session.
+- This is a heuristic, not a reliable browser identity detector: human background tabs can be flagged and foreground agents or spoofed client telemetry can evade it. Unflagged foreground sessions can view records normally. The proof protecting **flagged** reveals is WebAuthn, not the score.
+- Register the demo user's passkey in the demo browser, then select **Verify presence to view**. The server checks the signature, origin, RP, UP/UV, session/user binding, nonce, and age. Challenges are single-use. The reveal is logged with an assertion ID, and does not clear the session's suspicion. The page remasks when hidden or restored from browser history.
+- Responses are `no-store`; plaintext is never hidden in CSS, DOM attributes, or inline scripts. Fields already revealed to a human can still be read by a co-resident extension—the app cannot retract data already delivered.
+
+`npm test` includes record-route tests and a real cryptographic WebAuthn assertion test (temporary test keys), alongside mocked verifier tests for binding and expiry. A physical Touch ID / Windows Hello check still needs a human on the demo machine.
 
 ## Datasets
 

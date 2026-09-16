@@ -7,7 +7,7 @@
     "node": ">=20"
   },
   "scripts": {
-    "dev": "COUNTERSIGN=on PORT=3000 tsx watch portal/server.ts",
+    "dev": "tsx watch portal/server.ts",
     "dev:ungoverned": "COUNTERSIGN=off PORT=3001 tsx watch portal/server.ts",
     "generate": "tsx countersign/generate/index.ts",
     "test": "tsx --test countersign/server/__tests__/*.test.ts",

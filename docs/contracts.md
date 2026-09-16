@@ -161,8 +161,16 @@ and writes a `blocked` event. The ungoverned instance (`COUNTERSIGN=off`) skips 
 
 | Endpoint | Body | Returns |
 |---|---|---|
-| `POST /countersign/signals` | `{ "route", "signals": { … §4 } }` | `{ "score": 0.0–1.0, "flagged": bool, "actor_class" }` |
-| `POST /countersign/unmask` | same as `/challenge` with `rule_id: "student-record.unmask"`, then the assertion via `POST /countersign/unmask/verify` `{ challenge_id, assertion }` | `{ "ok": true, "fields": { "ssn": "…", "medical": "…" } }` — values are only ever sent after verification |
+| `POST /countersign/signals` | `{ "route", "signals": { … §4 } }` | `{ "score": 0.0–1.0, "flags": ["…"], "flagged": bool, "actor_class" }`; retains observed suspicion in the signed-in session |
+| `POST /countersign/record-fields` | `{ "signals": { … §4 } }` | Signal result + `masked: bool`; `fields: {name, ssn, "dod-id", medical}` only for a complete, unflagged signal sample and a session with no previous suspicion |
+| `POST /countersign/unmask` | `{ "rule_id": "student-record.unmask", "action": "POST /countersign/unmask/verify" }` | `{challenge_id, options, expires_at}`; `409 registration_required` if no passkey is enrolled |
+| `POST /countersign/unmask/verify` | `{ "challenge_id", "assertion" }` | `{ "ok": true, "fields": {name, ssn, "dod-id", medical} }` only after a valid action-bound presence assertion |
+
+Governed record HTML **always contains placeholders**, including the name. Values are not embedded in hidden nodes, attributes, scripts, or CSS. The client evaluates signals and requests `/record-fields` atomically, so a read before JavaScript finishes never sees plaintext. Missing signals or failed requests leave placeholders. Responses use `Cache-Control: no-store` and the marking header. The record belongs to the signed-in user, not a client-selected ID.
+
+Record-reveal challenges have a fixed action, no editable form, and are bound to `{session_id, user_id, rule_id, random challenge, created}`. They cannot authorize other actions. They are consumed on first verification attempt, expire after 120 seconds (or the policy age, if shorter), and require the policy's UV setting. Registration uses the real SimpleWebAuthn verifier and persists credentials in `data/credentials.json`. Registration alone never reveals fields. Successful reveal returns fields only for this view; it does not clear suspicion or grant subsequent plaintext requests. The client remasks on backgrounding and before back/forward caching.
+
+Each initial HTML response and each subsequent field-release/reveal decision has its own provenance event; no field values are logged. A flagged field request produces `masked / automation-suspected`; a verified reveal produces `unmasked / human-verified` with assertion metadata. Declared agents also stay masked until presence verification.
 
 Marked pages set a response header on the initial HTML:
 
@@ -191,6 +199,8 @@ Sent by `countersign.js` on page load and again immediately before any governed 
   "route": "/record/1",
   "signals": {
     "webdriver": false,
+    "document_hidden": true,
+    "document_has_focus": false,
     "pointer_events_before_input": 0,
     "keydown_events": 0,
     "fields_filled": 6,
@@ -203,6 +213,8 @@ Sent by `countersign.js` on page load and again immediately before any governed 
 ```
 
 Scoring is server-side, deterministic, and documented in `countersign/server/signals.ts` as a weighted sum clamped to `[0,1]`. Weights are tunable in policy `defaults.signals`. **The score never blocks.**
+
+The active policy gives `webdriver` and `background_record_read` weights of `0.6` each; fill-without-focus, fast multi-field input, and hidden input have weights of `0.2` each. `background-record-read` means a `/record/1` signal sample reports both a hidden document and no focus. This catches the observed BrowserOS neo background read even though its `navigator.webdriver` is false and its user agent looks like Chrome. It is deliberately labeled **suspected**: human background tabs can trigger it, and foreground agents or spoofed client telemetry can evade it. No universal agent fingerprint is claimed. Positive evidence is retained server-side for the lifetime of the login session (in-memory for this demo); later clean samples cannot downgrade it. Human-required submissions still need presence regardless of score.
 
 ---
 
