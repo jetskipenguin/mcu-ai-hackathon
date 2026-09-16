@@ -102,7 +102,8 @@ export function createRecordGovernance(options: RecordOptions) {
 
   router.get("/sessions/flagged", authenticated, (_request, response) => {
     response.json({ sessions: [...sessions].filter(([, value]) => value.flagged)
-      .map(([session_id, value]) => ({ session_id, ...value })) });
+      .map(([session_id, value]) => ({ session_id, user: value.user, score: value.score,
+        flags: value.flags, first_seen: value.first_seen })) });
   });
 
   router.post("/record-fields", authenticated, async (request, response) => {

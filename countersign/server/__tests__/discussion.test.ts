@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { once } from "node:events";
 import { readFileSync } from "node:fs";
-import { mkdtemp, rm } from "node:fs/promises";
+import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import type { AddressInfo } from "node:net";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -10,6 +10,7 @@ import { createApp } from "../../../portal/app.js";
 import { formHash } from "../canonical.js";
 import { CredentialStore } from "../credentials.js";
 import { readProvenanceEvents } from "../log.js";
+import { loadPolicy } from "../policy.js";
 import type { Attestation, SubmissionProvenance } from "../types.js";
 import { authenticator } from "./authenticator.js";
 
@@ -21,13 +22,17 @@ const forum = JSON.parse(readFileSync(new URL("../../../portal/data/forum.json",
 };
 const discussionPosts = forum.posts.filter((post) => post.post_id !== forum.faculty_prompt_post_id);
 
-async function setup(context: TestContext, enabled = true) {
+async function setup(context: TestContext, enabled = true, aiProhibited = false) {
   const directory = await mkdtemp(join(tmpdir(), "countersign-discussion-"));
   const credentialsPath = join(directory, "credentials.json");
   const provenancePath = join(directory, "provenance.jsonl");
+  const policyPath = join(directory, "active.json");
+  const policy = loadPolicy();
+  if (aiProhibited) policy.rules.find(rule => rule.id === "discussion-initial-post")!.ai_use = "prohibited";
+  await writeFile(policyPath, JSON.stringify(policy));
   const device = authenticator();
   new CredentialStore(credentialsPath).add("stu-0011", device.credential);
-  const server = createApp({ countersignEnabled: enabled, credentialsPath, provenancePath,
+  const server = createApp({ countersignEnabled: enabled, credentialsPath, provenancePath, policyPaths: { policyPath },
     sessionSecret: "discussion-test-session" }).listen(0, "127.0.0.1");
   await once(server, "listening");
   const base = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
@@ -171,6 +176,27 @@ test("contradictory own-work publishes with a review badge tied to the actual re
   assert.match(article, /Composition signals do not establish authorship/);
   assert.ok(article.includes(events[2].event_id));
   assert.doesNotMatch(article, /AI-assisted \(disclosed\)/);
+});
+
+test("malformed advisory telemetry does not block a verified post or fabricate a contradiction", async (context) => {
+  const h = await setup(context);
+  const result = await h.publish("own-work", { field: "body", keystrokes: -1, final_length: 75, single_event_fill: true });
+  const events = (await h.events()).filter(event => event.action === "POST /discussion/2/post");
+  assert.deepEqual(events.map(event => event.decision), ["presence-requested", "allowed"]);
+  assert.equal(events[1].telemetry, null);
+  assert.match(events[1].notes, /Discarded/);
+  assert.equal(events[1].actor_class, "human-verified");
+  assert.deepEqual(result.provenance.review_flags, []);
+});
+
+test("AI-assisted disclosure under a prohibited policy publishes with a linked advisory flag", async (context) => {
+  const h = await setup(context, true, true);
+  const result = await h.publish("ai-assisted", null);
+  const events = (await h.events()).filter(event => event.action === "POST /discussion/2/post");
+  assert.deepEqual(events.map(event => event.decision), ["presence-requested", "allowed", "flagged"]);
+  assert.equal(events[2].presence?.assertion_id, events[1].presence?.assertion_id);
+  assert.deepEqual(result.provenance.review_flags, [{ decision: "flagged", event_id: events[2].event_id, notes: events[2].notes }]);
+  assert.match(publishedArticle(await h.page(), result.post_id), /Flagged for review/);
 });
 
 test("client-supplied badge metadata is ignored and post text is escaped", async (context) => {

@@ -4,7 +4,7 @@ import type { AuthenticationResponseJSON } from "@simplewebauthn/server";
 import { formHash, isRecord } from "./canonical.js";
 import { appendProvenanceEvent } from "./log.js";
 import { loadPolicy, matchRule, requiresPresence } from "./policy.js";
-import type { ActorClass, Attestation, NewProvenanceEvent, PolicyRule, PortalUser, PresenceProof, SubmissionProvenance } from "./types.js";
+import type { ActorClass, Attestation, CountersignPolicy, NewProvenanceEvent, PolicyRule, PortalUser, PresenceProof, SubmissionProvenance } from "./types.js";
 import {
   PresenceError,
   type ActionChallenge,
@@ -152,7 +152,7 @@ export function governedSubmission(
     // The contract explicitly calls for separate advisory attestation decisions.
     // They never stop the portal action from executing.
     if (event.class === "attested") {
-      const fields = Array.isArray(event.telemetry) ? event.telemetry : [event.telemetry];
+      const fields = Array.isArray(allowed.telemetry) ? allowed.telemetry : [allowed.telemetry];
       const contradiction = fields.some((field) => isRecord(field) &&
         (field.single_event_fill === true ||
           (typeof field.keystrokes === "number" && typeof field.final_length === "number" &&
@@ -175,9 +175,11 @@ export function governedSubmission(
     enforcePresenceRequirements, deriveActorClass, writeGovernedEvent];
 }
 
-export function governedPageVisit(enabled: boolean, provenancePath?: string): RequestHandler {
+export function governedPageVisit(enabled: boolean, provenancePath?: string, readPolicy: () => CountersignPolicy = loadPolicy): RequestHandler {
   if (!enabled) return bypass;
   return async (request, response, next) => {
+    const signals = response.locals.signals ?? { score: 0, flags: [] };
+    const declared = Boolean(request.get("Countersign-Agent")) || response.locals.agentDeclared;
     await appendProvenanceEvent({
       session_id: response.locals.sessionId,
       user: response.locals.user,
@@ -186,11 +188,11 @@ export function governedPageVisit(enabled: boolean, provenancePath?: string): Re
       rule_id: "scaffold-route-visit",
       class: "unrestricted",
       decision: "allowed",
-      actor_class: "unverified",
+      actor_class: declared ? "agent-declared" : signals.score >= readPolicy().defaults.signals.suspect_threshold ? "automation-suspected" : "unverified",
       presence: null, attestation: null,
-      signals: { score: 0, flags: [] },
+      signals,
       telemetry: null, form_hash: null,
-      notes: "Portal page visit; record masking is separate Track A work.",
+      notes: "Portal page visit; no action-time presence proof requested.",
     }, provenancePath);
     next();
   };

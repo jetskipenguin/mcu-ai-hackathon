@@ -23,6 +23,11 @@ const styles = `
   .automation-suspected { border-left: .4rem solid #b86b1b; }
   .agent-declared { border-left: .4rem solid #395f8a; }
   .unverified { border-left: .4rem solid #777; }
+  .actor-key span { display: inline-block; padding: .3rem .6rem; margin: .2rem; }
+  .timeline-controls { display: flex; align-items: center; flex-wrap: wrap; gap: .6rem; }
+  select { padding: .5rem; max-width: 100%; }
+  .timeline-scroll { overflow-x: auto; }
+  #events pre { max-width: 40rem; max-height: 28rem; white-space: pre-wrap; overflow-wrap: anywhere; }
   .policy-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
   pre { overflow: auto; padding: 1rem; background: #fff; border: 1px solid #c7c9c4; }
   button { padding: .6rem .9rem; margin: .3rem .5rem .3rem 0; cursor: pointer; }
@@ -49,51 +54,128 @@ export function renderDashboard(): string {
     &middot; <a href="/quiz/1">Portal</a>
   </header>
   <main>
-    <p>Polling <code>/countersign/events</code> once per second. Newest events appear last.</p>
-    <table>
-      <thead><tr><th>Time</th><th>User</th><th>Route / action</th><th>Rule</th><th>Decision</th><th>Actor</th></tr></thead>
-      <tbody id="events"><tr><td colspan="6">Waiting for events...</td></tr></tbody>
-    </table>
+    <p>Polling <code>/countersign/events</code> once per second. Events stay in append order; newest appear last.</p>
+    <div class="timeline-controls">
+      <label for="user-filter">Show user</label>
+      <select id="user-filter"><option value="">All users</option></select>
+      <button type="button" id="all-users">Show all users</button>
+    </div>
+    <p class="actor-key" aria-label="Actor color key">
+      <span class="human-verified">human-verified</span>
+      <span class="agent-declared">agent-declared</span>
+      <span class="automation-suspected">automation-suspected</span>
+      <span class="unverified">unverified</span>
+    </p>
+    <p>Presence verifies participation at the action, not authorship. Signals and review flags are advisory.</p>
+    <p id="timeline-status" role="status">Waiting for events…</p>
+    <div class="timeline-scroll"><table>
+      <thead><tr><th scope="col">Time</th><th scope="col">User</th><th scope="col">Route / action</th><th scope="col">Rule</th><th scope="col">Decision</th><th scope="col">Actor</th><th scope="col">Evidence</th></tr></thead>
+      <tbody id="events"><tr><td colspan="7">Waiting for events…</td></tr></tbody>
+    </table></div>
   </main>
   <script>
     const body = document.querySelector("#events");
+    const filter = document.querySelector("#user-filter");
+    const status = document.querySelector("#timeline-status");
+    const actors = ["human-verified", "agent-declared", "automation-suspected", "unverified"];
+    const rows = new Map();
+    let events = [];
+    let selectedUser = new URL(location.href).searchParams.get("user") || "";
+    let busy = false;
 
     function cell(row, value) {
       const td = document.createElement("td");
       td.textContent = value == null ? "" : String(value);
       row.append(td);
+      return td;
+    }
+
+    function createRow(event) {
+      const row = document.createElement("tr");
+      row.dataset.eventId = event.event_id;
+      row.className = actors.includes(event.actor_class) ? event.actor_class : "unverified";
+      cell(row, event.ts);
+      const user = document.createElement("a");
+      user.textContent = event.user.name + " (" + event.user.id + ")";
+      user.href = "?user=" + encodeURIComponent(event.user.id);
+      user.addEventListener("click", e => {
+        if (e.button || e.ctrlKey || e.metaKey || e.shiftKey || e.altKey) return;
+        e.preventDefault();
+        selectUser(event.user.id);
+        filter.focus();
+      });
+      cell(row, "").append(user);
+      cell(row, event.route + " / " + event.action);
+      cell(row, event.rule_id);
+      cell(row, event.decision);
+      cell(row, event.actor_class);
+      const details = document.createElement("details");
+      const summary = document.createElement("summary");
+      summary.textContent = "Event details";
+      const evidence = document.createElement("pre");
+      evidence.textContent = JSON.stringify(event, null, 2);
+      details.append(summary, evidence);
+      cell(row, "").append(details);
+      return row;
+    }
+
+    function render() {
+      const users = new Map(events.map(event => [event.user.id, event.user.name]));
+      if (selectedUser && !users.has(selectedUser)) users.set(selectedUser, "No events yet");
+      const choices = [["", "All users"], ...[...users].sort(([a], [b]) => a.localeCompare(b))
+        .map(([id, name]) => [id, name + " (" + id + ")"])];
+      // Do not replace the focused select or open evidence on each polling tick.
+      const signature = JSON.stringify(choices);
+      if (filter.dataset.choices !== signature) {
+        filter.replaceChildren(...choices.map(([value, label]) => new Option(label, value)));
+        filter.dataset.choices = signature;
+      }
+      filter.value = selectedUser;
+      const visible = events.filter(event => !selectedUser || event.user.id === selectedUser);
+      let index = 0;
+      for (const event of visible) {
+        let row = rows.get(event.event_id);
+        if (!row) { row = createRow(event); rows.set(event.event_id, row); }
+        if (body.children[index] !== row) body.insertBefore(row, body.children[index] || null);
+        index++;
+      }
+      while (body.children.length > index) body.lastElementChild.remove();
+      if (!visible.length) {
+        const row = document.createElement("tr");
+        cell(row, selectedUser ? "No events for this user yet." : "No governed events yet.").colSpan = 7;
+        body.append(row);
+      }
+      const ids = new Set(events.map(event => event.event_id));
+      for (const id of rows.keys()) if (!ids.has(id)) rows.delete(id);
+      status.textContent = "Showing " + visible.length + " of " + events.length + " events — " +
+        (selectedUser ? "user " + selectedUser : "all users") + ". Updates every second.";
+    }
+
+    function selectUser(id) {
+      selectedUser = id;
+      const url = new URL(location.href);
+      if (id) url.searchParams.set("user", id); else url.searchParams.delete("user");
+      history.replaceState(null, "", url);
+      render();
     }
 
     async function refresh() {
+      if (busy) return;
+      busy = true;
       try {
-        const response = await fetch("/countersign/events", { cache: "no-store" });
+        const response = await fetch("/countersign/events", { cache: "no-store", signal: AbortSignal.timeout(5000) });
+        if (!response.ok) throw new Error("HTTP " + response.status);
         const payload = await response.json();
-        body.replaceChildren();
-        if (payload.events.length === 0) {
-          const row = document.createElement("tr");
-          const td = document.createElement("td");
-          td.colSpan = 6;
-          td.textContent = "No governed events yet.";
-          row.append(td);
-          body.append(row);
-          return;
-        }
-        for (const event of payload.events) {
-          const row = document.createElement("tr");
-          row.className = event.actor_class;
-          cell(row, event.ts);
-          cell(row, event.user && event.user.name);
-          cell(row, event.route + " / " + event.action);
-          cell(row, event.rule_id);
-          cell(row, event.decision);
-          cell(row, event.actor_class);
-          body.append(row);
-        }
+        if (!Array.isArray(payload.events)) throw new Error("Invalid events response");
+        events = payload.events;
+        render();
       } catch (error) {
-        body.textContent = "Timeline unavailable: " + error.message;
-      }
+        status.textContent = "Timeline unavailable: " + error.message + ". Keeping the last events; retrying every second.";
+      } finally { busy = false; }
     }
 
+    filter.addEventListener("change", () => selectUser(filter.value));
+    document.querySelector("#all-users").addEventListener("click", () => selectUser(""));
     refresh();
     setInterval(refresh, 1000);
   </script>

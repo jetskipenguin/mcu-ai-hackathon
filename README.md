@@ -99,7 +99,7 @@ confirmation. See [dataset import evidence](docs/build-log/dataset-import-verifi
 3. On `/quiz/1`, let the agent fill the form and submit. A fresh WebAuthn prompt requires human confirmation. After Touch ID, the page shows **Quiz submitted. Human presence verified.** The log records `presence-requested`, then `allowed` / `human-verified` with an assertion ID. Canceling leaves the form available for a fresh attempt; direct submissions without a valid assertion return a logged 403.
 4. On `/discussion/2`, `independent_first` hides peer posts until the learner submits an initial response. Declare `own-work` or `ai-assisted` at Publish, then complete the presence check. The published post displays **Own work (declared)** or **AI-assisted (disclosed)** separately from **Human presence verified at submit**. Contradictions publish with **Flagged for review**; expand **Provenance details** for the assertion and matching event IDs. Seeded posts show **Provenance not recorded**. Demo posts/badges last for the current server run; the JSONL audit persists.
 5. On `/record/1`, the `marking` rule withholds record fields until signal evaluation. A suspected-agent session sees placeholders and an **Automation suspected** banner. Register a passkey and select **Verify presence to view** to reveal the record using WebAuthn.
-6. Open `/countersign/` on port 3000 to watch the provenance timeline and `/countersign/policy/review` to compare active and draft policies.
+6. Open `/countersign/` on port 3000 to watch the provenance timeline. Click a user or use **Show user** for exact-ID filtering; `/countersign/?user=stu-0011` is a shareable drill-down. Expand **Event details** for the assertion ID, UP/UV, age, attestation, signals, telemetry, hash, and notes. One-second polling preserves open details and retains the last rows during a recoverable read error. Use `/countersign/policy/review` to compare active and draft policies.
 
 A2–A4 implement registration, action-bound WebAuthn verification, and governed submission enforcement. Challenges are single-use and bound to the user, session, action, form contents, and attestation; required UP/UV and age checks run server-side. A9 stores and renders the attested discussion's disclosure, presence status, and advisory review flags. Record masking, deterministic signal scoring, and action-bound reveal from A6–A8 share the same credential and verification service. A1's source-derived fixtures and B4's Registry-backed GPT-6 drafting are implemented and verified alongside policy approval.
 
@@ -110,6 +110,13 @@ A2–A4 implement registration, action-bound WebAuthn verification, and governed
 - This is a heuristic: background human tabs can be flagged, while foreground agents or spoofed telemetry can evade it. See `docs/contracts.md` for the endpoints and presence-verification rules.
 
 `npm test` covers the seven required enforcement cases plus real cryptographic verification, record access, registration, replay, session/action binding, and origin/RP/UP/UV rejection. An isolated Chrome run with a virtual platform authenticator also verifies the browser flow; evidence is in `docs/build-log/a2-a4-verification.md`. A live governed quiz assertion was verified separately in `docs/build-log/live-quiz-verification.md`. **The complete agent/Touch ID recording and Comet-local checkpoint remain open.** Register separately on localhost; the WebAuthn.io test credential does not apply. Disable any DevTools virtual authenticator before the physical-sensor demo.
+
+The B1 dashboard and A10 finalized provenance contract are verified by **97 tests**,
+the strict TypeScript build, and isolated Chrome checks. Advisory composition data
+is normalized before logging and contradiction checks; malformed telemetry never
+blocks otherwise valid presence. The append-only log validates event metadata and
+reports corrupt completed records explicitly. See [verification and the repeatable
+browser harness](docs/build-log/dashboard-provenance-verification.md).
 
 ## Datasets
 
