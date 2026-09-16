@@ -270,7 +270,6 @@ export function createApp(options: AppOptions = {}): express.Express {
     "/assets",
     express.static(resolve(process.cwd(), "countersign/client")),
   );
-  app.use(records.attachSignals);
   app.use("/countersign", records.router, createCountersignRouter(enabled, services, [quizAction, discussionAction]));
 
   app.get("/", (_request, response) => response.redirect(302, "/login"));
@@ -333,7 +332,7 @@ export function createApp(options: AppOptions = {}): express.Express {
   app.get(
     "/quiz/1",
     requireUser(),
-    governedPageVisit(enabled, options.provenancePath, readPolicy),
+    governedPageVisit(enabled, options.provenancePath),
     (_request, response) => {
       const questions = quiz.questions
         .map(
@@ -390,7 +389,7 @@ export function createApp(options: AppOptions = {}): express.Express {
   app.get(
     "/discussion/2",
     requireUser(),
-    governedPageVisit(enabled, options.provenancePath, readPolicy),
+    governedPageVisit(enabled, options.provenancePath),
     (_request, response) => {
       const user = response.locals.user as PortalUser;
       response.set("Cache-Control", "no-store");
@@ -533,15 +532,13 @@ export function createApp(options: AppOptions = {}): express.Express {
     discussionResetting = true;
     try {
       const removed = posts.filter(post => post.user_id === demoUserId && !seededPostIds.has(post.post_id));
-      const signals = response.locals.signals ?? { score: 0, flags: [] };
       // Administrative reset is audited even with COUNTERSIGN=off. Record first:
       // a failed write must never silently remove the rehearsal's visible state.
       await appendProvenanceEvent({
         session_id: response.locals.sessionId, user, route: "/discussion/2", action: "POST /discussion/2/reset",
         rule_id: "demo-discussion-reset", class: "unrestricted", decision: "allowed",
-        actor_class: request.get("Countersign-Agent") || response.locals.agentDeclared ? "agent-declared" :
-          signals.score >= readPolicy().defaults.signals.suspect_threshold ? "automation-suspected" : "unverified",
-        presence: null, attestation: null, signals, telemetry: null, form_hash: null,
+        actor_class: "unverified",
+        presence: null, attestation: null, signals: { score: 0, flags: [] }, telemetry: null, form_hash: null,
         notes: `Demo discussion reset; COUNTERSIGN=${enabled ? "on" : "off"}; removed_posts=${removed.length}; removed_post_ids=${JSON.stringify(removed.map(post => post.post_id))}. Passkeys and prior audit retained.`,
       }, options.provenancePath);
       webAuthn.revokeActionChallenges(demoUserId, discussionAction.action);
@@ -575,7 +572,7 @@ export function createApp(options: AppOptions = {}): express.Express {
           `<h1>Student record</h1>
            <p class="notice">All values on this page are fabricated.</p>
            ${enabled ? `<section class="notice">
-             <p role="status" data-record-status>${response.locals.recordSignals?.flagged ? "Automation suspected. Sensitive content hidden — verify presence to view." : "Sensitive content hidden while browser signals are checked."}</p>
+              <p role="status" data-record-status>Protected information (PII, PHI, and CUI-marked content) is hidden by default. Human authentication is required to view it.</p>
              <button type="button" data-record-reveal>Verify presence to view</button>
              <button type="button" data-record-register>Register a passkey</button>
            </section>` : ""}

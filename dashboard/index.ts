@@ -20,8 +20,6 @@ const styles = `
   th, td { padding: .65rem; border: 1px solid #c7c9c4; text-align: left; vertical-align: top; }
   th { background: #e4e0d4; }
   .human-verified { border-left: .4rem solid #28784b; }
-  .automation-suspected { border-left: .4rem solid #b86b1b; }
-  .agent-declared { border-left: .4rem solid #395f8a; }
   .unverified { border-left: .4rem solid #777; }
   .actor-key span { display: inline-block; padding: .3rem .6rem; margin: .2rem; }
   .timeline-controls { display: flex; align-items: center; flex-wrap: wrap; gap: .6rem; }
@@ -62,11 +60,9 @@ export function renderDashboard(): string {
     </div>
     <p class="actor-key" aria-label="Actor color key">
       <span class="human-verified">human-verified</span>
-      <span class="agent-declared">agent-declared</span>
-      <span class="automation-suspected">automation-suspected</span>
       <span class="unverified">unverified</span>
     </p>
-    <p>Presence verifies participation at the action, not authorship. Signals and review flags are advisory.</p>
+    <p>Presence verifies participation at the action, not authorship. Agent detection is disabled. Historical events retain their original labels; composition review flags are advisory.</p>
     <p id="timeline-status" role="status">Waiting for events…</p>
     <div class="timeline-scroll"><table>
       <thead><tr><th scope="col">Time</th><th scope="col">User</th><th scope="col">Route / action</th><th scope="col">Rule</th><th scope="col">Decision</th><th scope="col">Actor</th><th scope="col">Evidence</th></tr></thead>
@@ -77,7 +73,7 @@ export function renderDashboard(): string {
     const body = document.querySelector("#events");
     const filter = document.querySelector("#user-filter");
     const status = document.querySelector("#timeline-status");
-    const actors = ["human-verified", "agent-declared", "automation-suspected", "unverified"];
+    const actors = ["human-verified", "unverified"];
     const rows = new Map();
     let events = [];
     let selectedUser = new URL(location.href).searchParams.get("user") || "";

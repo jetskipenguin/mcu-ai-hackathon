@@ -66,12 +66,12 @@ The human rehearsal checkboxes below remain separate.
   must not request WebAuthn. Reload the other open tab.
 - [ ] Confirm the port 3001 post is still present, then perform its own reset.
   Only Capt J. Demo's runtime-added posts on each reset instance are removed.
-  Login and passkeys remain usable without reenrollment; session signals,
+  Login and passkeys remain usable without reenrollment;
   policies, and the existing JSONL history are retained.
 - [ ] Check the timeline for one `demo-discussion-reset` event per successful
   reset, including `COUNTERSIGN=off`. Each has action `POST /discussion/2/reset`,
   class `unrestricted`, decision `allowed`, null `presence`, `attestation`,
-  `form_hash`, and `telemetry`, observed signals, and notes with mode and removed
+  `form_hash`, and `telemetry`, neutral legacy signals, and notes with mode and removed
   post IDs/count, but no post body or reset token. All old submission and review
   events remain visible.
 - [ ] Publish again on both instances. The governed initial response must ask for

@@ -58,7 +58,7 @@ export function validateDemoPolicy(value: unknown, vocabulary: Vocabulary): Coun
       discussion.match.when?.is_initial_post !== true || Object.keys(discussion.match.when).length !== 1) {
     throw new PolicyError("invalid_demo_policy", "The initial discussion post must be attested and matched by is_initial_post=true.");
   }
-  if (record?.id !== "student-record" || record.class !== "marking" || record.mask_when !== "automation-suspected" ||
+  if (record?.id !== "student-record" || record.class !== "marking" || record.mask_when !== "always" ||
       record.unmask?.rule_id !== "student-record.unmask" || record.unmask.presence.uv !== "required") {
     throw new PolicyError("invalid_demo_policy", "The record must retain masking and UV-required student-record.unmask verification.");
   }

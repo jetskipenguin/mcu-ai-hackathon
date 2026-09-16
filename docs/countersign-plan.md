@@ -94,9 +94,9 @@ Then split into tracks.
 
 **Afternoon (to 16:00)**
 - [x] Markings: render `data-marking` / `data-categories` attributes and `Countersign-Marking` header on `/record/1`.
-- [x] Signals in `countersign.js`: `navigator.webdriver`; fill-without-focus; timing; score computation; send to server on page load and on submit.
-- [x] Masking: when score ≥ threshold, replace marked fields with placeholders + banner; step-up reveal via the same WebAuthn path; log `unmask`.
-- [x] Discussion post: detect actor class; store and render "AI-assisted" tag. Disclosure, verified presence, and advisory review flags are separate; see [A9 evidence](build-log/a9-verification.md).
+- [x] A7 revised per user request: remove agent detection, scoring, collection/delivery, declarations, and suspected-session tracking. New actor labels reflect presence proof only; historical audit remains readable. See [default-masking evidence](build-log/default-masking-verification.md).
+- [x] A8: mask protected PII, PHI, and CUI-marked fields by default for every session; require fresh UP/UV WebAuthn authentication to reveal this view and log `unmasked`. Automated cryptographic tests and BrowserOS masking checks pass; physical-sensor rehearsal remains separate.
+- [x] Discussion post: record presence status; store and render "AI-assisted" disclosure. No agent classification. Disclosure, verified presence, and advisory composition review flags are separate; see [A9 evidence](build-log/a9-verification.md).
 - [x] Log event schema finalized (spec §5.7). Typed/normalized advisory telemetry, metadata validation, null/proof semantics, page-visit attribution, cursor/read-error behavior, and flagged-session fields are documented and verified; 97 tests and virtual-authenticator browser regressions pass (see [evidence](build-log/dashboard-provenance-verification.md)).
 
 **Evening**
@@ -145,7 +145,7 @@ Then split into tracks.
 
 ## 4. Cut lines (in order, if we're behind)
 
-1. Signals/masking on the record page → replace with: record page is `human-required` to *open* (still demonstrates the wall; loses the "masked ████" beat).
+1. Masking UI on the record page → replace with: record page is `human-required` to *open* (still requires authentication for everyone; loses the "masked ████" beat).
 2. Policy approval UI → generator writes the policy file directly; show the JSON diff in a terminal.
 3. Discussion tagging → mention verbally; one line in the log.
 4. Dashboard → tail the JSONL in a terminal with `jq` and pretty colors. Honestly still convincing.
@@ -177,7 +177,7 @@ Then split into tracks.
 - [ ] Ungoverned portal: Comet completes the quiz and reads the record (live or recorded).
 - [ ] Extension clip: same, in stock Chrome, with the vendor-side log/history showing the SSN.
 - [ ] Governed portal: Comet reaches Submit → Touch ID prompt → stalls → human touch → submit succeeds → log shows `human-verified` + assertion ID.
-- [ ] Governed portal: flagged session sees masked record; step-up reveals; logged.
+- [ ] Governed portal: every session sees masked record; human authentication reveals the current view; logged.
 - [ ] Discussion post via agent succeeds and is tagged.
 - [ ] Policy generator drafts the three rules with rationale; approval applies them.
 - [ ] Dashboard (or terminal) shows the provenance timeline.
@@ -193,7 +193,7 @@ Most of the rubric is earned by the demo. These are the leftovers — each is un
 | Criterion | Item | When |
 |---|---|---|
 | Security & Sustainability (15%) | `README.md`: what it is, how to run both instances, how to run the policy generator. Judges may open the repo. | Thu 09:00 |
-| Security & Sustainability | A handful of real tests: assertion verification rejects a replayed/mismatched challenge; policy engine picks the right rule; masking triggers at threshold. Not coverage — proof we thought about it. | Wed evening, Track A |
+| Security & Sustainability | A handful of real tests: assertion verification rejects a replayed/mismatched challenge; policy engine picks the right rule; protected fields stay masked without fresh human authentication. Not coverage — proof we thought about it. | Wed evening, Track A |
 | Security & Sustainability | Pinned dependencies, no secrets in the repo, LLM key via env var. Obvious, but a judge scanning for "readiness for DoW testing" will notice. | Wed |
 | Usability & Design (20%) | Policy schema documented in the repo (spec §7 is enough). The "reuse on any app" claim needs a file to point at. | Thu 09:00 |
 | Technical Innovation (25%) | `BUILD-LOG.md` with timestamps and screenshots — the feasibility evidence. | Continuous |

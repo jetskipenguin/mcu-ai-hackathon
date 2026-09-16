@@ -15,6 +15,7 @@ export type Decision =
 
 export type ActorClass =
   | "human-verified"
+  // Historical audit records only; new decisions never classify agents.
   | "agent-declared"
   | "automation-suspected"
   | "unverified";
@@ -63,7 +64,7 @@ export interface ProvenanceEvent {
   actor_class: ActorClass;
   presence: PresenceProof | null;
   attestation: Attestation;
-  signals: { score: number; flags: string[] };
+  signals: { score: number; flags: string[] }; // Legacy audit field; new events use 0 / [].
   telemetry: Telemetry | null;
   form_hash: string | null;
   notes: string;
@@ -110,7 +111,7 @@ export interface PolicyRule {
   ai_use?: "prohibited" | "disclosed" | "encouraged";
   markings?: PolicyMarking[];
   page_marking?: string;
-  mask_when?: "automation-suspected";
+  mask_when?: "always";
   unmask?: {
     rule_id: string;
     class: "human-required";
@@ -125,7 +126,6 @@ export interface CountersignPolicy {
   app: string;
   defaults: {
     class: "unrestricted";
-    signals: Record<string, number> & { suspect_threshold: number };
   };
   rules: PolicyRule[];
 }

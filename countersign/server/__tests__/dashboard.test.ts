@@ -38,7 +38,7 @@ test("dashboard serves accessible user filtering and expandable evidence with on
   assert.match(html, /Event details/);
   assert.match(html, /JSON.stringify\(event, null, 2\)/);
   assert.match(html, /textContent/);
-  for (const actor of ["human-verified", "agent-declared", "automation-suspected", "unverified"]) assert.ok(html.includes(`class="${actor}"`));
+  for (const actor of ["human-verified", "unverified"]) assert.ok(html.includes(`class="${actor}"`));
 });
 
 test("events API is no-store, preserves append order, and implements exclusive opaque cursors", async (t) => {
@@ -74,23 +74,20 @@ test("events API reports corrupt completed records without exposing contents and
   assert.deepEqual(await (await h.get("/countersign/events")).json(), { events: [] });
 });
 
-test("page visits retain advisory session signals and declaration precedence without claiming presence", async (t) => {
+test("page visits ignore agent declarations and detection endpoints are removed", async (t) => {
   const h = await setup(t);
-  await (await h.post("/countersign/signals", { route: "/quiz/1", signals: { webdriver: true } })).json();
+  assert.equal((await h.post("/countersign/signals", { route: "/quiz/1", signals: { webdriver: true } })).status, 404);
   await (await h.get("/quiz/1")).text();
   let event = (await readProvenanceEvents(h.path)).at(-1)!;
-  assert.equal(event.actor_class, "automation-suspected");
+  assert.equal(event.actor_class, "unverified");
   assert.equal(event.decision, "allowed");
   assert.equal(event.presence, null);
-  assert.equal(event.signals.score, 0.6);
+  assert.deepEqual(event.signals, { score: 0, flags: [] });
   await (await h.get("/discussion/2", { "Countersign-Agent": "synthetic-test" })).text();
   event = (await readProvenanceEvents(h.path)).at(-1)!;
-  assert.equal(event.actor_class, "agent-declared");
+  assert.equal(event.actor_class, "unverified");
   assert.equal(event.presence, null);
-  assert.ok(event.signals.flags.includes("webdriver"));
-  const flagged = await (await h.get("/countersign/sessions/flagged")).json();
-  assert.equal(flagged.sessions.length, 1);
-  assert.deepEqual(Object.keys(flagged.sessions[0]).sort(), ["session_id", "user", "score", "flags", "first_seen"].sort());
-  assert.equal(flagged.sessions[0].session_id, event.session_id);
-  assert.deepEqual(flagged.sessions[0].user, event.user);
+  assert.deepEqual(event.signals, { score: 0, flags: [] });
+  assert.equal((await h.get("/countersign/sessions/flagged")).status, 404);
+  assert.equal((await readProvenanceEvents(h.path)).length, 2);
 });

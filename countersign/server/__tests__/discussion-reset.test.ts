@@ -78,7 +78,6 @@ async function setup(t: TestContext, enabled = true) {
 
 for (const enabled of [true, false]) test(`post-reset-post restores only demo state and retains credentials/audit (governed=${enabled})`, async t => {
   const h = await setup(t, enabled);
-  if (enabled) await (await h.post("/countersign/signals", { route: "/discussion/2", signals: { webdriver: true } })).json();
   const first = await h.publish();
   const peer = await h.login("stu-0003");
   const other = await (await h.post("/discussion/2/post", { body: "Another synthetic student's runtime response." }, peer)).json();
@@ -104,7 +103,7 @@ for (const enabled of [true, false]) test(`post-reset-post restores only demo st
   assert.equal(resetEvent.decision, "allowed");
   assert.equal(resetEvent.presence, null);
   assert.equal(resetEvent.user.id, "stu-0011");
-  if (enabled) assert.ok(resetEvent.signals.flags.includes("webdriver"), "reset does not erase observed suspicion");
+  assert.deepEqual(resetEvent.signals, { score: 0, flags: [] });
   assert.match(resetEvent.notes, new RegExp(`COUNTERSIGN=${enabled ? "on" : "off"}; removed_posts=1`));
   assert.ok(resetEvent.notes.includes(first.result.post_id));
   assert.ok(!resetEvent.notes.includes(fields.body) && !resetEvent.notes.includes(resetToken));

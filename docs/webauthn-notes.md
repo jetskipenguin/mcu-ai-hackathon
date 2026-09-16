@@ -156,7 +156,7 @@ so the library always enforces UP, including for `uv: preferred` rules.
 
 - The session cookie gets the agent to the form. It does not get it past `startAuthentication`: the browser hands control to the OS authenticator UI, which requires a physical touch or biometric. There is no DOM element to click and no JS API to satisfy it.
 - The assertion is a signature by a private key that never leaves the Secure Enclave, over a challenge the server chose and remembers. Replaying an old assertion fails (challenge single-use). Getting an assertion for one form and submitting another fails (`form_hash`). Waiting and reusing fails (`max_age_s`).
-- Signals (`navigator.webdriver`, timing) are advisory. **None of the above depends on detecting the agent.** If a judge asks "what if the agent looks perfectly human?", the answer is: it still has to touch the sensor.
+- Agent detection has been removed. **None of the above depends on detecting the agent.** Protected records are masked for every session until fresh human authentication. If a judge asks "what if the agent looks perfectly human?", the answer is: it still has to touch the sensor.
 
 ---
 

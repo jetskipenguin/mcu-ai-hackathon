@@ -46,9 +46,9 @@ Stable IDs preserve the ordering and grouping in `docs/countersign-plan.md` sect
 ## Track A - Afternoon
 
 - [x] **A6** Render record markings and the `Countersign-Marking` response header. Verified in HTTP tests and Chrome, including imported Registry identifiers after approval in an isolated policy store.
-- [x] **A7** Implement browser signals, deterministic scoring, and page-load/pre-submit delivery. BrowserOS background record reads verified; evidence is advisory and retained per session.
-- [x] **A8** Mask marked fields at the threshold, implement step-up reveal, and log `unmask`. Initial HTML withholds all record fields; record WebAuthn verification and automated tests implemented. Physical Touch ID / Windows Hello rehearsal still pending.
-- [x] **A9** Detect discussion actor class and store/render the AI-assisted tag. Published posts retain server-generated disclosure, presence, event IDs, and advisory review flags. Six new integration tests and both disclosure variants passed browser checks (see [A9 evidence](build-log/a9-verification.md)).
+- [x] **A7** Remove agent detection (supersedes the original signal/scoring implementation): no collection, delivery, scoring, declaration handling, or suspected-session tracking. New actor labels depend only on presence proof; historical audit remains readable. See [default-masking evidence](build-log/default-masking-verification.md).
+- [x] **A8** Mask protected PII, PHI, and CUI-marked fields by default for every session; require fresh UP/UV WebAuthn authentication to reveal the current view. Legacy clean-signal requests cannot release fields. Automated cryptographic tests and BrowserOS masking checks pass; physical Touch ID / Windows Hello rehearsal remains pending.
+- [x] **A9** Record discussion presence status and store/render the AI-assisted disclosure. Published posts retain server-generated disclosure, presence, event IDs, and advisory composition review flags. No agent classification. See [A9 evidence](build-log/a9-verification.md) for the original implementation checks.
 - [x] **A10** Finalize the provenance event schema. Typed/normalized advisory telemetry, metadata validation, null/proof semantics, page-visit attribution, cursor/read-error behavior, and flagged-session fields are documented and verified; 97 tests and virtual-authenticator browser regressions pass (see [evidence](build-log/dashboard-provenance-verification.md)).
 
 ## Track A - Evening

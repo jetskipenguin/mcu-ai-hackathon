@@ -4,7 +4,7 @@ import type { AuthenticationResponseJSON } from "@simplewebauthn/server";
 import { formHash, isRecord } from "./canonical.js";
 import { appendProvenanceEvent } from "./log.js";
 import { loadPolicy, matchRule, requiresPresence } from "./policy.js";
-import type { ActorClass, Attestation, CountersignPolicy, NewProvenanceEvent, PolicyRule, PortalUser, PresenceProof, SubmissionProvenance } from "./types.js";
+import type { ActorClass, Attestation, NewProvenanceEvent, PolicyRule, PortalUser, PresenceProof, SubmissionProvenance } from "./types.js";
 import {
   PresenceError,
   type ActionChallenge,
@@ -21,7 +21,6 @@ interface SubmissionState {
   presence: PresenceProof | null;
   attestation: Attestation;
   actorClass: ActorClass;
-  threshold: number;
   notes: string;
 }
 
@@ -47,22 +46,20 @@ export function governedSubmission(
       actor_class: state.actorClass,
       presence: state.presence,
       attestation: state.attestation,
-      signals: response.locals.signals ?? { score: 0, flags: [] },
+      signals: { score: 0, flags: [] },
       telemetry: state.rule?.class === "attested" ? request.body?.countersign?.telemetry ?? null : null,
       form_hash: state.formHash,
       notes: state.notes,
     };
   }
 
-  function actorFor(request: Request, response: Response): ActorClass {
+  function actorFor(response: Response): ActorClass {
     if (stateFor(response).presence) return "human-verified";
-    if (request.get("Countersign-Agent") || response.locals.agentDeclared) return "agent-declared";
-    if ((response.locals.signals?.score ?? 0) >= stateFor(response).threshold) return "automation-suspected";
     return "unverified";
   }
 
   async function blocked(request: Request, response: Response, reason: PresenceFailure) {
-    stateFor(response).actorClass = actorFor(request, response);
+    stateFor(response).actorClass = actorFor(response);
     await appendProvenanceEvent({
       ...eventFor(request, response), decision: "blocked", notes: reason,
     }, provenancePath);
@@ -76,7 +73,6 @@ export function governedSubmission(
       rule: matchRule(action.route, action.action, action.context?.(user), policy),
       formHash: formHash(isRecord(_request.body) ? _request.body : {}),
       presence: null, attestation: null, actorClass: "unverified", notes: "",
-      threshold: policy.defaults.signals.suspect_threshold,
     } satisfies SubmissionState;
     next();
   };
@@ -135,7 +131,7 @@ export function governedSubmission(
   };
 
   const deriveActorClass: RequestHandler = (request, response, next) => {
-    stateFor(response).actorClass = actorFor(request, response);
+    stateFor(response).actorClass = actorFor(response);
     next();
   };
 
@@ -175,11 +171,9 @@ export function governedSubmission(
     enforcePresenceRequirements, deriveActorClass, writeGovernedEvent];
 }
 
-export function governedPageVisit(enabled: boolean, provenancePath?: string, readPolicy: () => CountersignPolicy = loadPolicy): RequestHandler {
+export function governedPageVisit(enabled: boolean, provenancePath?: string): RequestHandler {
   if (!enabled) return bypass;
   return async (request, response, next) => {
-    const signals = response.locals.signals ?? { score: 0, flags: [] };
-    const declared = Boolean(request.get("Countersign-Agent")) || response.locals.agentDeclared;
     await appendProvenanceEvent({
       session_id: response.locals.sessionId,
       user: response.locals.user,
@@ -188,9 +182,9 @@ export function governedPageVisit(enabled: boolean, provenancePath?: string, rea
       rule_id: "scaffold-route-visit",
       class: "unrestricted",
       decision: "allowed",
-      actor_class: declared ? "agent-declared" : signals.score >= readPolicy().defaults.signals.suspect_threshold ? "automation-suspected" : "unverified",
+      actor_class: "unverified",
       presence: null, attestation: null,
-      signals,
+      signals: { score: 0, flags: [] },
       telemetry: null, form_hash: null,
       notes: "Portal page visit; no action-time presence proof requested.",
     }, provenancePath);

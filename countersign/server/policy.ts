@@ -77,19 +77,8 @@ export function validatePolicy(
   if (value.defaults.class !== "unrestricted") {
     throw new Error("policy.defaults.class must be unrestricted");
   }
-  if (!isRecord(value.defaults.signals)) {
-    throw new Error("policy.defaults.signals must be an object");
-  }
-  for (const [name, weight] of Object.entries(value.defaults.signals)) {
-    if (typeof weight !== "number" || !Number.isFinite(weight)) {
-      throw new Error(`policy.defaults.signals.${name} must be a number`);
-    }
-  }
-  const threshold = value.defaults.signals.suspect_threshold;
-  if (typeof threshold !== "number" || threshold < 0 || threshold > 1) {
-    throw new Error(
-      "policy.defaults.signals.suspect_threshold must be between 0 and 1",
-    );
+  if (value.defaults.signals !== undefined) {
+    throw new Error("policy.defaults.signals is no longer supported; agent detection has been removed");
   }
   if (!Array.isArray(value.rules)) {
     throw new Error("policy.rules must be an array");
@@ -208,9 +197,9 @@ export function validatePolicy(
     }
     if (
       candidate.mask_when !== undefined &&
-      candidate.mask_when !== "automation-suspected"
+      candidate.mask_when !== "always"
     ) {
-      throw new Error(`${context}.mask_when must be automation-suspected`);
+      throw new Error(`${context}.mask_when must be always`);
     }
     if (candidate.unmask !== undefined) {
       if (!isRecord(candidate.unmask)) {
@@ -224,6 +213,10 @@ export function validatePolicy(
         candidate.unmask.presence,
         `${context}.unmask.presence`,
       );
+    }
+    if (ruleClass === "marking" && (candidate.mask_when !== "always" ||
+        !isRecord(candidate.unmask) || !isRecord(candidate.unmask.presence) || candidate.unmask.presence.uv !== "required")) {
+      throw new Error(`${context} marking rules require default masking and UV-required human authentication`);
     }
   }
 

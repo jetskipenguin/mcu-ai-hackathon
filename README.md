@@ -12,7 +12,7 @@ A sentry asks for a countersign before allowing someone to pass, even when that 
 ┌────────────────────────── Student's laptop ────────────────────────────────┐
 │  Browser (Comet / Chrome + extension)                                      │
 │    └─ Agent (cloud LLM behind it) ──────────────────────────► public CSP   │
-│    └─ Portal pages + countersign.js (signals, step-up UI, masking)         │
+│    └─ Portal pages + countersign.js (step-up UI, default masking)          │
 └─────────────────────────────────┬──────────────────────────────────────────┘
                                   │ HTTPS / localhost
 ┌─────────────────────────────────▼──────────────────────────────────────────┐
@@ -98,10 +98,10 @@ confirmation. See [dataset import evidence](docs/build-log/dataset-import-verifi
 2. Open `http://localhost:3000/login` in the browser/profile used by the demo agent and choose the same user. First login redirects to `/register`: click **Register passkey with Touch ID** and complete registration. Use the **Register passkey** navigation link to add a credential if another profile cannot access the existing one. Credentials survive server restarts in gitignored `data/credentials.json`.
 3. On `/quiz/1`, let the agent fill the form and submit. A fresh WebAuthn prompt requires human confirmation. After Touch ID, the page shows **Quiz submitted. Human presence verified.** The log records `presence-requested`, then `allowed` / `human-verified` with an assertion ID. Canceling leaves the form available for a fresh attempt; direct submissions without a valid assertion return a logged 403.
 4. On `/discussion/2`, `independent_first` hides peer posts until the learner submits an initial response. Declare `own-work` or `ai-assisted` at Publish, then complete the presence check. The published post displays **Own work (declared)** or **AI-assisted (disclosed)** separately from **Human presence verified at submit**. Contradictions publish with **Flagged for review**; expand **Provenance details** for the assertion and matching event IDs. Seeded posts show **Provenance not recorded**. Demo posts/badges last for the current server run unless removed by the demo reset; the JSONL audit persists.
-5. On `/record/1`, the `marking` rule withholds record fields until signal evaluation. A suspected-agent session sees placeholders and an **Automation suspected** banner. Register a passkey and select **Verify presence to view** to reveal the record using WebAuthn.
+5. On `/record/1`, the `marking` rule masks all protected PII, PHI, and CUI-marked fields for every session. Register a passkey and select **Verify presence to view** to authenticate with WebAuthn. Only a valid, fresh human-presence and user-verification assertion reveals this view. Reloading or returning after backgrounding requires another check.
 6. Open `/countersign/` on port 3000 to watch the provenance timeline. Click a user or use **Show user** for exact-ID filtering; `/countersign/?user=stu-0011` is a shareable drill-down. Expand **Event details** for the assertion ID, UP/UV, age, attestation, signals, telemetry, hash, and notes. One-second polling preserves open details and retains the last rows during a recoverable read error. Use `/countersign/policy/review` to compare active and draft policies.
 
-A2–A4 implement registration, action-bound WebAuthn verification, and governed submission enforcement. Challenges are single-use and bound to the user, session, action, form contents, and attestation; required UP/UV and age checks run server-side. A9 stores and renders the attested discussion's disclosure, presence status, and advisory review flags. Record masking, deterministic signal scoring, and action-bound reveal from A6–A8 share the same credential and verification service. A1's source-derived fixtures and B4's Registry-backed GPT-6 drafting are implemented and verified alongside policy approval.
+A2–A4 implement registration, action-bound WebAuthn verification, and governed submission enforcement. Challenges are single-use and bound to the user, session, action, form contents, and attestation; required UP/UV and age checks run server-side. A9 stores and renders the attested discussion's disclosure, presence status, and advisory review flags. Default record masking and action-bound reveal from A6–A8 share the same credential and verification service. Agent detection has been removed; actor status depends only on accepted presence proof. A1's source-derived fixtures and B4's Registry-backed GPT-6 drafting are implemented and verified alongside policy approval.
 
 ### Repeat the discussion demo
 
@@ -121,7 +121,7 @@ A2–A4 implement registration, action-bound WebAuthn verification, and governed
 Keep both servers running; no restart, new dependency, or environment flag is
 needed. Reset removes only Capt J. Demo's runtime-added posts on that instance.
 Seeded posts, other learners' runtime posts, the other instance's posts, passkeys,
-session, signals, policies, and prior JSONL timeline remain. Each reset adds an
+session, policies, and prior JSONL timeline remain. Each reset adds an
 administrative `demo-discussion-reset` event **even with `COUNTERSIGN=off`**;
 ordinary ungoverned actions still write no governance log. If the audit cannot be
 written, reset fails without removing posts.
@@ -140,9 +140,10 @@ both modes; see [verification evidence](docs/build-log/discussion-reset-verifica
 
 ### Student-record protection (A6–A8)
 
-- Record HTML contains only placeholders. The server evaluates signals before releasing fields; suspected automation stays masked until WebAuthn verification. Responses are `no-store` and every decision is logged.
-- Hidden, unfocused record reads score `0.6`, reaching the policy threshold. This catches the observed BrowserOS workflow despite `webdriver=false`. Suspicion persists for the login session; verified reveals do not clear it.
-- This is a heuristic: background human tabs can be flagged, while foreground agents or spoofed telemetry can evade it. See `docs/contracts.md` for the endpoints and presence-verification rules.
+- Record HTML contains only placeholders for every session. Sensitive values are withheld server-side until fresh WebAuthn authentication with UP and UV. Responses are `no-store` and every decision is logged.
+- No agent detection, browser scoring, declaration handling, or suspected-session tracking remains. The legacy `/countersign/record-fields` endpoint always returns `{ "masked": true }`, even when an old client submits clean signals or the session previously revealed a record.
+- A successful assertion reveals only the signed-in user's current view. Registration alone is insufficient; replayed, expired, cross-session, or invalid assertions cannot release fields. Backgrounding and back/forward caching remask the page.
+- Active/draft policies and generated policies use `mask_when: "always"`; validation rejects conditional masking or record reveal without required UV. Existing audit history stays readable, while new events use only `unverified` / `human-verified` and neutral legacy signal fields. See `docs/contracts.md` and [verification evidence](docs/build-log/default-masking-verification.md).
 
 `npm test` covers the seven required enforcement cases plus real cryptographic verification, record access, registration, replay, session/action binding, and origin/RP/UP/UV rejection. An isolated Chrome run with a virtual platform authenticator also verifies the browser flow; evidence is in `docs/build-log/a2-a4-verification.md`. A live governed quiz assertion was verified separately in `docs/build-log/live-quiz-verification.md`. **The complete agent/Touch ID recording and Comet-local checkpoint remain open.** Register separately on localhost; the WebAuthn.io test credential does not apply. Disable any DevTools virtual authenticator before the physical-sensor demo.
 
@@ -180,7 +181,7 @@ Data caveats:
 ## Non-Goals
 
 - Preventing a co-resident browser extension from reading the DOM or taking screenshots.
-- Treating agent fingerprinting as an adversary-proof control; signals remain advisory.
+- Detecting or fingerprinting agents.
 - Providing real CAC/PIV integration in the hackathon build; Touch ID or a passkey is the stand-in.
 - Proving which human is present; identity binding remains the authentication system's responsibility.
 - Banning AI; Countersign governs where and how it may be used.

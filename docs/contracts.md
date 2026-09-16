@@ -31,7 +31,7 @@ identifiers/hashes; they are not literal runtime values.
     "age_ms": 1840
   },
   "attestation": null,
-  "signals": { "score": 0.82, "flags": ["fill-without-focus", "uniform-timing"] },
+  "signals": { "score": 0, "flags": [] },
   "telemetry": null,
   "form_hash": "sha256:9c1e…",
   "notes": ""
@@ -44,7 +44,7 @@ Enums:
 |---|---|
 | `class` | `human-required` · `attested` · `marking` · `unrestricted` |
 | `decision` | `allowed` · `blocked` · `flagged` · `masked` · `unmasked` · `presence-requested` · `contradiction` |
-| `actor_class` | `human-verified` · `agent-declared` · `automation-suspected` · `unverified` |
+| `actor_class` | New events: `human-verified` · `unverified`. Historical audit records also accept `agent-declared` · `automation-suspected`. |
 | `attestation` | `own-work` · `ai-assisted` · `null` |
 
 Field semantics:
@@ -58,31 +58,30 @@ Field semantics:
   identity claims. This portal uses selectable synthetic identities, not real SSO.
 - `presence: null` means **no accepted action-time presence proof for this
   decision**. This includes missing, rejected, and expired assertions as well as
-  visits, signal observations, and challenge requests. An accepted proof has UP
+  visits and challenge requests. An accepted proof has UP
   true, UV as verified (false is valid for `preferred`), and finite nonnegative age.
   `human-verified` requires that accepted proof; a previous login or action does
   not confer this classification on a later page visit.
 - `attestation` is the declaration bound to the challenge. It can remain null on
   failures before binding succeeds. It is not an authorship determination.
-- `signals.score` is finite and in `[0,1]`; `flags` is a string array. Signals are
-  advisory, including when attached to `human-verified` decisions. On page visits,
-  known session evidence and request declarations retain the precedence in §7.
+- `signals` is retained for audit compatibility. New events always write
+  `{ "score": 0, "flags": [] }`; no browser signals are collected or scored.
+  Historical scores remain readable (finite, in `[0,1]`, with string-array flags).
 - `telemetry` is normalized advisory data, non-null only for `attested` actions
   (see §5). It is never a substitute for presence or a reason to reject valid proof.
 - `form_hash` is the SHA-256 of canonical editable form fields (§6). Visits,
-  signal observations, and record decisions use null. Record reveal internally
+  and record decisions use null. Record reveal internally
   binds the empty form but has no editable form hash to report.
 - `route` names the governed page. Form challenge events use the target submit
   action, while record challenge/verification events use their respective
-  `/countersign/unmask` and `/countersign/unmask/verify` action paths. Signal
-  observations carry a client-reported route (possibly empty), not proof of a
-  navigation. `scaffold-route-visit`, `session-signals`, `default-unrestricted`, and
+  `/countersign/unmask` and `/countersign/unmask/verify` action paths.
+  `scaffold-route-visit`, `default-unrestricted`, and
   `demo-discussion-reset` are synthetic rule IDs, not entries that must appear in
   the policy file.
 - `allowed` records a governance authorization, not the outcome of later portal
   validation/persistence. One submission has one `allowed` or `blocked` decision;
   attestation findings produce separate linked `contradiction`/`flagged` events.
-  A signal observation may independently produce a `flagged` event.
+  Historical signal events remain in the append-only log.
 
 The writer normalizes advisory telemetry and validates metadata shape, enums,
 numeric ranges, and actor/presence consistency before appending. That validation
@@ -93,7 +92,7 @@ Events the demo must produce, in order, for Act 3:
 
 1. `presence-requested` on `quiz-submit` (agent clicked Submit)
 2. `allowed` / `human-verified` on `quiz-submit` (human touched sensor)
-3. `masked` / `automation-suspected` on `student-record`
+3. `masked` / `unverified` on `student-record` (every session)
 4. `unmasked` / `human-verified` on `student-record.unmask`
 5. `presence-requested` on `discussion-initial-post`
 6. `allowed` + `contradiction` / `human-verified` on `discussion-initial-post` (attested own-work, telemetry says single-event fill)
@@ -108,7 +107,7 @@ Events the demo must produce, in order, for Act 3:
 {
   "version": "0.1",
   "app": "mcu-learning-portal",
-  "defaults": { "class": "unrestricted", "signals": { "suspect_threshold": 0.6 } },
+  "defaults": { "class": "unrestricted" },
   "rules": [
     {
       "id": "quiz-submit",
@@ -137,7 +136,7 @@ Events the demo must produce, in order, for Act 3:
         { "selector": "[data-field=medical]", "marking": "<from data/cui/>", "categories": ["PHI"] }
       ],
       "page_marking": "<from data/cui/>",
-      "mask_when": "automation-suspected",
+      "mask_when": "always",
       "unmask": { "rule_id": "student-record.unmask", "class": "human-required", "presence": { "uv": "required", "max_age_s": 300 } },
       "rationale": "Personnel and medical data; not authorized for third-party models.",
       "citations": [ { "source": "cui-registry", "ref": "<category id>", "excerpt": "<one sentence>" } ]
@@ -152,6 +151,7 @@ Field notes:
 - `presence.uv`: `required` forces user verification (Touch ID); `preferred` accepts presence-only (security key tap). `max_age_s`: how old an assertion may be at the moment the action executes.
 - `ai_use` (attested only): `prohibited` · `disclosed` · `encouraged`. Changes the attestation wording and what counts as a contradiction (§7).
 - `markings[].marking` and `page_marking` must be identifiers present in `data/cui/categories.json` or `data/cui/ldcs.json`. The policy loader rejects unknown identifiers.
+- Marking rules require `mask_when: "always"` and a `human-required` unmask rule with `presence.uv: "required"`. Missing/default-off masking, conditional agent masking, and presence-only reveal policies are rejected. `defaults.signals` is no longer supported.
 - `citations[]` is generator output for the approval view: `{source, ref, excerpt}`. Empty array is valid.
 - Approving a draft copies it over the active file and the server hot-reloads. No restart.
 
@@ -183,9 +183,9 @@ names because cookies are shared across ports on the same hostname.
 
 Quiz, discussion, and record reveal use the same registration, credential store,
 and verifier. A newly enrolled credential is immediately usable by each flow;
-record and form challenges cannot authorize each other's actions. Session signal
-scores/declarations are included in form provenance, but a valid presence proof
-still takes precedence as `human-verified` regardless of the score.
+record and form challenges cannot authorize each other's actions. Only accepted
+action-time proof produces `human-verified`; browser behavior and agent declarations
+are not inspected or classified.
 
 Ceremony endpoints return `401 login_required` without a session,
 `415 json_required` for non-JSON requests, and `403 origin_mismatch` when a browser
@@ -245,8 +245,8 @@ in the browser sends no submission, leaving only the challenge's
 
 The quiz's JSON success response is `{ "ok": true, "message": "…", "assertion_id": "asr_…" }`;
 `assertion_id` is null for an unrestricted/ungoverned submission. The client shows
-the success message in the form. Signal delivery failures never prevent the
-presence ceremony, and editing a form during confirmation requires a new ceremony.
+the success message in the form. Editing a form during confirmation requires a
+new ceremony.
 
 ### Discussion post provenance (A9)
 
@@ -338,7 +338,7 @@ instance. Seeded posts, other users' runtime posts, and the other instance's pos
 are retained. It clears the demo user's initial-post status, so the next page
 response server-hides peers and restores the initial-response composer. The next
 governed initial submission requires a fresh attestation and WebAuthn proof.
-Credentials, login session, observed signals, policies, and prior JSONL history
+Credentials, login session, policies, and prior JSONL history
 are retained; no restart, new dependency, or environment flag is required.
 
 After the audit append, the WebAuthn service advances the generation for this
@@ -357,8 +357,8 @@ governance logging for ordinary ungoverned actions. The event uses the existing
 schema: `route: "/discussion/2"`, `action: "POST /discussion/2/reset"`,
 `rule_id: "demo-discussion-reset"`, `class: "unrestricted"`, and
 `decision: "allowed"`. `presence`, `attestation`, `form_hash`, and `telemetry` are
-null; signals remain as observed, and actor class follows §7 without an accepted
-proof. Notes include `COUNTERSIGN=on` or `COUNTERSIGN=off`, `removed_posts`, and
+null; signals use the neutral legacy value, and actor class is `unverified` without
+an accepted proof. Notes include `COUNTERSIGN=on` or `COUNTERSIGN=off`, `removed_posts`, and
 `removed_post_ids`, never post bodies or the CSRF token. No decision enum or policy
 rule is added, and old timeline events are never removed.
 
@@ -372,20 +372,19 @@ reset is not a proposed policy action. If an initial form is missing because the
 crawler's demo student has already posted, it reports an error with reset guidance
 rather than performing any reset itself.
 
-### Signals and masking
+### Default masking and human authentication
 
 | Endpoint | Body | Returns |
 |---|---|---|
-| `POST /countersign/signals` | `{ "route", "signals": { … §4 } }` | `{ "score": 0.0–1.0, "flags": ["…"], "flagged": bool, "actor_class" }`; retains observed suspicion in the signed-in session |
-| `POST /countersign/record-fields` | `{ "signals": { … §4 } }` | Signal result + `masked: bool`; `fields: {name, ssn, "dod-id", medical}` only for a complete, unflagged signal sample and a session with no previous suspicion |
+| `POST /countersign/record-fields` | Ignored (legacy clients) | `{ "masked": true }`; never returns fields, including after a verified reveal |
 | `POST /countersign/unmask` | `{ "rule_id": "student-record.unmask", "action": "POST /countersign/unmask/verify" }` | `{challenge_id, options, expires_at}`; `409 registration_required` if no passkey is enrolled |
 | `POST /countersign/unmask/verify` | `{ "challenge_id", "assertion" }` | `{ "ok": true, "fields": {name, ssn, "dod-id", medical} }` only after a valid action-bound presence assertion |
 
-Governed record HTML **always contains placeholders**, including the name. Values are not embedded in hidden nodes, attributes, scripts, or CSS. The client evaluates signals and requests `/record-fields` atomically, so a read before JavaScript finishes never sees plaintext. Missing signals or failed requests leave placeholders. Responses use `Cache-Control: no-store` and the marking header. The record belongs to the signed-in user, not a client-selected ID.
+Governed record HTML **always contains placeholders**, including the name. Values are not embedded in hidden nodes, attributes, scripts, or CSS. Every session remains masked until human authentication: PII, PHI, and CUI-marked content is never released based on browser behavior, focus, timing, headers, or client claims. No automatic field request is made at page load. JavaScript disabled, failed requests, canceled authentication, and invalid proof all leave placeholders. Responses use `Cache-Control: no-store` and the marking header. The record belongs to the signed-in user, not a client-selected ID.
 
-Record-reveal challenges have a fixed action, no editable form, and are bound to `{session_id, user_id, rule_id, random challenge, created}`. They cannot authorize other actions. They are consumed on first verification attempt, expire after 120 seconds (or the policy age, if shorter), and require the policy's UV setting. Registration uses the real SimpleWebAuthn verifier and persists credentials in `data/credentials.json`. Registration alone never reveals fields. Successful reveal returns fields only for this view; it does not clear suspicion or grant subsequent plaintext requests. The client remasks on backgrounding and before back/forward caching.
+Record-reveal challenges have a fixed action, no editable form, and are bound to `{session_id, user_id, rule_id, random challenge, created}`. They cannot authorize other actions. They are consumed on first verification attempt, expire after 120 seconds (or the policy age, if shorter), and require UP and UV. Registration uses the real SimpleWebAuthn verifier and persists credentials in `data/credentials.json`. Registration alone never reveals fields. Successful reveal returns fields only for this view; it does not grant subsequent plaintext requests. The client remasks on backgrounding and before back/forward caching. Reloading requires fresh authentication.
 
-Each initial HTML response and each subsequent field-release/reveal decision has its own provenance event; no field values are logged. A flagged field request produces `masked / automation-suspected`; a verified reveal produces `unmasked / human-verified` with assertion metadata. Declared agents also stay masked until presence verification.
+Each initial HTML response and each subsequent field/reveal decision has its own provenance event; no field values are logged. An unverified field request produces `masked / unverified`; a verified reveal produces `unmasked / human-verified` with assertion metadata. The former signal and flagged-session endpoints are removed (404).
 
 Marked pages set a response header on the initial HTML:
 
@@ -398,7 +397,6 @@ Countersign-Marking: <page_marking>; categories=PII,PHI
 | Endpoint | Returns |
 |---|---|
 | `GET /countersign/events?since=<event_id>` | `{ "events": [ … ] }` newest last |
-| `GET /countersign/sessions/flagged` | `{ "sessions": [ { session_id, user, score, first_seen, flags } ] }` |
 | `GET /countersign/policy` | active policy |
 | `GET /countersign/policy/draft` | draft policy or `404` |
 | `POST /countersign/policy/generate` | `{}` → `{ "ok": true, "draft_version", "generated_at", "provider", "model", "source_urls", "vocabulary", "draft_revision" }` (`region` also present for Bedrock) |
@@ -422,12 +420,9 @@ Timeline/read semantics:
   with an error notice while retrying after failure. Details show the complete
   event, including session/event/assertion IDs, proof flags/age, attestation,
   signals, telemetry, hash, and notes. User/event text is rendered as text, not HTML.
-- `/sessions/flagged` requires a signed-in governed session. Its five response
-  fields are exactly those shown above. It lists in-memory signal-suspect sessions
-  for this process, not a historical aggregation of all contradiction events.
-  `first_seen` is the first signal observation, not the first flag; restarting the
-  server resets that view while the JSONL timeline persists. A presence verification
-  does not erase retained advisory suspicion.
+- No agent-detection session state is retained. Historical actor labels and
+  signals remain available in event details; the current legend shows only
+  `human-verified` and `unverified`.
 
 The timeline is a local synthetic-demo read interface, not a production
 administrator authorization system.
@@ -478,31 +473,16 @@ and whether the generator is using placeholders.
 
 ---
 
-## 4. Client → server signal payload
+## 4. Agent detection removed
 
-Sent by `countersign.js` on page load and again immediately before any governed submit.
-
-```json
-{
-  "route": "/record/1",
-  "signals": {
-    "webdriver": false,
-    "document_hidden": true,
-    "document_has_focus": false,
-    "pointer_events_before_input": 0,
-    "keydown_events": 0,
-    "fields_filled": 6,
-    "fill_span_ms": 210,
-    "visibility_hidden_during_input": false,
-    "focus_before_fill": false,
-    "agent_header_declared": false
-  }
-}
-```
-
-Scoring is server-side, deterministic, and documented in `countersign/server/signals.ts` as a weighted sum clamped to `[0,1]`. Weights are tunable in policy `defaults.signals`. **The score never blocks.**
-
-The active policy gives `webdriver` and `background_record_read` weights of `0.6` each; fill-without-focus, fast multi-field input, and hidden input have weights of `0.2` each. `background-record-read` means a `/record/1` signal sample reports both a hidden document and no focus. This catches the observed BrowserOS neo background read even though its `navigator.webdriver` is false and its user agent looks like Chrome. It is deliberately labeled **suspected**: human background tabs can trigger it, and foreground agents or spoofed client telemetry can evade it. No universal agent fingerprint is claimed. Positive evidence is retained server-side for the lifetime of the login session (in-memory for this demo); later clean samples cannot downgrade it. Human-required submissions still need presence regardless of score.
+The client does not collect or transmit browser-agent detection signals. The
+server does not score browser behavior, inspect agent declarations, or retain
+suspected-agent sessions. `POST /countersign/signals` and
+`GET /countersign/sessions/flagged` return 404. Previously supplied signals and
+`Countersign-Agent` headers cannot release content or change actor classification.
+Visibility events are used only to remask an already revealed view, not to infer
+who is using the browser. Discussion composition telemetry (§5) remains an
+advisory record of composition, not an agent classifier or an authentication input.
 
 ---
 
@@ -554,9 +534,7 @@ authorship.
 Evaluated in order; first match wins.
 
 1. Valid assertion, `up: true`, within `max_age_s`, `uv` satisfies rule → `human-verified`
-2. Request or session carries a cooperative agent declaration (header `Countersign-Agent: <id>` or a WebMCP-style declaration) → `agent-declared`
-3. Signal score ≥ `suspect_threshold` → `automation-suspected`
-4. Otherwise → `unverified`
+2. Otherwise → `unverified`
 
 Note that `human-verified` on an `attested` action says a human was present at submit — it does not assert authorship. Authorship is what the attestation + telemetry pair records.
 

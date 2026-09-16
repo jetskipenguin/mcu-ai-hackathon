@@ -6,8 +6,6 @@ import { join } from "node:path";
 import type { AddressInfo } from "node:net";
 import test, { type TestContext } from "node:test";
 import { createApp } from "../../../portal/app.js";
-import { loadPolicy } from "../policy.js";
-import { scoreSignals } from "../signals.js";
 import { RP } from "../webauthn.js";
 import type { NewProvenanceEvent } from "../types.js";
 
@@ -24,7 +22,8 @@ async function setup(context: TestContext, enabled = true) {
   ]);
   const directory = await mkdtemp(join(tmpdir(), "countersign-record-"));
   const credentialsPath = join(directory, "credentials.json");
-  await writeFile(credentialsPath, JSON.stringify({ "stu-0011": [{ id: "test-credential", publicKey: cose.toString("base64url"), counter: 0 }] }));
+  const credential = { id: "test-credential", publicKey: cose.toString("base64url"), counter: 0 };
+  await writeFile(credentialsPath, JSON.stringify({ "stu-0011": [credential], "stu-0003": [credential] }));
   const events: NewProvenanceEvent[] = [];
   const app = createApp({ countersignEnabled: enabled, sessionSecret: "test-record-secret", recordOptions: {
     credentialsPath, writeEvent: async (event) => { events.push(event); },
@@ -42,13 +41,13 @@ async function setup(context: TestContext, enabled = true) {
     return response.headers.getSetCookie().map((cookie) => cookie.split(";")[0]).join("; ");
   }
   const cookie = await login();
-  const request = (path: string, body?: unknown, session = cookie) => fetch(`${base}${path}`, {
+  const request = (path: string, body?: unknown, session = cookie, headers: Record<string, string> = {}) => fetch(`${base}${path}`, {
     method: body === undefined ? "GET" : "POST", redirect: "manual",
-    headers: { "content-type": "application/json", cookie: session },
+    headers: { "content-type": "application/json", cookie: session, ...headers },
     ...(body === undefined ? {} : { body: JSON.stringify(body) }),
   });
-  async function signedReveal(flags = 0x05, origin: string = RP.origin, corrupt = false) {
-    const challenge = await (await request("/countersign/unmask", unmaskRequest)).json();
+  async function signedReveal(flags = 0x05, origin: string = RP.origin, corrupt = false, session = cookie) {
+    const challenge = await (await request("/countersign/unmask", unmaskRequest, session)).json();
     const hash = (value: string | Buffer) => createHash("sha256").update(value).digest();
     const clientData = Buffer.from(JSON.stringify({ type: "webauthn.get", challenge: challenge.options.challenge, origin }));
     const authenticatorData = Buffer.concat([hash(RP.rpID), Buffer.from([flags, 0, 0, 0, 1])]);
@@ -65,21 +64,7 @@ async function setup(context: TestContext, enabled = true) {
   return { request, login, events, credentialsPath, signedReveal };
 }
 
-test("scores read-only background automation; visible and incomplete samples stay finite", () => {
-  const weights = loadPolicy().defaults.signals;
-  assert.equal(scoreSignals({}, weights).score, 0);
-  assert.equal(scoreSignals(visible, weights, "/record/1").flagged, false);
-  assert.equal(scoreSignals(background, weights, "/quiz/1").flagged, false);
-  assert.equal(scoreSignals({ ...background, document_has_focus: true }, weights, "/record/1").flagged, false);
-  const result = scoreSignals(background, weights, "/record/1");
-  assert.equal(result.score, weights.suspect_threshold);
-  assert.equal(result.actor_class, "automation-suspected");
-  assert.deepEqual(result.flags, ["background-record-read"]);
-  assert.equal(scoreSignals({ webdriver: true }, weights).flagged, true);
-  assert.equal(scoreSignals({ agent_header_declared: true }, weights).actor_class, "agent-declared");
-});
-
-test("record HTML never includes field values; BrowserOS-style read masks and persists the flag", async (context) => {
+test("record HTML and legacy field requests stay masked for every browser and supplied signal", async (context) => {
   const { request, events } = await setup(context);
   const html = await request("/record/1");
   assert.equal(html.headers.get("cache-control"), "no-store");
@@ -89,36 +74,39 @@ test("record HTML never includes field values; BrowserOS-style read masks and pe
   assert.match(text, /data-protected-record/);
   assert.equal(events.length, 1);
   assert.equal(events[0].decision, "masked");
-  assert.equal((await (await request("/countersign/record-fields", {})).json()).masked, true);
-  const result = await (await request("/countersign/record-fields", { signals: background })).json();
-  assert.equal(result.masked, true);
-  assert.equal(result.actor_class, "automation-suspected");
-  assert.equal(result.fields, undefined);
-  const last = events.at(-1)!;
-  assert.equal(last.rule_id, "student-record");
-  assert.equal(last.decision, "masked");
-  assert.equal(last.actor_class, "automation-suspected");
-  assert.deepEqual(last.signals.flags, ["background-record-read"]);
-  assert.equal((await (await request("/countersign/record-fields", { signals: visible })).json()).masked, true);
-  assert.match(await (await request("/record/1")).text(), /Automation suspected/);
-  const flagged = await (await request("/countersign/sessions/flagged")).json();
-  assert.equal(flagged.sessions.length, 1);
-  assert.equal(flagged.sessions[0].user.id, "stu-0011");
+  for (const sample of [{}, { signals: visible }, { signals: background }, { signals: { webdriver: true } },
+    { masked: false, actor_class: "human-verified", signals: { score: 0, flags: [] } }]) {
+    const response = await request("/countersign/record-fields", sample);
+    assert.equal(response.headers.get("cache-control"), "no-store");
+    assert.deepEqual(await response.json(), { masked: true });
+    const last = events.at(-1)!;
+    assert.equal(last.rule_id, "student-record");
+    assert.equal(last.decision, "masked");
+    assert.equal(last.actor_class, "unverified");
+    assert.deepEqual(last.signals, { score: 0, flags: [] });
+  }
+  const declared = await request("/countersign/record-fields", { signals: visible }, undefined, { "Countersign-Agent": "test" });
+  assert.deepEqual(await declared.json(), { masked: true });
+  assert.equal(events.at(-1)!.actor_class, "unverified");
+  assert.equal(events.length, 7, "one event for HTML and each field request");
+  assert.match(await (await request("/record/1")).text(), /Human authentication is required/);
 });
 
-test("unflagged foreground records load for the signed-in user, not a hard-coded student", async (context) => {
-  const { request, login } = await setup(context);
-  const demo = await (await request("/countersign/record-fields", { signals: visible })).json();
-  assert.equal(demo.masked, false);
+test("only verified reveals return the signed-in user's fields; subsequent views require fresh proof", async (context) => {
+  const { request, login, signedReveal } = await setup(context);
+  const demo = await (await request("/countersign/unmask/verify", await signedReveal())).json();
   assert.equal(demo.fields.name, "Capt J. Demo");
+  assert.deepEqual(await (await request("/countersign/record-fields", { signals: visible })).json(), { masked: true });
+  assert.doesNotMatch(await (await request("/record/1")).text(), /900-12-3411/);
   const otherSession = await login("stu-0003");
   assert.ok(otherSession);
-  const other = await (await request("/countersign/record-fields", { signals: visible }, otherSession)).json();
+  assert.deepEqual(await (await request("/countersign/record-fields", { signals: visible }, otherSession)).json(), { masked: true });
+  const other = await (await request("/countersign/unmask/verify", await signedReveal(0x05, RP.origin, false, otherSession), otherSession)).json();
   assert.equal(other.fields.name, "LCDR P. Raghunathan");
   assert.equal(other.fields.ssn, "900-12-3403");
 });
 
-test("unauthenticated and ungoverned signal/reveal APIs cannot release data", async (context) => {
+test("unauthenticated and ungoverned reveal APIs cannot release data", async (context) => {
   const { request } = await setup(context);
   for (const path of ["/countersign/record-fields", "/countersign/unmask", "/countersign/unmask/verify", "/countersign/webauthn/register/options"]) {
     assert.equal((await request(path, {}, "")).status, 401);

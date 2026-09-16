@@ -2,15 +2,7 @@
   "version": "0.1",
   "app": "mcu-learning-portal",
   "defaults": {
-    "class": "unrestricted",
-    "signals": {
-      "suspect_threshold": 0.6,
-      "webdriver": 0.6,
-      "background_record_read": 0.6,
-      "fill_without_focus": 0.2,
-      "uniform_timing": 0.2,
-      "hidden_during_input": 0.2
-    }
+    "class": "unrestricted"
   },
   "rules": [
     {
@@ -45,13 +37,13 @@
         { "selector": "[data-field=medical]", "marking": "PLACEHOLDER-CUI-PHI", "categories": ["PHI"] }
       ],
       "page_marking": "PLACEHOLDER-CUI-PII",
-      "mask_when": "automation-suspected",
+      "mask_when": "always",
       "unmask": {
         "rule_id": "student-record.unmask",
         "class": "human-required",
         "presence": { "uv": "required", "max_age_s": 300 }
       },
-      "rationale": "Personnel and medical data; not authorized for third-party models.",
+      "rationale": "Personnel and medical data are masked for every session until a fresh human authentication reveals this view.",
       "citations": [
         {
           "source": "cui-registry",

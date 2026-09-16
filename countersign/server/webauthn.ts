@@ -303,14 +303,12 @@ export function createWebAuthnRouter(
       response.status(409).json({ error: error.reason, message: "Action changed while requesting presence. Reload and try again." });
       return;
     }
-    const signals = response.locals.signals ?? { score: 0, flags: [] };
     await appendProvenanceEvent({
       session_id: sessionId, user, route: action.route, action: action.action,
       rule_id: rule.id, class: rule.class, decision: "presence-requested",
-      actor_class: request.get("Countersign-Agent") || response.locals.agentDeclared ? "agent-declared" :
-        signals.score >= policy.defaults.signals.suspect_threshold ? "automation-suspected" : "unverified",
+      actor_class: "unverified",
       presence: null, attestation: attestation as Attestation,
-      signals,
+      signals: { score: 0, flags: [] },
       telemetry: null, form_hash: body.form_hash, notes: "Fresh action-bound presence requested.",
     }, provenancePath);
     response.json(challenge);

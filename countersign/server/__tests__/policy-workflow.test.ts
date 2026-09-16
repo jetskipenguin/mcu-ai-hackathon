@@ -46,7 +46,6 @@ async function fixture(t: TestContext) {
   const original = store.active();
   const draft = structuredClone(original);
   draft.version = "test-generated-draft";
-  draft.defaults.signals.suspect_threshold = 0.8;
   for (const rule of draft.rules) { rule.rationale = `New rationale for ${rule.id}`; rule.citations = []; }
   draft.rules[0].presence!.max_age_s = 1;
   const device = authenticator();

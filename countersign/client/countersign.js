@@ -2,30 +2,10 @@ import { startAuthentication, startRegistration } from "./vendor/simplewebauthn-
 
 const governedForms = [...document.querySelectorAll("form[data-countersign-rule]")];
 const composition = new Map();
-const filledFields = new Set();
-const signalState = {
-  pointerEventsBeforeInput: 0,
-  keydownEvents: 0,
-  firstInputAt: null,
-  lastInputAt: null,
-  hiddenDuringInput: false,
-  focusBeforeFill: false,
-};
-
-document.addEventListener(
-  "pointerdown",
-  () => {
-    if (signalState.firstInputAt === null) {
-      signalState.pointerEventsBeforeInput += 1;
-    }
-  },
-  true,
-);
 
 document.addEventListener(
   "keydown",
   (event) => {
-    signalState.keydownEvents += 1;
     const state = composition.get(event.target);
     if (state) {
       state.keystrokes += 1;
@@ -81,51 +61,6 @@ for (const form of governedForms) {
       }
     });
   }
-}
-
-document.addEventListener(
-  "input",
-  (event) => {
-    const now = performance.now();
-    signalState.firstInputAt ??= now;
-    signalState.lastInputAt = now;
-    signalState.hiddenDuringInput ||= document.hidden;
-    signalState.focusBeforeFill ||= document.activeElement === event.target;
-    if (event.target && event.target.name && event.target.value !== "") {
-      filledFields.add(event.target.name);
-    }
-  },
-  true,
-);
-
-document.addEventListener("visibilitychange", () => {
-  if (document.hidden && signalState.firstInputAt !== null) {
-    signalState.hiddenDuringInput = true;
-  }
-});
-
-function collectSignals() {
-  const first = signalState.firstInputAt;
-  const last = signalState.lastInputAt;
-  return {
-    webdriver: navigator.webdriver === true,
-    document_hidden: document.hidden,
-    document_has_focus: document.hasFocus(),
-    pointer_events_before_input: signalState.pointerEventsBeforeInput,
-    keydown_events: signalState.keydownEvents,
-    fields_filled: filledFields.size,
-    fill_span_ms: first === null || last === null ? 0 : Math.round(last - first),
-    visibility_hidden_during_input: signalState.hiddenDuringInput,
-    focus_before_fill: signalState.focusBeforeFill,
-    agent_header_declared: false,
-  };
-}
-
-function sendSignals() {
-  return postJson("/countersign/signals", {
-    route: location.pathname,
-    signals: collectSignals(),
-  });
 }
 
 function setNestedField(target, name, value) {
@@ -295,8 +230,6 @@ for (const form of governedForms) {
     }
 
     try {
-      // Advisory telemetry must never prevent a real presence check.
-      await sendSignals().catch(() => {});
       const fields = serialize(form);
       const form_hash = await sha256Canonical(fields);
       const attestation =
@@ -353,24 +286,10 @@ if (record) {
     }
   }
 
-  async function checkRecord() {
-    const current = ++generation;
+  function maskRecord() {
+    generation += 1;
     renderRecord();
-    try {
-      // The server evaluates signals before returning any field values.
-      const result = await postJson("/countersign/record-fields", { signals: collectSignals() });
-      if (current !== generation) return;
-      if (result.masked) {
-        status.textContent = result.flagged
-          ? "Automation suspected. Sensitive content hidden — verify presence to view."
-          : "Sensitive content hidden — verify presence to view.";
-      } else {
-        renderRecord(result.fields);
-        status.textContent = "No automation signals above threshold. This is not proof of human presence.";
-      }
-    } catch {
-      if (current === generation) status.textContent = "Sensitive content hidden. Signal check unavailable — verify presence to view.";
-    }
+    status.textContent = "Protected information (PII, PHI, and CUI-marked content) is hidden by default. Human authentication is required to view it.";
   }
 
   registerButton.addEventListener("click", async () => {
@@ -390,6 +309,7 @@ if (record) {
 
   revealButton.addEventListener("click", async () => {
     revealButton.disabled = true;
+    renderRecord();
     const current = ++generation;
     try {
       status.textContent = "Waiting for a human presence check...";
@@ -411,12 +331,8 @@ if (record) {
 
   // Do not leave revealed fields in a background tab or a back/forward-cache
   // snapshot. An older in-flight response must not reveal a now-hidden page.
-  window.addEventListener("pagehide", () => { generation += 1; renderRecord(); });
-  window.addEventListener("pageshow", (event) => { if (event.persisted) checkRecord(); });
-  document.addEventListener("visibilitychange", () => { if (document.hidden) checkRecord(); });
-  checkRecord();
-} else {
-  sendSignals().catch(() => {
-    // Signals are advisory; an unavailable signal endpoint must not block a form.
-  });
+  window.addEventListener("pagehide", maskRecord);
+  window.addEventListener("pageshow", (event) => { if (event.persisted) maskRecord(); });
+  document.addEventListener("visibilitychange", () => { if (document.hidden) maskRecord(); });
+  maskRecord();
 }

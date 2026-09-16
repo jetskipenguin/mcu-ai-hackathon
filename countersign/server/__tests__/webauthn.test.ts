@@ -470,24 +470,23 @@ test("record and quiz challenges cannot authorize each other's actions", async (
   assert.ok(!(await h.events()).some((event) => event.decision === "allowed" || event.decision === "unmasked"));
 });
 
-test("session signals appear in quiz provenance but never block a valid presence proof", async (context) => {
+test("quiz requires proof regardless of supplied detection signals or agent headers", async (context) => {
   const h = await harness(context);
   const sample = { route: "/quiz/1", signals: { webdriver: true } };
   const signalResponse = await h.post("/countersign/signals", sample);
-  assert.equal((await signalResponse.json()).flagged, true);
+  assert.equal(signalResponse.status, 404);
   const challenge = await h.issue();
   const requested = (await h.events()).at(-1)!;
-  assert.equal(requested.actor_class, "automation-suspected");
-  assert.ok(requested.signals.score >= 0.6);
+  assert.equal(requested.actor_class, "unverified");
+  assert.deepEqual(requested.signals, { score: 0, flags: [] });
   assert.equal((await h.submit(challenge)).status, 200);
   const allowed = (await h.events()).at(-1)!;
   assert.equal(allowed.actor_class, "human-verified");
   assert.equal(allowed.signals.score, requested.signals.score);
   await expectBlocked(await h.post("/quiz/1/submit", fields), "no_assertion");
-  assert.equal((await h.events()).at(-1)?.actor_class, "automation-suspected");
-  await h.post("/countersign/signals", sample, h.session.cookie, { "Countersign-Agent": "test-browser" });
-  await h.issue();
-  assert.equal((await h.events()).at(-1)?.actor_class, "agent-declared");
+  assert.equal((await h.events()).at(-1)?.actor_class, "unverified");
+  await expectBlocked(await h.post("/quiz/1/submit", fields, h.session.cookie, { "Countersign-Agent": "test-browser" }), "no_assertion");
+  assert.equal((await h.events()).at(-1)?.actor_class, "unverified");
 });
 
 test("log writer appends one valid provenance event", async (context) => {

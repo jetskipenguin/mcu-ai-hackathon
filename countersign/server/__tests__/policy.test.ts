@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
 
-import { loadPolicy } from "../policy.js";
+import { loadPolicy, validatePolicy } from "../policy.js";
 
 test("policy loader rejects an unknown marking identifier", async (context) => {
   const directory = await mkdtemp(join(tmpdir(), "countersign-policy-"));
@@ -23,7 +23,6 @@ test("policy loader rejects an unknown marking identifier", async (context) => {
         app: "test",
         defaults: {
           class: "unrestricted",
-          signals: { suspect_threshold: 0.6 },
         },
         rules: [
           {
@@ -51,4 +50,20 @@ test("policy loader rejects an unknown marking identifier", async (context) => {
     () => loadPolicy({ policyPath, categoriesPath, ldcsPath }),
     /unknown marking identifier: UNKNOWN/,
   );
+});
+
+test("marking policies cannot disable default masking or human authentication", () => {
+  const policy = loadPolicy();
+  const known = new Set(policy.rules.flatMap(rule => [rule.page_marking, ...(rule.markings ?? []).map(marking => marking.marking)]).filter((id): id is string => Boolean(id)));
+  for (const change of [
+    { mask_when: "automation-suspected" },
+    { mask_when: undefined },
+    { unmask: undefined },
+    { unmask: { rule_id: "student-record.unmask", class: "human-required", presence: { uv: "preferred", max_age_s: 300 } } },
+  ]) {
+    const candidate = structuredClone(policy);
+    Object.assign(candidate.rules.find(rule => rule.id === "student-record")!, change);
+    assert.throws(() => validatePolicy(candidate, known), /mask_when|human authentication/);
+  }
+  assert.throws(() => validatePolicy({ ...policy, defaults: { ...policy.defaults, signals: { suspect_threshold: 0.6 } } }, known), /agent detection has been removed/);
 });
