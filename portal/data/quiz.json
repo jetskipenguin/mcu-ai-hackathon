@@ -1,0 +1,62 @@
+{
+  "id": "1",
+  "title": "EWS Prerequisite Review",
+  "notice": "Scaffold questions are synthetic placeholders pending selection of the approved coursebook chapter.",
+  "questions": [
+    {
+      "id": "q1",
+      "prompt": "Which activity best begins a deliberate planning process?",
+      "options": {
+        "a": "Publishing the final order",
+        "b": "Framing the problem and mission",
+        "c": "Conducting the after-action review",
+        "d": "Closing the command post"
+      },
+      "source_ref": "8670 EWS coursebook chapter pending - scaffold item 1"
+    },
+    {
+      "id": "q2",
+      "prompt": "What is the primary purpose of commander's intent?",
+      "options": {
+        "a": "To replace all subordinate judgment",
+        "b": "To list equipment serial numbers",
+        "c": "To communicate purpose, key tasks, and end state",
+        "d": "To record historical weather"
+      },
+      "source_ref": "8670 EWS coursebook chapter pending - scaffold item 2"
+    },
+    {
+      "id": "q3",
+      "prompt": "A course of action should first be checked for which quality?",
+      "options": {
+        "a": "Suitability for accomplishing the mission",
+        "b": "Length of its title",
+        "c": "Number of briefing slides",
+        "d": "Similarity to every prior operation"
+      },
+      "source_ref": "8670 EWS coursebook chapter pending - scaffold item 3"
+    },
+    {
+      "id": "q4",
+      "prompt": "Why are assumptions identified during planning?",
+      "options": {
+        "a": "To avoid collecting information",
+        "b": "To make uncertain conditions explicit for validation",
+        "c": "To guarantee the preferred outcome",
+        "d": "To eliminate branch plans"
+      },
+      "source_ref": "8670 EWS coursebook chapter pending - scaffold item 4"
+    },
+    {
+      "id": "q5",
+      "prompt": "What does a decision point connect to during execution?",
+      "options": {
+        "a": "A random calendar date",
+        "b": "A condition requiring a command decision",
+        "c": "A completed personnel roster",
+        "d": "A fixed formatting rule"
+      },
+      "source_ref": "8670 EWS coursebook chapter pending - scaffold item 5"
+    }
+  ]
+}

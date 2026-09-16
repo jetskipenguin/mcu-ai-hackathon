@@ -1,0 +1,16 @@
+[
+  {
+    "id": "PLACEHOLDER-CUI-PII",
+    "name": "Placeholder Personally Identifiable Information",
+    "authority": "Not authoritative - replace from the National CUI Registry dataset",
+    "description": "Scaffold-only identifier for synthetic personal fields.",
+    "placeholder": true
+  },
+  {
+    "id": "PLACEHOLDER-CUI-PHI",
+    "name": "Placeholder Health Information",
+    "authority": "Not authoritative - replace from the National CUI Registry dataset",
+    "description": "Scaffold-only identifier for fabricated medical notes.",
+    "placeholder": true
+  }
+]

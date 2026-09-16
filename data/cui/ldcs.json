@@ -1,0 +1,9 @@
+[
+  {
+    "id": "PLACEHOLDER-LDC-INTERNAL",
+    "name": "Placeholder Internal Dissemination Control",
+    "authority": "Not authoritative - replace from the National CUI Registry dataset",
+    "description": "Scaffold-only limited-dissemination identifier.",
+    "placeholder": true
+  }
+]
