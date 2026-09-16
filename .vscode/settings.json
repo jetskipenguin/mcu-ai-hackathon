@@ -1,0 +1,22 @@
+{
+  // Only run Biome in folders that actually have a biome.json.
+  "biome.requireConfiguration": true,
+
+  // Biome is the formatter for the languages it supports.
+  "[javascript]": { "editor.defaultFormatter": "biomejs.biome" },
+  "[javascriptreact]": { "editor.defaultFormatter": "biomejs.biome" },
+  "[typescript]": { "editor.defaultFormatter": "biomejs.biome" },
+  "[typescriptreact]": { "editor.defaultFormatter": "biomejs.biome" },
+  "[json]": { "editor.defaultFormatter": "biomejs.biome" },
+  "[jsonc]": { "editor.defaultFormatter": "biomejs.biome" },
+  "[css]": { "editor.defaultFormatter": "biomejs.biome" },
+
+  // Format and lint on save.
+  "editor.formatOnSave": true,
+  "editor.codeActionsOnSave": {
+    // Apply Biome's safe fixes (including import sorting) on every explicit save.
+    // Use "always" instead of "explicit" if you rely on Auto Save.
+    "source.fixAll.biome": "explicit",
+    "source.organizeImports.biome": "explicit"
+  }
+}

@@ -15,7 +15,7 @@ function inspect(hook: string, value: unknown) {
   const blocked = contains(value)
   const audit = process.env.GOVERNANCE_PROBE_AUDIT
   if (!audit) throw new Error("Governance probe requires GOVERNANCE_PROBE_AUDIT")
-  appendFileSync(audit, JSON.stringify({ hook, decision: blocked ? "block" : "allow" }) + "\n")
+  appendFileSync(audit, `${JSON.stringify({ hook, decision: blocked ? "block" : "allow" })}\n`)
   if (blocked) throw new Error("GOVERNANCE_BLOCKED: protected demo value detected")
 }
 

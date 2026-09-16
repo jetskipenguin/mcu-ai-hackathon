@@ -1,4 +1,4 @@
-import { mkdir, copyFile } from "node:fs/promises"
+import { copyFile, mkdir } from "node:fs/promises"
 import path from "node:path"
 import { fileURLToPath, pathToFileURL } from "node:url"
 
@@ -7,10 +7,24 @@ const run = path.join(root, ".probe", new Date().toISOString().replace(/[:.]/g, 
 await mkdir(run, { recursive: true })
 const marker = "GOVERNANCE_PROBE_SECRET_48291"
 const fixedTitle = process.argv.includes("--fixed-title")
-const executable = path.join(root, "node_modules", "opencode-ai", "bin", process.platform === "win32" ? "opencode.exe" : "opencode")
+const executable = path.join(
+  root,
+  "node_modules",
+  "opencode-ai",
+  "bin",
+  process.platform === "win32" ? "opencode.exe" : "opencode",
+)
 if (!(await Bun.file(executable).exists())) throw new Error("Run npm install first")
 
-const results: { scenario: string; passed: boolean; exitCode: number; timedOut: boolean; requestsReceived: number; protectedValueReceived: boolean; hooks: { hook: string; decision: string }[] }[] = []
+const results: {
+  scenario: string
+  passed: boolean
+  exitCode: number
+  timedOut: boolean
+  requestsReceived: number
+  protectedValueReceived: boolean
+  hooks: { hook: string; decision: string }[]
+}[] = []
 for (const scenario of ["clean", "message-block", "system-block"]) {
   const directory = path.join(run, scenario)
   await mkdir(directory, { recursive: true })
@@ -29,14 +43,22 @@ for (const scenario of ["clean", "message-block", "system-block"]) {
       const base = { id: "chatcmpl-probe", object: "chat.completion.chunk", created: 1, model: "probe" }
       if (body.stream) {
         const chunks = [
-          { ...base, choices: [{ index: 0, delta: { role: "assistant", content: "LOCAL_PROBE_OK" }, finish_reason: null }] },
+          {
+            ...base,
+            choices: [{ index: 0, delta: { role: "assistant", content: "LOCAL_PROBE_OK" }, finish_reason: null }],
+          },
           { ...base, choices: [{ index: 0, delta: {}, finish_reason: "stop" }] },
         ]
-        return new Response(chunks.map((chunk) => `data: ${JSON.stringify(chunk)}\n\n`).join("") + "data: [DONE]\n\n", {
+        return new Response(`${chunks.map((chunk) => `data: ${JSON.stringify(chunk)}\n\n`).join("")}data: [DONE]\n\n`, {
           headers: { "Content-Type": "text/event-stream" },
         })
       }
-      return Response.json({ ...base, object: "chat.completion", choices: [{ index: 0, message: { role: "assistant", content: "LOCAL_PROBE_OK" }, finish_reason: "stop" }], usage: { prompt_tokens: 1, completion_tokens: 1, total_tokens: 2 } })
+      return Response.json({
+        ...base,
+        object: "chat.completion",
+        choices: [{ index: 0, message: { role: "assistant", content: "LOCAL_PROBE_OK" }, finish_reason: "stop" }],
+        usage: { prompt_tokens: 1, completion_tokens: 1, total_tokens: 2 },
+      })
     },
   })
   const config = {
@@ -56,7 +78,9 @@ for (const scenario of ["clean", "message-block", "system-block"]) {
         models: { probe: { name: "Local fake model", limit: { context: 32000, output: 1024 } } },
       },
     },
-    agent: { build: { prompt: scenario === "system-block" ? `System canary: ${marker}` : "Answer briefly. Do not use tools." } },
+    agent: {
+      build: { prompt: scenario === "system-block" ? `System canary: ${marker}` : "Answer briefly. Do not use tools." },
+    },
   }
   const configPath = path.join(directory, "opencode.json")
   await Bun.write(configPath, JSON.stringify(config, null, 2))
@@ -80,23 +104,69 @@ for (const scenario of ["clean", "message-block", "system-block"]) {
   // Pure mode suppresses the very external plugin this test needs.
   delete env.OPENCODE_PURE
   console.log(`Running ${scenario} ...`)
-  const child = Bun.spawn([executable, "run", "--format", "json", "--model", "governance/probe", ...(fixedTitle ? ["--title", "Governance compatibility probe"] : []), scenario === "message-block" ? `Reply briefly. Canary: ${marker}` : "Reply with LOCAL_PROBE_OK."], {
-    cwd: directory, env, stdout: "pipe", stderr: "pipe",
-  })
+  const child = Bun.spawn(
+    [
+      executable,
+      "run",
+      "--format",
+      "json",
+      "--model",
+      "governance/probe",
+      ...(fixedTitle ? ["--title", "Governance compatibility probe"] : []),
+      scenario === "message-block" ? `Reply briefly. Canary: ${marker}` : "Reply with LOCAL_PROBE_OK.",
+    ],
+    {
+      cwd: directory,
+      env,
+      stdout: "pipe",
+      stderr: "pipe",
+    },
+  )
   let timedOut = false
-  const timer = setTimeout(() => { timedOut = true; child.kill() }, 120_000)
-  const [stdout, stderr, exitCode] = await Promise.all([new Response(child.stdout).text(), new Response(child.stderr).text(), child.exited])
+  const timer = setTimeout(() => {
+    timedOut = true
+    child.kill()
+  }, 120_000)
+  const [stdout, stderr, exitCode] = await Promise.all([
+    new Response(child.stdout).text(),
+    new Response(child.stderr).text(),
+    child.exited,
+  ])
   clearTimeout(timer)
   server.stop(true)
   await Bun.write(path.join(directory, "stdout.jsonl"), stdout)
   await Bun.write(path.join(directory, "stderr.txt"), stderr)
-  const events = (await Bun.file(audit).text()).trim().split("\n").filter(Boolean).map((line) => JSON.parse(line))
-  const expectedHook = scenario === "system-block" ? "experimental.chat.system.transform" : "experimental.chat.messages.transform"
+  const events = (await Bun.file(audit).text())
+    .trim()
+    .split("\n")
+    .filter(Boolean)
+    .map((line) => JSON.parse(line))
+  const expectedHook =
+    scenario === "system-block" ? "experimental.chat.system.transform" : "experimental.chat.messages.transform"
   const leaked = JSON.stringify(captured).includes(marker)
-  const passed = !timedOut && !leaked && (scenario === "clean"
-    ? exitCode === 0 && captured.length > 0 && stdout.includes("LOCAL_PROBE_OK") && ["experimental.chat.messages.transform", "experimental.chat.system.transform"].every((hook) => events.some((event) => event.hook === hook && event.decision === "allow"))
-    : (!fixedTitle || captured.length === 0) && events.some((event) => event.hook === expectedHook && event.decision === "block") && exitCode !== 0 && (stdout.includes('"type":"error"') || stderr.includes("GOVERNANCE_BLOCKED")))
-  const result = { scenario, passed, exitCode, timedOut, requestsReceived: captured.length, protectedValueReceived: leaked, hooks: events }
+  const passed =
+    !timedOut &&
+    !leaked &&
+    (scenario === "clean"
+      ? exitCode === 0 &&
+        captured.length > 0 &&
+        stdout.includes("LOCAL_PROBE_OK") &&
+        ["experimental.chat.messages.transform", "experimental.chat.system.transform"].every((hook) =>
+          events.some((event) => event.hook === hook && event.decision === "allow"),
+        )
+      : (!fixedTitle || captured.length === 0) &&
+        events.some((event) => event.hook === expectedHook && event.decision === "block") &&
+        exitCode !== 0 &&
+        (stdout.includes('"type":"error"') || stderr.includes("GOVERNANCE_BLOCKED")))
+  const result = {
+    scenario,
+    passed,
+    exitCode,
+    timedOut,
+    requestsReceived: captured.length,
+    protectedValueReceived: leaked,
+    hooks: events,
+  }
   results.push(result)
   console.log(JSON.stringify(result, null, 2))
 }
