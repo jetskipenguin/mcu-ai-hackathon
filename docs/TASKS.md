@@ -4,6 +4,8 @@ Stable IDs preserve the ordering and grouping in `docs/countersign-plan.md` sect
 
 **Functional acceptance:** The tester confirmed the quiz, discussion post, and record flows all worked as expected with governance enabled and disabled. All six flow/mode checks are recorded in [manual acceptance](manual-acceptance-testing.md#tester-confirmed-functional-acceptance). Recording, browser/device-specific evidence, edge-case checks, deployment acceptance, and rehearsal remain separately tracked below and in the manual checklist.
 
+**Current media:** The [75.5-second real Chrome-extension quiz demo](presentation/README.md) now includes governance off/on, native Touch ID/Done/success, and matching audit evidence; B10 is complete for this current demo. Video-enabled deck package/PDF checks and standalone Chrome playback pass. Presenting-laptop PowerPoint/Keynote playback, B11 rehearsal, T2 final approval, and a full seven-minute pitch recording remain outstanding. The Chrome recording does not complete A5/M6 Comet checks.
+
 ## Wednesday Morning - Adversary Checks
 
 - [ ] **M1** Create a fresh macOS user account for demo work. Enroll Touch ID for it.
@@ -30,7 +32,7 @@ Stable IDs preserve the ordering and grouping in `docs/countersign-plan.md` sect
 
 - [x] **M17** Iterate on the spec, pitch, and plan documents.
 - [x] **M18** Lock the stack, extension adversary, and slide ownership.
-- [x] **M19** Create the slide deck with the current eight pitch-outline titles. [Editable PowerPoint and preview](presentation/README.md) are drafted; final review, media insertion, and timed rehearsal remain separate.
+- [x] **M19** Create the slide deck with the current eight pitch-outline titles. [Editable PowerPoint and preview](presentation/README.md) are drafted; slide 3 uses the completed 75.5-second recorded quiz demo as one offline MP4, with a standalone backup and static PDF poster. Package/PDF and standalone video checks pass; laptop slide playback, final review, and timed rehearsal remain pending.
 - [x] **M20** Create the repository, commit the docs, and start `docs/BUILD-LOG.md` from commit timestamps.
 - [x] **M21** Confirm presentation format, semifinal/final schedule, and deliverables.
 - [x] **M22** Select the coursebook chapter, extract the CUI category/LDC files, note dataset fields, and register all three datasets on the hackathon portal.
@@ -43,7 +45,7 @@ Stable IDs preserve the ordering and grouping in `docs/countersign-plan.md` sect
 - [x] **A2** Implement first-login WebAuthn registration and action assertions; store credentials in memory/JSON. Verified with real library registration/assertion tests and Chrome's virtual platform authenticator.
 - [x] **A3** Implement `countersign.js` v1 to intercept policy-matched forms, request a challenge, call WebAuthn, and submit assertion plus form. Browser checks cover success, cancellation/retry, form edits, and advisory-signal failure.
 - [x] **A4** Implement middleware v1 to load policy, verify human-required assertions and binding, enforce UP/UV and age, and write the event. All seven required tests plus cryptographic/binding regressions pass; see [verification evidence](build-log/a2-a4-verification.md). Physical-sensor checkpoint A5 remains open.
-- [ ] **A5** Run Comet against the governed quiz and record the 13:00 checkpoint when the wall works. Progress: live localhost quiz success corroborated at 11:17 with `allowed` / `human-verified`, UP/UV true, and an assertion ID following the Nanobrowser test. Full agent/sensor recording and the Comet-local check remain pending (see [live evidence](build-log/live-quiz-verification.md)).
+- [ ] **A5** Run Comet against the governed quiz and record the 13:00 checkpoint when the wall works. Progress: live localhost quiz success corroborated at 11:17 with `allowed` / `human-verified`, UP/UV true, and an assertion ID following the Nanobrowser test (see [live evidence](build-log/live-quiz-verification.md)). The [current Chrome ChatGPT-extension recording](presentation/recording-session.md) now captures native Touch ID, success, and matching proof; the Comet-local check and its recording remain pending.
 
 ## Track A - Afternoon
 
@@ -66,20 +68,20 @@ Stable IDs preserve the ordering and grouping in `docs/countersign-plan.md` sect
 
 - [x] **B1** Build dashboard v1 with one-second JSONL polling, actor-class colors, and per-user drill-down. Exact-ID user links/filter, shareable URLs, expandable event/proof details, stable focus/expanded rows, and polling failure recovery passed Chrome checks (see [evidence](build-log/dashboard-provenance-verification.md)).
 - [x] **B2** Draft and hand-test the policy generator prompt against all three pages. Live GPT-6 generation used the source-derived localhost pages and all 126 categories/10 LDCs, producing a validated draft with rationales and exact Registry-definition citations.
-- [x] **B3** Draft all eight current pitch slides and speaker notes for the confirmed 7-minute presentation plus 3-minute Q&A. [PowerPoint draft](presentation/README.md) includes native diagrams, real UI crops, and a clearly identified demo slot; no actual extension recording is claimed.
+- [x] **B3** Draft all eight current pitch slides and speaker notes for the confirmed 7-minute presentation plus 3-minute Q&A. [PowerPoint draft](presentation/README.md) includes native diagrams, the original UI crops, and slide 3's real recorded Chrome-extension quiz demo; slide 4 remains a virtual-authenticator UI reference. The 75.5-second clip leaves 29.5 seconds for intro/wrap within the 1:45 demo budget; playback, final approval, and rehearsal remain pending.
 
 ## Track B - Afternoon
 
 - [x] **B4** Implement the policy generator CLI/endpoint, constrained Registry vocabulary, and draft-policy output. Live GPT-6 generation passed with 126 imported categories/10 LDCs and `placeholder: false`; draft-only writes and post-approval enforcement passed regression checks (see [dataset evidence](build-log/dataset-import-verification.md)).
 - [ ] **B5** If on schedule, attach a Registry definition and governing-document citation to each marking. Exact Registry definitions are attached; optional governing-document chunk retrieval remains open.
 - [x] **B6** Implement policy review, per-rule approval, approve-all, active-policy writes, and middleware hot reload. HTTP and browser checks verify selective/full approval, stale-review rejection, and continued quiz/record enforcement without restart (see [generator evidence](build-log/policy-generation-verification.md)).
-- [ ] **B7** Run and record quiz and record tasks with the chosen Chrome extension, including its vendor-side trace. Progress: Nanobrowser quiz completion/submission passed by tester report; record extraction was partial (DoD ID and medical note reproduced, SSN redacted). Recordings and task/vendor trace remain pending (see [NOTES.md](../NOTES.md)).
+- [ ] **B7** Run and record quiz and record tasks with the chosen Chrome extension, including its vendor-side trace. Progress: Nanobrowser quiz completion/submission passed by tester report; record extraction was partial (DoD ID and medical note reproduced, SSN redacted; see [NOTES.md](../NOTES.md)). The [current ChatGPT-extension quiz footage](presentation/recording-session.md) covers governance off/on; the protected-record recording and task/vendor-trace criterion remain pending.
 - [ ] **B8** If purchased, run the same Manus tests within the time box.
 
 ## Track B - Evening
 
 - [ ] **B9** Record and trim Act 1 with Comet against the ungoverned portal.
-- [ ] **B10** Record the Act 3 governed backup after Track A is stable.
+- [x] **B10** Record the governed backup after Track A is stable (current Chrome-extension quiz demo, replacing the earlier Act 3 delivery). [Completed MP4 and evidence](presentation/recording-session.md) show real native Touch ID/Done/success and the same-run expanded audit with `human-verified`, assertion ID, UP=true, UV=true, and age=6775ms. This is a demo clip, not a Comet check or full seven-minute pitch recording; laptop playback remains pending.
 - [ ] **B11** Run the first timed rehearsal and note stalls or overruns.
 
 ## Thursday

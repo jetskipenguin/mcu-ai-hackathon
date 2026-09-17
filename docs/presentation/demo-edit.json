@@ -1,0 +1,53 @@
+{
+  "version": 1,
+  "output": "Countersign-demo.mp4",
+  "width": 1920,
+  "height": 1080,
+  "fps": 30,
+  "expected_duration_seconds": 75.5,
+  "inputs": {
+    "off": {
+      "cache_file": "ungoverned-original.mov",
+      "source_filename": "Screen Recording 2026-09-17 at 9.51.05 AM.mov",
+      "sha256": "0965994e9b6ce0f1efee0ab9bbba1f748fe15eaf7286f6425230043e83435c60",
+      "recorded_at": "2026-09-17T13:51:05Z"
+    },
+    "on": {
+      "cache_file": "governed-original.mov",
+      "source_filename": "Screen Recording 2026-09-17 at 9.54.44 AM.mov",
+      "sha256": "ed9a9a239c9db41844acd981e5806718ad90598c83d4796476b362871eedc76a",
+      "recorded_at": "2026-09-17T13:54:44Z"
+    }
+  },
+  "segments": [
+    { "kind": "title", "stage": "off", "seconds": 2 },
+    { "kind": "video", "stage": "off", "input": "off", "start": 6, "end": 15, "view": "browser" },
+    { "kind": "video", "stage": "off", "input": "off", "start": 39, "end": 58, "view": "browser" },
+    { "kind": "title", "stage": "on", "seconds": 2 },
+    { "kind": "video", "stage": "on", "input": "on", "start": 6, "end": 16, "view": "browser" },
+    { "kind": "video", "stage": "on", "input": "on", "start": 34, "end": 41.5, "view": "browser" },
+    { "kind": "video", "stage": "on", "input": "on", "start": 41.5, "end": 56.5, "view": "confirmation" },
+    { "kind": "video", "stage": "proof", "input": "on", "start": 69, "end": 72, "view": "browser" },
+    { "kind": "proof-still", "stage": "proof", "input": "on", "source_time": 78, "seconds": 8 }
+  ],
+  "continuous_confirmation_source_interval": [34, 56.5],
+  "evidence": {
+    "action": "POST /quiz/1/submit",
+    "rule_id": "quiz-submit",
+    "presence_requested_at": "2026-09-17T13:55:27.757Z",
+    "verified_at": "2026-09-17T13:55:34.532Z",
+    "event_id": "evt_3ea776d201de4b59961e7123fa571fd3",
+    "assertion_id": "asr_20a3eda1-bc17-4d87-ba58-2e44c966eaf8",
+    "up": true,
+    "uv": true,
+    "age_ms": 6775
+  },
+  "editing_rules": [
+    "Retained motion footage plays at real time; waiting intervals are removed with visible edits.",
+    "No time is cut, sped up, slowed, or frozen between governed source times 34 and 56.5 seconds; the crop changes at 41.5 seconds only.",
+    "The final audit detail is explicitly labeled as a still from source time 78 seconds in the same governed recording.",
+    "Native system prompt, submission status, and assertion values come from the supplied real recordings, not generated UI.",
+    "Menu bar and Dock are cropped out. The audit still omits session data and visibly masks the unnecessary credential identifier.",
+    "Desktop originals and ignored full-quality working copies remain unchanged. Exported video omits source hardware metadata and contains no audio."
+  ]
+}
