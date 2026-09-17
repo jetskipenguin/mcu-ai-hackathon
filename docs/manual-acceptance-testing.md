@@ -2,6 +2,24 @@
 
 The following must be performed by a human and not an agent.
 
+### Tester-confirmed functional acceptance
+
+Confirmation recorded on 2026-09-17 (UTC). The tester reported:
+
+> I verified the quiz, discussion board post, and record all worked as expected both with and without governance enabled.
+
+- [x] Quiz submission with governance enabled.
+- [x] Quiz submission with governance disabled.
+- [x] Discussion post with governance enabled.
+- [x] Discussion post with governance disabled.
+- [x] Record flow with governance enabled.
+- [x] Record flow with governance disabled.
+
+This records human-reported functional verification, not a new automated test run.
+Recording, browser/device-specific evidence, reset/cancellation edge cases,
+deployment acceptance, and presentation rehearsal remain separately tracked;
+their detailed checkboxes are not completed by this general flow confirmation.
+
 ### Test that telemetry detects an agent
 - Test the following with nanoagent chrome extension and with opencode BrowserOS MCP
 - Start the application with countersign off

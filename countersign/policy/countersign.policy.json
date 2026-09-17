@@ -1,5 +1,5 @@
 {
-  "version": "0.1",
+  "version": "draft-2026-09-17-registry-aligned-human-presence",
   "app": "mcu-learning-portal",
   "defaults": {
     "class": "unrestricted"
@@ -7,10 +7,16 @@
   "rules": [
     {
       "id": "quiz-submit",
-      "match": { "route": "/quiz/*", "action": "POST /quiz/:id/submit" },
+      "match": {
+        "route": "/quiz/*",
+        "action": "POST /quiz/:id/submit"
+      },
       "class": "human-required",
-      "presence": { "uv": "required", "max_age_s": 60 },
-      "rationale": "Exam submission. Academic integrity requires the enrolled student to perform this.",
+      "presence": {
+        "uv": "required",
+        "max_age_s": 60
+      },
+      "rationale": "The observed form submits five required multiple-choice answers for the Fundamentals of National Defense prerequisite review. Require human authentication with user verification within 60 seconds when committing this assessment submission. This establishes human participation in the submission action, not independent authorship, unaided reasoning, or correctness of the answers. The requirement does not depend on browser behavior.",
       "citations": []
     },
     {
@@ -18,37 +24,81 @@
       "match": {
         "route": "/discussion/*",
         "action": "POST /discussion/:id/post",
-        "when": { "is_initial_post": true }
+        "when": {
+          "is_initial_post": true
+        }
       },
       "class": "attested",
       "ai_use": "disclosed",
-      "presence": { "uv": "preferred", "max_age_s": 60 },
-      "rationale": "Q&A forum, independent_first: the initial post must be the learner's own thinking.",
+      "presence": {
+        "uv": "preferred",
+        "max_age_s": 60
+      },
+      "rationale": "The discussion form publishes an initial response assessing whether autonomy changes war's nature or character. Peer posts remain hidden until that response is published, supporting an independent-first contribution before exposure to peers' arguments. Require an attestation to that process and disclosure of AI assistance rather than inferring authorship from writing style or browser behavior. User verification is preferred within 60 seconds; human presence does not certify authorship or prove that the response was unaided. This rule applies only to initial posts.",
       "citations": []
     },
     {
       "id": "student-record",
-      "match": { "route": "/record/*" },
+      "match": {
+        "route": "/record/*"
+      },
       "class": "marking",
       "markings": [
-        { "selector": "[data-field=name]", "marking": "PLACEHOLDER-CUI-PII", "categories": ["PII"] },
-        { "selector": "[data-field=ssn]", "marking": "PLACEHOLDER-CUI-PII", "categories": ["PII"] },
-        { "selector": "[data-field=dod-id]", "marking": "PLACEHOLDER-CUI-PII", "categories": ["PII"] },
-        { "selector": "[data-field=medical]", "marking": "PLACEHOLDER-CUI-PHI", "categories": ["PHI"] }
+        {
+          "selector": "[data-field=name]",
+          "marking": "cui-category-privacy",
+          "categories": [
+            "PII"
+          ]
+        },
+        {
+          "selector": "[data-field=ssn]",
+          "marking": "cui-category-privacy",
+          "categories": [
+            "PII"
+          ]
+        },
+        {
+          "selector": "[data-field=dod-id]",
+          "marking": "cui-category-privacy",
+          "categories": [
+            "PII"
+          ]
+        },
+        {
+          "selector": "[data-field=medical]",
+          "marking": "cui-category-health-info",
+          "categories": [
+            "PHI"
+          ]
+        }
       ],
-      "page_marking": "PLACEHOLDER-CUI-PII",
+      "page_marking": "cui-category-student-records",
       "mask_when": "always",
       "unmask": {
         "rule_id": "student-record.unmask",
         "class": "human-required",
-        "presence": { "uv": "required", "max_age_s": 300 }
+        "presence": {
+          "uv": "required",
+          "max_age_s": 300
+        }
       },
-      "rationale": "Personnel and medical data are masked for every session until a fresh human authentication reveals this view.",
+      "rationale": "The name identifies the learner, while the SSN and DoD ID are direct personal identifiers; General Privacy fits all three fields. The SSN warrants particularly careful handling, but sensitivity alone does not establish the authority scope of the provisional Sensitive Personally Identifiable Information category. General Privacy is selected instead of that provisional category or provisional Privacy Information. A rank and DoD identifier alone do not establish applicability of the narrower military-personnel authorities. The medical field describes an evaluation and temporary physical-activity restriction, fitting Health Information and the demonstration's PHI handling category. Student Records is proposed for the page because it assembles information directly related to a learner; actual education-record authority coverage must be confirmed before production use. All protected fields remain masked by default in every session and may be revealed only through student-record.unmask with user verification within 300 seconds. Protected PII, PHI, and CUI-marked content requires human authentication regardless of browser behavior. These selections derive from field contents and supplied definitions, not legacy attributes. They are proposed governance rules for synthetic demonstration data, not a classification determination, a finding of statutory coverage, or a determination that CUI Basic or Specified applies.",
       "citations": [
         {
           "source": "cui-registry",
-          "ref": "PLACEHOLDER-CUI-PII",
-          "excerpt": "Placeholder citation; replace when the Registry dataset is extracted."
+          "ref": "cui-category-privacy",
+          "excerpt": "Refers to personal information, or, in some cases, \"personally identifiable information,\" as defined in OMB M-17-12, or \"means of identification\" as defined in 18 USC 1028(d)(7)."
+        },
+        {
+          "source": "cui-registry",
+          "ref": "cui-category-health-info",
+          "excerpt": "As per 42 USC 1320d(4), \"health information\" means any information, whether oral or recorded in any form or medium, that (A) is created or received by a health care provider, health plan, public health authority, employer, life insurer, school or university, or health care clearinghouse; and (B) relates to the past, present, or future physical or mental health or condition of an individual, the provision of health care to an individual, or the past, present, or future payment for the provision of health care to an individual."
+        },
+        {
+          "source": "cui-registry",
+          "ref": "cui-category-student-records",
+          "excerpt": "As per 20 USC 1232g, the Family Educational Rights and Privacy Act of 1974, an education record which is comprised of those records which are directly related to a student."
         }
       ]
     }

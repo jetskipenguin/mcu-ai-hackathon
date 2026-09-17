@@ -6,6 +6,8 @@
 
 Implementation/adversary checkboxes are synchronized with [TASKS.md](TASKS.md); that file links the detailed outcomes and verification evidence. Live/recorded demo checkpoints are tracked separately from automated implementation checks.
 
+**Functional acceptance:** The tester confirmed the quiz, discussion post, and record flows all worked as expected with governance enabled and disabled. All six flow/mode checks are recorded in [manual acceptance](manual-acceptance-testing.md#tester-confirmed-functional-acceptance). Recording, browser/device-specific evidence, edge-case checks, deployment acceptance, and rehearsal remain separately tracked below and in the manual checklist.
+
 ---
 
 ## 0. Principles
