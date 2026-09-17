@@ -33,12 +33,21 @@ const styles = `
   pre { max-width: 100%; max-height: 30rem; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; padding: 1rem; background: #fff; border: 1px solid #c7c9c4; }
   button { max-width: 100%; white-space: normal; padding: .6rem .9rem; margin: .3rem .5rem .3rem 0; cursor: pointer; }
   button:disabled { cursor: default; opacity: .55; }
+  .sort-column { display: flex; align-items: center; gap: .4rem; width: 100%; margin: 0; padding: 0; border: 0; background: transparent; color: inherit; font: inherit; font-weight: inherit; text-align: left; }
+  .sort-column:focus-visible { outline: 2px solid #28784b; outline-offset: 4px; }
   .notice { padding: .8rem; border-left: .35rem solid #b86b1b; background: #fff5d9; }
   .policy-rule { border-top: 1px solid #c7c9c4; margin-top: 1.5rem; }
   @media (max-width: 800px) { .policy-grid { grid-template-columns: minmax(0, 1fr); } main, header { padding: 1rem; } }
 `;
 
 export function renderDashboard(): string {
+  const columns = [
+    ["time", "Time"], ["user", "User"], ["route", "Route / action"],
+    ["rule", "Rule"], ["decision", "Decision"], ["actor", "Actor"],
+  ];
+  const headers = columns.map(([key, label]) =>
+    `<th scope="col"><button type="button" class="sort-column" data-sort="${key}" data-label="${label}" aria-label="${label}: sort ${key === "time" ? "newest first" : "A to Z"}">${label} <span aria-hidden="true">↕</span></button></th>`
+  ).join("");
   return `<!doctype html>
 <html lang="en">
 <head>
@@ -54,7 +63,7 @@ export function renderDashboard(): string {
     &middot; <a href="/quiz/1">Portal</a>
   </header>
   <main>
-    <p>Polling <code>/countersign/events</code> once per second. Events stay in append order; newest appear last.</p>
+    <p>Polling <code>/countersign/events</code> once per second. Initially, newest events appear last. Click a column title to sort; click it again to reverse the order.</p>
     <div class="timeline-controls">
       <label for="user-filter">Show user</label>
       <select id="user-filter"><option value="">All users</option></select>
@@ -67,7 +76,7 @@ export function renderDashboard(): string {
     <p>Presence verifies participation at the action, not authorship. Agent detection is disabled. Historical events retain their original labels; composition review flags are advisory.</p>
     <p id="timeline-status" role="status">Waiting for events…</p>
     <div class="timeline-scroll"><table>
-      <thead><tr><th scope="col">Time</th><th scope="col">User</th><th scope="col">Route / action</th><th scope="col">Rule</th><th scope="col">Decision</th><th scope="col">Actor</th><th scope="col">Evidence</th></tr></thead>
+      <thead><tr>${headers}<th scope="col">Evidence</th></tr></thead>
       <tbody id="events"><tr><td colspan="7">Waiting for events…</td></tr></tbody>
     </table></div>
   </main>
@@ -77,6 +86,18 @@ export function renderDashboard(): string {
     const status = document.querySelector("#timeline-status");
     const actors = ["human-verified", "unverified"];
     const rows = new Map();
+    const sortButtons = [...document.querySelectorAll("[data-sort]")];
+    const collator = new Intl.Collator(undefined, { sensitivity: "base" });
+    const sortValues = {
+      time: event => Date.parse(event.ts),
+      user: event => event.user.name + " (" + event.user.id + ")",
+      route: event => event.route + " / " + event.action,
+      rule: event => event.rule_id || "",
+      decision: event => event.decision,
+      actor: event => event.actor_class,
+    };
+    let sortColumn = null;
+    let sortDirection = "ascending";
     let events = [];
     let selectedUser = new URL(location.href).searchParams.get("user") || "";
     let busy = false;
@@ -130,6 +151,13 @@ export function renderDashboard(): string {
       }
       filter.value = selectedUser;
       const visible = events.filter(event => !selectedUser || event.user.id === selectedUser);
+      if (sortColumn) {
+        const value = sortValues[sortColumn];
+        const direction = sortDirection === "ascending" ? 1 : -1;
+        visible.sort((a, b) => direction * (sortColumn === "time"
+          ? value(a) - value(b)
+          : collator.compare(value(a), value(b))));
+      }
       let index = 0;
       for (const event of visible) {
         let row = rows.get(event.event_id);
@@ -174,6 +202,27 @@ export function renderDashboard(): string {
 
     filter.addEventListener("change", () => selectUser(filter.value));
     document.querySelector("#all-users").addEventListener("click", () => selectUser(""));
+    for (const button of sortButtons) {
+      button.addEventListener("click", () => {
+        const column = button.dataset.sort;
+        sortDirection = sortColumn === column
+          ? (sortDirection === "ascending" ? "descending" : "ascending")
+          : (column === "time" ? "descending" : "ascending");
+        sortColumn = column;
+        for (const control of sortButtons) {
+          const active = control.dataset.sort === sortColumn;
+          if (active) control.closest("th").setAttribute("aria-sort", sortDirection);
+          else control.closest("th").removeAttribute("aria-sort");
+          control.querySelector("span").textContent = active ? (sortDirection === "ascending" ? "↑" : "↓") : "↕";
+          const nextAscending = active ? sortDirection !== "ascending" : control.dataset.sort !== "time";
+          const nextOrder = control.dataset.sort === "time"
+            ? (nextAscending ? "oldest first" : "newest first")
+            : (nextAscending ? "A to Z" : "Z to A");
+          control.setAttribute("aria-label", control.dataset.label + ": sort " + nextOrder);
+        }
+        render();
+      });
+    }
     refresh();
     setInterval(refresh, 1000);
   </script>
