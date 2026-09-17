@@ -104,6 +104,7 @@ Then split into tracks.
 - [x] User-requested discussion demo reset (A12): restore Capt J. Demo's initial-post state on the current instance, retain fixtures/passkeys/audit, record the reset, and require a fresh governed submission after reset. Both modes, stale/concurrent requests, audit failure, and unaffected quiz/record/registration were verified; 108 tests and Chrome checks pass (see [reset evidence](build-log/discussion-reset-verification.md)).
 - [x] User-requested Docker/EC2 deployment (A13): two-container Compose, persistent data/policies, manual setup and first-boot automation. Image build, healthy containers, signed quiz enforcement, internal generator crawl, and passkey/audit persistence after recreation verified locally; 110 tests passed, two source-data checks skipped. See [deployment guide](ec2-deployment.md).
   - [ ] Verify first-boot deployment on EC2 and physical Touch ID in Comet through the SSH tunnel.
+- [x] User-requested imported-content layout fixes (A14): improve wrapping and readability on portal and dashboard pages without truncating source text or changing governance, including quiz legends fully inside their cards. Verified 60 browser cases across five desktop/mobile widths in both modes, vertical-containment regression, 112 tests/build, and virtual-authenticator quiz/record/discussion flows (see [layout evidence](build-log/content-layout-verification.md)).
 
 ### Track B — Dashboard, policy generator, demo assets — Chris *(iterate)*
 **Morning (to 13:00)**

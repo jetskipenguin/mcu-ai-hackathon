@@ -55,6 +55,9 @@ Stable IDs preserve the ordering and grouping in `docs/countersign-plan.md` sect
 
 - [ ] **A11** Fix bugs from the integrated run; add nothing new.
 - [x] **A12** Add the user-requested discussion demo reset: restore Capt J. Demo's initial-post state on the current instance, retain fixtures/passkeys/audit, record the reset, and require a fresh governed submission after reset. Both modes, stale/concurrent requests, audit failure, and unaffected quiz/record/registration were verified; 108 tests and Chrome checks pass (see [reset evidence](build-log/discussion-reset-verification.md)).
+- [x] **A13** Add Docker/EC2 deployment: two-container Compose, persistent data/policies, manual setup and first-boot automation. Upstream local image/container, enforcement, generator-crawl, and persistence checks are recorded in the [deployment guide](ec2-deployment.md).
+  - [ ] Verify first-boot deployment on EC2 and physical Touch ID in Comet through the SSH tunnel.
+- [x] **A14** Fix imported-content wrapping and readability on portal and dashboard pages without truncating source text or changing governance, including quiz legends fully inside their cards. Verified 60 browser cases across five desktop/mobile widths in both modes, vertical-containment regression, 112 tests/build, and virtual-authenticator quiz/record/discussion flows (see [layout evidence](build-log/content-layout-verification.md)).
 
 ## Track B - Morning
 
