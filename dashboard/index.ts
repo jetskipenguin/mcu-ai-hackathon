@@ -11,7 +11,8 @@ function escapeHtml(value: string): string {
 }
 
 const styles = `
-  :root { color-scheme: light; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+  :root { color-scheme: light; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; line-height: 1.5; overflow-wrap: anywhere; }
+  *, *::before, *::after { box-sizing: border-box; }
   body { margin: 0; background: #f3f0e8; color: #17211b; }
   header { padding: 1.25rem 2rem; background: #17211b; color: #f8f4e8; }
   header a { color: #d7c783; }
@@ -25,15 +26,16 @@ const styles = `
   .timeline-controls { display: flex; align-items: center; flex-wrap: wrap; gap: .6rem; }
   select { padding: .5rem; max-width: 100%; }
   .timeline-scroll { overflow-x: auto; }
+  .timeline-scroll table { min-width: 64rem; }
   #events pre { max-width: 40rem; max-height: 28rem; white-space: pre-wrap; overflow-wrap: anywhere; }
-  .policy-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
-  pre { overflow: auto; padding: 1rem; background: #fff; border: 1px solid #c7c9c4; }
-  button { padding: .6rem .9rem; margin: .3rem .5rem .3rem 0; cursor: pointer; }
+  .policy-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }
+  .policy-grid > section { min-width: 0; }
+  pre { max-width: 100%; max-height: 30rem; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; padding: 1rem; background: #fff; border: 1px solid #c7c9c4; }
+  button { max-width: 100%; white-space: normal; padding: .6rem .9rem; margin: .3rem .5rem .3rem 0; cursor: pointer; }
   button:disabled { cursor: default; opacity: .55; }
   .notice { padding: .8rem; border-left: .35rem solid #b86b1b; background: #fff5d9; }
   .policy-rule { border-top: 1px solid #c7c9c4; margin-top: 1.5rem; }
-  .policy-rule pre { max-height: 30rem; white-space: pre-wrap; overflow-wrap: anywhere; }
-  @media (max-width: 800px) { .policy-grid { grid-template-columns: 1fr; } main { padding: 1rem; } }
+  @media (max-width: 800px) { .policy-grid { grid-template-columns: minmax(0, 1fr); } main, header { padding: 1rem; } }
 `;
 
 export function renderDashboard(): string {
