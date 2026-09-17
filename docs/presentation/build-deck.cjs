@@ -5,6 +5,7 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const assert = require('node:assert/strict');
+const { createHash } = require('node:crypto');
 
 const ROOT = path.resolve(__dirname, '../..');
 const PptxGenJS = require(path.join(ROOT, 'node_modules/.cache/presentation-tools/node_modules/pptxgenjs'));
@@ -19,6 +20,13 @@ const W = 13.333333, H = 7.5;
 const FONT = 'Arial';
 const layout = [];
 let slideIndex = 0;
+const demoPath = path.join(__dirname, 'Countersign-demo.mp4');
+const hasDemo = fs.existsSync(demoPath);
+const demo = hasDemo ? JSON.parse(fs.readFileSync(path.join(__dirname, 'demo-video.json'), 'utf8')) : null;
+if (hasDemo) {
+  assert.equal(createHash('sha256').update(fs.readFileSync(demoPath)).digest('hex'), demo.sha256,
+    'The movie must match its verified edit manifest before embedding.');
+}
 
 pptx.layout = 'LAYOUT_WIDE';
 pptx.author = 'Countersign team';
@@ -129,7 +137,9 @@ const clocks = ['0:00–0:35', '0:35–1:10', '1:10–2:55', '2:55–3:40', '3:4
 const extraNotes = [
   'Lead with the training use case. The question is fresh confirmation, not identifying a malicious bot. Optional: add presenter names to the small brand area after assigning roles.',
   'Explain the military countersign meaning once. The human/passkey graphic is conceptual, not a native authenticator dialog.',
-  'DEMO SLOT — no video is embedded. The picture is a static governed-quiz UI reference. Switch to your prepared Chrome tabs, or replace the dark panel with your real recording. The OFF/ON pills contain localhost hyperlinks; pre-open Chrome because hyperlinks use the OS default browser. Never describe this still as the selected extension submitting or a human touching a sensor.\n\nDemo schedule: 20s ungoverned result; 30s governed preparation; 25s fresh prompt/confirmation/result; 20s matching audit; 10s landing line. In a hybrid handoff, explain where the recording ends and live confirmation starts. Do not pre-issue a challenge.\n\nIf live progress stalls for ~10 seconds, use the backup. Show the actual human-verified event and assertion ID from THAT run. Do not substitute UI/test evidence.',
+  hasDemo
+    ? `RECORDED DEMO — ${demo.duration_seconds} seconds, embedded in this slide. In Slide Show, click the video itself to play. Narrate live; the MP4 is intentionally silent. Keep Countersign-demo.mp4 as the standalone fallback. Do not call this a live interaction.\n\nVideo clock: 0:00–0:30 governance off; 0:30–1:04.5 governance on; 1:04.5–1:15.5 matching audit. Use the remaining 29.5 seconds of the 1:45 slide allocation for introduction and landing line.\n\nThe recordings show the real Chrome ChatGPT extension and native Touch ID UI, not a virtual authenticator. Waiting intervals are trimmed. Governed source 34–56.5 seconds remains contiguous at real time; a spatial zoom changes framing only. The final eight seconds are explicitly a still from this same recording's audit at source time 78 seconds. Session data is cropped out and the credential identifier is visibly masked.\n\nMatching actual assertion: ${demo.evidence.assertion_id}; UP=true, UV=true, age=${demo.evidence.age_ms}ms. This verifies participation, not authorship, comprehension, or which finger was used. Native prompt, result, and audit are not substituted from another run. See demo-edit.json, demo-video.json, and recording-session.md.\n\nPowerPoint/Keynote playback on the presenting laptop and the timed rehearsal still need a human check.`
+    : 'LIVE-DEMO FALLBACK — no movie was found at build time. The picture is a static governed-quiz UI reference, not footage of an extension or native prompt. Use prepared Chrome tabs and show their matching audit event; do not narrate the static picture as the real interaction.',
   'The published badges are a real app screenshot from an isolated Chrome virtual-authenticator test. The footer says so. They demonstrate UI and disclosure semantics, NOT a physical Touch ID interaction or a ChatGPT-extension run. The record crop shows synthetic fields withheld by default. Discuss disclosure for ~35s and protected records for ~10s. After reveal, an extension can read the data.',
   'All diagram elements are editable PowerPoint text/shapes. Gray/white is the existing app; teal/mint is Countersign. Arrows illustrate the governed action, not every possible request. The server gate is mandatory. Express is the demonstrated implementation; no universal SDK or governance-injection proxy is claimed.',
   'Policy-review images are separate detail crops of the real current UI. Active and draft policies were identical at capture. No model call and no approval were performed for the capture. This shows the approval interface, not a claim of live generation. Do not change the known-good policy on stage. The current crawler covers three demo routes. Runtime verification does not call an LLM.',
@@ -192,8 +202,24 @@ function notes(slide, n) {
   notes(s, 2);
 }
 
-// 3 — A useful live-demo holding slide, explicitly not fabricated footage.
-{
+// 3 — Nearly full-frame local video; offline, click-to-play, with a real poster.
+if (hasDemo) {
+  const s = pptx.addSlide();
+  slideIndex++;
+  s.background = { color: C.navy };
+  text(s, 'Same task. Different boundary.', 0.54, 0.12, 9.72, 0.35, 23, C.white, { bold: true });
+  text(s, 'RECORDED · 1:15', 10.55, 0.19, 2.22, 0.24, 12, C.mint, { bold: true, align: 'right' });
+  // PDF exporters can omit the video's cover. A matching static underlay keeps
+  // the PDF useful while the higher-z-order native media object receives clicks.
+  image(s, 'demo-poster.png', 0.54, 0.61, 12.24, 6.885,
+    'Static preview of the real recorded native prompt; the PPT video overlays this image.');
+  register('video', 0.54, 0.61, 12.24, 6.885, 'Recorded Chrome extension demo and matching proof');
+  s.addMedia({ type: 'video', path: demoPath, x: 0.54, y: 0.61, w: 12.24, h: 6.885,
+    cover: 'data:image/png;base64,' + fs.readFileSync(path.join(__dirname, 'assets/demo-poster.png')).toString('base64'),
+    objectName: 'Recorded quiz demo — governance off/on, native confirmation, matching audit',
+  });
+  notes(s, 3);
+} else {
   const s = newSlide('SO WHAT / THE DEMO');
   title(s, 'Same task. Different boundary.');
   text(s, 'ChatGPT extension · Chrome', 0.75, 1.88, 9.5, 0.35, 18, C.muted);
@@ -330,6 +356,7 @@ assert.equal(times.reduce((a, b) => a + b, 0), 390);
 fs.writeFileSync(path.join(ROOT, 'node_modules/.cache/countersign-deck-layout.json'), JSON.stringify({
   canvas: { width: W, height: H, unit: 'inches' }, font: FONT,
   slides: 8, timed_seconds: times, buffer_seconds: 30, qa_seconds: 180,
+  embedded_video: hasDemo, video_sha256: demo?.sha256 ?? null,
   objects: layout,
 }, null, 2) + '\n');
 pptx.writeFile({ fileName: path.join(__dirname, 'Countersign.pptx'), compression: true });

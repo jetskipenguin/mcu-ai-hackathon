@@ -8,6 +8,8 @@ Implementation/adversary checkboxes are synchronized with [TASKS.md](TASKS.md); 
 
 **Functional acceptance:** The tester confirmed the quiz, discussion post, and record flows all worked as expected with governance enabled and disabled. All six flow/mode checks are recorded in [manual acceptance](manual-acceptance-testing.md#tester-confirmed-functional-acceptance). Recording, browser/device-specific evidence, edge-case checks, deployment acceptance, and rehearsal remain separately tracked below and in the manual checklist.
 
+**Current media:** The [75.5-second real Chrome-extension quiz demo](presentation/README.md) now includes governance off/on, native Touch ID/Done/success, and matching audit evidence; B10 is complete for this current demo. Video-enabled deck package/PDF checks and standalone Chrome playback pass. Presenting-laptop PowerPoint/Keynote playback, B11 rehearsal, T2 final approval, and a full seven-minute pitch recording remain outstanding. The Chrome recording does not complete A5/M6 Comet checks. The [current eight-slide delivery plan](countersign-pitch.md#5-demo-production-and-stage-plan) uses this recording; live/hybrid delivery is optional, and the older Act/Comet schedule below is historical context.
+
 ---
 
 ## 0. Principles
@@ -64,7 +66,7 @@ Then split into tracks.
 ### 1.3 Together (before splitting)
 - [x] Iterate on the spec/pitch/plan docs.
 - [x] Lock: stack, extension adversary, who presents which slide. (Name is decided: Countersign — spec §0 explains it.)
-- [x] Slide deck with the current eight pitch-outline titles. [Editable PowerPoint and preview](presentation/README.md) are drafted; final review, media insertion, and timed rehearsal remain separate.
+- [x] Slide deck with the current eight pitch-outline titles (M19). [Editable PowerPoint and preview](presentation/README.md) are drafted; slide 3 uses the completed 75.5-second recorded quiz demo as one offline MP4, with a standalone backup and static PDF poster. Package/PDF and standalone video checks pass; laptop slide playback, final review, and timed rehearsal remain pending.
 - [x] Repo created, docs committed. Start `docs/BUILD-LOG.md` with that as the first entry (timestamps from the commits).
 - [x] Rubric is in hand (pitch §0). Presentation format, semi/final schedule, and deliverables confirmed (M21).
 - [x] Datasets (spec §11.1): select the coursebook chapter, extract the CUI category/LDC files, note dataset fields, and register all three on the hackathon portal.
@@ -92,7 +94,7 @@ Then split into tracks.
 - [x] WebAuthn: registration on first login (Touch ID), assertion endpoint. Store credentials in memory/JSON.
 - [x] `countersign.js` v1: intercept form submits matching policy; request challenge; call `navigator.credentials.get`; POST assertion + form together.
 - [x] Middleware v1: load `countersign.policy.json` (hand-written); for `human-required` verify assertion (signature, challenge binding, UP/UV flags, max age) before executing; write log event.
-- [ ] **Run Comet against it. This is the 13:00 checkpoint. Record it the moment it works.**
+- [ ] **Run Comet against it. This is the 13:00 checkpoint (A5). Record it the moment it works.** The [current Chrome ChatGPT-extension recording](presentation/recording-session.md) captures native Touch ID, success, and matching proof; the Comet-local check and its recording remain pending.
 
 **Afternoon (to 16:00)**
 - [x] Markings: render `data-marking` / `data-categories` attributes and `Countersign-Marking` header on `/record/1`.
@@ -113,18 +115,18 @@ Then split into tracks.
 **Morning (to 13:00)**
 - [x] Dashboard v1: live timeline reading the JSONL log (poll every 1s); event rows colored by actor class; per-user drill-down. Exact-ID user links/filter, shareable URLs, expandable event/proof details, stable focus/expanded rows, and polling failure recovery passed Chrome checks (see [evidence](build-log/dashboard-provenance-verification.md)).
 - [x] Draft the policy generator prompt: input = rendered HTML of each route + list of form actions; output = policy JSON per spec §7 with rationale strings. Live GPT-6 generation against all three source-derived local pages passed with all 126 categories/10 LDCs and exact Registry-definition citations.
-- [x] All eight current pitch slides and speaker notes drafted for the confirmed 7-minute presentation plus 3-minute Q&A. [PowerPoint draft](presentation/README.md) includes native diagrams, real UI crops, and a clearly identified demo slot; no actual extension recording is claimed.
+- [x] All eight current pitch slides and speaker notes drafted for the confirmed 7-minute presentation plus 3-minute Q&A (B3). [PowerPoint draft](presentation/README.md) includes native diagrams, the original UI crops, and slide 3's real recorded Chrome-extension quiz demo; slide 4 remains a virtual-authenticator UI reference. The 75.5-second clip leaves 29.5 seconds for intro/wrap within the 1:45 demo budget; playback, final approval, and rehearsal remain pending.
 
 **Afternoon (to 18:00)**
 - [x] Policy generator CLI/endpoint: crawl routes → LLM → draft policy → write `countersign.policy.draft.json`. Load the 126 Registry categories + 10 LDCs from the CUI dataset as structured input; the generator may only emit identifiers from that list (spec §5.6). Live GPT-6 generation passed with `placeholder: false`; draft-only writes and post-approval enforcement passed regression checks (see [dataset evidence](build-log/dataset-import-verification.md)).
 - [ ] *(1 hr, if on schedule)* Cite per marking: keyword/BM25 lookup over the dataset's JSONL chunks, attach the Registry definition and one governing-document chunk to each proposed marking's rationale. Exact Registry definitions are attached and visible in the approval view; governing-document chunk retrieval remains open.
 - [x] Dashboard: policy review view (draft vs. current, per-rule approve, "Approve all"). Approval writes `countersign.policy.json` and hot-reloads the middleware. Selective/full approval, stale-review handling, and continued enforcement passed browser tests.
-- [ ] Extension adversary: run the quiz + record tasks in Chrome with the chosen extension; **record the clips**, including the vendor's task log / chat history showing the SSN.
+- [ ] Extension adversary (B7): run the quiz + record tasks in Chrome with the chosen extension; **record the clips**, including the vendor's task log / chat history showing the SSN. The [current ChatGPT-extension quiz footage](presentation/recording-session.md) covers governance off/on; the protected-record recording and task/vendor-trace criterion remain pending.
 - [ ] Manus (if bought): same, time-boxed.
 
 **Evening**
 - [ ] Record Act 1 with Comet (ungoverned portal). Trim clips.
-- [ ] Record Act 3 backup with Comet (governed portal) once Track A is stable.
+- [x] Record the governed backup once Track A is stable (B10; current Chrome-extension quiz demo replaces the earlier Act 3 Comet backup). [Completed MP4 and evidence](presentation/recording-session.md) show real native Touch ID/Done/success and the same-run expanded audit with `human-verified`, assertion ID, UP=true, UV=true, and age=6775ms. This is a demo clip, not a Comet check or full seven-minute pitch recording; laptop playback remains pending.
 - [ ] First full rehearsal, timed. Note every place the demo stalls or a slide runs long.
 
 ### Integration points
@@ -157,7 +159,7 @@ Then split into tracks.
 4. Dashboard → tail the JSONL in a terminal with `jq` and pretty colors. Honestly still convincing.
 5. Extension adversary live → recorded only (already the plan) → if no clip, one slide with a screenshot.
 
-**Never cut:** the Touch ID wall on quiz submit, live, in Comet (or the fallback agent). That is the demo.
+**Never cut:** the Touch ID wall on quiz submit and its matching proof. The current delivery preserves this in the real recorded Chrome-extension demo; live/hybrid delivery is optional. Comet-specific verification remains separately pending.
 
 ---
 

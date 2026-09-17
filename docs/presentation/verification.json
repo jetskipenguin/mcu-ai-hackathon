@@ -1,23 +1,57 @@
 {
   "slides": 8,
   "notes_pages": 8,
+  "external_links": [],
+  "embedded_video": true,
+  "video": {
+    "filename": "Countersign-demo.mp4",
+    "package_part": "ppt/media/media-3-2.mp4",
+    "slide": 3,
+    "sha256": "8d7a73b28ec19d13891199ecf3c90133e3a42f92db5a1d0ac5c07955b303733f",
+    "bytes": 2805037,
+    "duration_seconds": 75.5,
+    "duration_source": "demo-video.json (decode checked separately by verify-demo-video.py)",
+    "standalone_and_metadata_sha256_match": true,
+    "poster": "assets/demo-poster.png",
+    "recorded_action": {
+      "action": "POST /quiz/1/submit",
+      "rule_id": "quiz-submit",
+      "presence_requested_at": "2026-09-17T13:55:27.757Z",
+      "verified_at": "2026-09-17T13:55:34.532Z",
+      "event_id": "evt_3ea776d201de4b59961e7123fa571fd3",
+      "assertion_id": "asr_20a3eda1-bc17-4d87-ba58-2e44c966eaf8",
+      "up": true,
+      "uv": true,
+      "age_ms": 6775
+    }
+  },
   "format": "16:9",
   "native_text_font": "Arial",
   "presentation_seconds": 390,
   "buffer_seconds": 30,
   "qa_seconds": 180,
   "package_xml": "valid",
-  "external_links": [
-    "http://localhost:3001/quiz/1",
-    "http://localhost:3000/quiz/1"
-  ],
-  "embedded_video": false,
+  "package_relationships": "pass",
+  "external_media_links": [],
   "source_object_bounds": "pass",
   "rendered_text_bounds": "pass",
-  "renderer": "LibreOffice PDF export; PyMuPDF rasterization",
+  "pdf_video_poster": "visible_image_coverage_pass",
+  "renderer": "Actual deck PDF export; PyMuPDF rasterization",
+  "pptx_sha256": "dbfb4cdea5bbe8ffdb14884551b57d2786a1d01a96a54352baf3cbdee3954e06",
+  "pdf_sha256": "933d85bed2bde5339d587aa315c950f0a2b38af03afafd7a30d5caa1153e77b8",
+  "evidence": {
+    "slide_3": {
+      "kind": "recorded_quiz_demo",
+      "source": "Two user-supplied real Chrome/ChatGPT-extension recordings; demo-video.json records the matching audit action.",
+      "native_prompt": "Visibly captured in the real recording, as confirmed by the user; not a virtual-authenticator UI reference."
+    },
+    "slide_4": "Automated UI reference: disclosure badges from an isolated virtual-authenticator flow; not the recorded quiz demo.",
+    "slide_6": "Policy-review UI detail crops; not evidence of new policy generation or approval."
+  },
+  "powerpoint_keynote_playback": "not_tested",
   "limitations": [
-    "No physical-passkey or ChatGPT-extension demo recording is embedded.",
-    "UI screenshots are automated/virtual-authenticator references.",
+    "Package/PDF validation does not decode the MP4; run verify-demo-video.py separately.",
+    "PDF/PNG previews show the video cover only, not playback.",
     "PowerPoint/Keynote playback and final live rehearsal remain human checks."
   ],
   "slide_text": [
@@ -31,7 +65,7 @@
     },
     {
       "slide": 3,
-      "text": "SO WHAT / THE DEMO\ncountersign.\nHUMAN VERIFICATION FOR WEB APPS\n03\nSame task. Different boundary.\nChatGPT extension \u00b7 Chrome\nGoverned quiz \u00b7 UI reference\nGovernance off\nGovernance on\nLive demo\nor insert your recording\nPrepare \u2192 Confirm \u2192 Inspect proof\n"
+      "text": "Same task. Different boundary.\nRECORDED \u00b7 1:15\n"
     },
     {
       "slide": 4,

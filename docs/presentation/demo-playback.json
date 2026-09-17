@@ -1,0 +1,223 @@
+{
+  "status": "playback_passed_minor_nonblocking_visual_note",
+  "checked_at": "2026-09-17T15:00:06.900Z",
+  "scope": "Final MP4 playback and visual QA of the specified slide preview, poster, proof image, and decoded movie frames.",
+  "preview_recheck": {
+    "checked_at": "2026-09-17T15:09:48Z",
+    "status": "passed",
+    "scope": "Targeted visual comparison of the regenerated slide-03.png against demo-poster.png, with SHA-256 checks of those two PNGs only.",
+    "observed": "The poster is now visible beneath the slide heading and visually matches the supplied asset. Governance on, the complete Touch ID prompt, the human-confirmation message, the click-to-play annotation, and the timing caption are legible and not clipped.",
+    "poster_asset_hash_unchanged": true,
+    "initial_mp4_playback_results_and_limitations_preserved": true,
+    "browser_playback_or_source_checks_rerun": false
+  },
+  "artifact": {
+    "path": "docs/presentation/Countersign-demo.mp4",
+    "expected_sha256_source": "docs/presentation/demo-video.json",
+    "expected_sha256_read_dynamically": true,
+    "expected_sha256": "8d7a73b28ec19d13891199ecf3c90133e3a42f92db5a1d0ac5c07955b303733f",
+    "actual_sha256": "8d7a73b28ec19d13891199ecf3c90133e3a42f92db5a1d0ac5c07955b303733f",
+    "hash_matches": true,
+    "hash_unchanged_after_playback": true,
+    "bytes": 2805037,
+    "duration_seconds": 75.5,
+    "width": 1920,
+    "height": 1080,
+    "codec": "H.264/AVC",
+    "codec_string": "avc1.640029",
+    "fps": 30,
+    "encoded_frame_count": 2265,
+    "audio_tracks": 0,
+    "metadata_verification": "MP4 track/sample timing parsed directly; Chrome independently reported matching duration and dimensions."
+  },
+  "browser": {
+    "name": "Google Chrome",
+    "version": "152.0.7977.83",
+    "executable": "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+    "headless": true,
+    "playwright_version": "1.58.2",
+    "own_temporary_profile": true,
+    "viewport": [1920, 1080],
+    "delivery": "Owned ephemeral loopback HTTP server serving only the video test page and the exact hashed MP4 bytes; byte-range response exercised.",
+    "h264_can_play_type": "probably",
+    "connected_to_existing_browser": false
+  },
+  "playback": {
+    "status": "passed",
+    "loaded_metadata_and_decoded_frame": true,
+    "initial_current_time_advance_seconds": 1.801394,
+    "initial_wall_time_seconds": 1.8015,
+    "continuous_playback": {
+      "playback_rate": 1,
+      "wall_time_seconds": 75.515,
+      "ended": true,
+      "final_current_time_seconds": 75.5,
+      "reported_dropped_frames": 0,
+      "inspected_video_frame_callbacks": 2263,
+      "first_callback_media_time_seconds": 0.033333,
+      "last_callback_media_time_seconds": 75.466667,
+      "maximum_callback_media_time_gap_seconds": 0.066667,
+      "non_monotonic_callback_times": 0,
+      "black_frame_callbacks": 0,
+      "minimum_mean_luma_0_to_255": 37.98037,
+      "minimum_nonblack_pixel_fraction": 0.999861,
+      "black_frame_method": "Each delivered video-frame callback was drawn into a 160x90 canvas. A frame failed if mean luma was below 2 or fewer than 1% of pixels exceeded luma 8."
+    },
+    "seek_samples_seconds": [0, 0.5, 1, 1.95, 2, 2.1, 3, 4, 5, 10, 10.95, 11.05, 28, 29.95, 30.05, 31, 31.95, 32.05, 41.95, 42.05, 46, 49.45, 49.55, 51, 53, 55, 56, 57, 58, 59, 60, 62, 64.45, 64.55, 66, 67.45, 67.55, 71, 75, 75.45],
+    "successful_seek_samples": 40,
+    "all_seek_samples_decoded_and_nonblack": true,
+    "boundary_playback_seconds": [2, 11, 30, 32, 42, 49.5, 64.5, 67.5],
+    "boundary_playback_method": "Seek to 0.2 seconds before each boundary, play at 1x past 0.2 seconds after it, and check currentTime and media error state.",
+    "successful_boundary_crossings": 8,
+    "media_errors": [],
+    "page_errors": [],
+    "console_errors": [],
+    "request_failures": [],
+    "waiting_events": 0,
+    "stalled_events": 0
+  },
+  "visual_qa": {
+    "method": "Visual inspection of the three specified PNGs plus contact sheets generated from this Chrome decode and full-resolution opening, Touch ID, result, audit overview, and final proof frames.",
+    "opening": {
+      "status": "passed",
+      "observed": "The actual MP4 contains the Governance off title card at 0-2 seconds. Frames at 2.1, 3, 4, and 5 seconds show the browser and assistant request. The opening was checked from the MP4 rather than an older contact sheet."
+    },
+    "narrative_and_labels": {
+      "status": "passed",
+      "observed": "Governance off, Governance on, and Verified action labels match their sections. The 28-second sample shows baseline submission; the 31-second sample is the Governance on title card. Recorded/Chrome labels identify a recorded Chrome + ChatGPT-extension demonstration.",
+      "timing_disclosures": [
+        "Title cards say: Recorded in Chrome. Waiting intervals trimmed. Confirmation remains continuous.",
+        "Wide browser footage says: Waiting intervals trimmed; retained footage is real time.",
+        "The confirmation crop says: Continuous confirmation - real time, no time cut.",
+        "The final proof says: Audit detail: still from this recording."
+      ],
+      "unqualified_real_time_claim_over_trimmed_waits_observed": false
+    },
+    "native_prompt_and_result": {
+      "status": "passed",
+      "observed": "At 53 seconds the complete recorded native Sign In / Use Touch ID to sign in? prompt is large and readable, including Continue with Touch ID. Samples at 55-57 seconds show signing-in/done states; 58-64.45 seconds show Quiz submitted. Human presence verified. The prompt and success message are not clipped.",
+      "peripheral_crop": "The spatial close-up intentionally cuts off much of the assistant sidebar and some peripheral page content. The core prompt and submission evidence remain visible.",
+      "native_authentication_triggered_during_qa": false
+    },
+    "critical_timeline": {
+      "status": "manifest_mapping_consistent_with_observed_transition",
+      "source_recording": "governed recording",
+      "source_start_seconds": 34,
+      "source_end_seconds": 56.5,
+      "output_start_seconds": 42,
+      "output_end_seconds": 64.5,
+      "duration_seconds": 22.5,
+      "manifest_segments": [
+        {"source": [34, 41.5], "output": [42, 49.5], "view": "browser", "frames": 225},
+        {"source": [41.5, 56.5], "output": [49.5, 64.5], "view": "confirmation", "frames": 450}
+      ],
+      "manifest_source_ranges_contiguous": true,
+      "manifest_source_and_output_durations_equal": true,
+      "observed_spatial_crop_change_output_seconds": 49.5,
+      "original_source_frame_comparison_performed": false
+    },
+    "final_proof": {
+      "status": "passed",
+      "output_start_seconds": 67.5,
+      "output_end_seconds": 75.5,
+      "duration_seconds": 8,
+      "manifest_source_time_seconds": 78,
+      "manifest_source_recording": "same governed recording",
+      "explicit_still_label_visible": true,
+      "observed": "The last eight seconds are presented as an audit still. Samples at 67.55, 71, and 75 seconds show the same proof composition. The action, actor class, assertion, UP/UV flags, and age are readable.",
+      "evidence": {
+        "route": "/quiz/1",
+        "action": "POST /quiz/1/submit",
+        "rule_id": "quiz-submit",
+        "class": "human-required",
+        "decision": "allowed",
+        "actor_class": "human-verified",
+        "assertion_id": "asr_20a3eda1-bc17-4d87-ba58-2e44c966eaf8",
+        "up": true,
+        "uv": true,
+        "age_ms": 6775,
+        "matches_manifest_and_requested_assertion": true
+      }
+    },
+    "privacy": {
+      "status": "passed_in_inspected_frames",
+      "menu_bar_and_dock_visible": false,
+      "final_proof_session_data_cropped_out": true,
+      "final_proof_credential_identifier_visibly_masked": true,
+      "mask_label": "credential ID omitted",
+      "observed": "The required assertion remains readable. No local home paths or exposed session/credential identifiers were observed in the inspected presentation imagery."
+    },
+    "assets": [
+      {
+        "path": "docs/presentation/assets/demo-poster.png",
+        "sha256": "b1dfc787c9fe2c87d223485057c21bbb07fb5131fe02e110895d0df7904165d5",
+        "matches_manifest_hash": true,
+        "width": 1920,
+        "height": 1080,
+        "status": "passed",
+        "observed": "Recorded Touch ID prompt is legible. The click-to-play annotation does not cover the prompt or human-confirmation message."
+      },
+      {
+        "path": "docs/presentation/assets/demo-proof.png",
+        "sha256": "6de3817b6e9784b90308429b43dc31dc87b56e183e3e8b1c665ad56e4d665cce",
+        "matches_manifest_hash": true,
+        "width": 1920,
+        "height": 1080,
+        "status": "passed",
+        "observed": "Matches the final proof composition and readable assertion/UP/UV/age values. Session data are omitted and the credential identifier is masked."
+      },
+      {
+        "path": "docs/presentation/preview/slide-03.png",
+        "sha256": "198702f2a01d7dcc5f1640e0f3183e8ba212dabcfc5336bf085b29f3f31d5831",
+        "width": 1537,
+        "height": 864,
+        "status": "passed",
+        "observed": "The regenerated preview shows the matching demo-poster.png below Same task. Different boundary. and RECORDED · 1:15. The native Touch ID prompt, human-confirmation message, click-to-play label, and timing caption are visible and legible."
+      }
+    ]
+  },
+  "issues": [
+    {
+      "severity": "minor_visual",
+      "blocking": false,
+      "artifact": "docs/presentation/Countersign-demo.mp4",
+      "output_interval_seconds": [64.5, 67.5],
+      "finding": "The audit overview's rightmost Evidence column is partly cut off in the recorded browser viewport; the later overview sample also clips the left edge of timestamps after horizontal movement.",
+      "impact": "The enlarged final proof is readable and contains the required assertion, UP/UV flags, and age."
+    }
+  ],
+  "resolved_issues": [
+    {
+      "status": "resolved",
+      "original_status": "issue",
+      "severity": "major_visual",
+      "artifact": "docs/presentation/preview/slide-03.png",
+      "first_observed_at": "2026-09-17T15:00:06.900Z",
+      "resolved_at": "2026-09-17T15:09:48Z",
+      "previous_preview_sha256": "9148098748587907cc1eae099a9faf524f2cefef13643feb148040724e2eb23b",
+      "original_finding": "The current exported slide 3 preview is blank below its heading and duration label.",
+      "original_impact": "The static preview does not visually expose the movie/poster. This observation does not establish how the native presentation application renders or plays the deck.",
+      "resolution": "The regenerated PNG now visibly includes the matching, legible poster beneath the heading. Resolution is based on static-preview inspection only; native presentation playback remains untested."
+    }
+  ],
+  "limitations": [
+    "PowerPoint is not installed. No PowerPoint or Keynote playback, embedded-media interaction, or slideshow rendering was tested or claimed.",
+    "Browser playback was tested in isolated headless Chrome at 1920x1080, not on the presentation projector or in a native slide show.",
+    "Frame-callback inspection covered 2263 delivered callbacks from a 2265-frame movie, supplemented by 40 exact-time decode samples; it was not an exhaustive manual inspection of every frame.",
+    "Source-time continuity and the final still's 78-second source position were checked against demo-video.json and the decoded final composition. Original recordings were not independently frame-compared in this pass.",
+    "This was media QA, not a new live authentication or application test."
+  ],
+  "execution": {
+    "command": "node node_modules/.cache/demo-recording/playback-qa.cjs",
+    "result": "passed",
+    "raw_results": "node_modules/.cache/demo-recording/playback-qa-w4P3sm/results.json",
+    "decoded_frame_and_contact_sheet_directory": "node_modules/.cache/demo-recording/playback-qa-w4P3sm",
+    "browser_closed": true,
+    "owned_http_server_closed": true,
+    "temporary_browser_profile_removed": true,
+    "existing_browser_and_app_servers_touched": false,
+    "native_authentication_triggered": false,
+    "modified_outside_ignored_scratch": ["docs/presentation/demo-playback.json"],
+    "commit_created": false
+  }
+}

@@ -5,8 +5,8 @@
 - **Demo:** the **ChatGPT extension in Chrome only**, in both governance modes.
 - **Central idea:** AI can assist with the work; the application decides which actions require fresh human confirmation.
 
-**First-draft deck:** [Editable PowerPoint](presentation/Countersign.pptx) · [PDF preview](presentation/Countersign.pdf) · [All-slide contact sheet](presentation/Countersign-preview.png). The deck includes editable diagrams, speaker notes, and a live-demo/video slot; **no Chrome-extension or physical-passkey recording is embedded**. See [deck usage notes](presentation/README.md) before presenting.
-The tester has [confirmed all three flows in both modes](manual-acceptance-testing.md#tester-confirmed-functional-acceptance); recording, exact Chrome/passkey behavior, and timed rehearsal remain separate checks.
+**First-draft deck:** [Editable PowerPoint](presentation/Countersign.pptx) · [PDF preview](presentation/Countersign.pdf) · [All-slide contact sheet](presentation/Countersign-preview.png) · [Standalone demo MP4 / backup](presentation/Countersign-demo.mp4). The deck includes editable diagrams and speaker notes; slide 3 uses the completed **75.5-second real Chrome ChatGPT-extension recording**, with native Touch ID, successful submission, and matching audit evidence, as one offline embedded MP4. Click the video in **Slide Show** to play and narrate live. The PDF shows a static poster only. Video decode/playback and video-enabled package/PDF checks passed; see [deck usage notes](presentation/README.md) for the remaining presenting-laptop check.
+The tester has [confirmed all three flows in both modes](manual-acceptance-testing.md#tester-confirmed-functional-acceptance); the [user-recorded quiz footage](presentation/recording-session.md) now captures the actual Chrome/native-prompt behavior. Presenting-laptop PowerPoint/Keynote playback, timed rehearsal, final approval, and a full seven-minute pitch recording remain separate, outstanding checks. Comet checks are still pending.
 
 **How to use this file:** rehearse from §§2–3; prepare the demo from §5; paste **only the brief in §6** into Beautiful.ai and add the assets in §7. Keep §8 for Q&A. This eight-slide outline replaces the earlier eleven-slide/three-act pitch; historical task and test records are not new demo instructions.
 
@@ -92,6 +92,8 @@ A clean checkpoint graphic: **Action → Human confirmation → Decision record*
 **On screen:** a large video/demo region, with labels **Governance off** and **Governance on**. End on an enlarged crop of the actual accepted-proof event, not the whole log.
 
 This is the main event. Use the same ChatGPT extension, Chrome profile, demo user, and rehearsed quiz request in both instances. Keep the mode indicator visible. The full sequence is in §5.
+
+**Current delivery:** introduce this as a **recorded demo**, then play the completed clip and narrate its four beats. The confirmation shown happened in that recording. The clip takes 75.5 seconds of the 1:45 slot, leaving 29.5 seconds for introduction and wrap; live/hybrid delivery is optional.
 
 **Narrate four beats:**
 
@@ -205,23 +207,27 @@ Draw the governed-action path prominently; policy, log, and reject are smaller s
 
 ## 5. Demo production and stage plan
 
-### Recommended: hybrid, with a complete recorded fallback
+### Current delivery: completed recording, narrated live
 
-**Record variable-latency agent navigation/drafting; perform the short human-confirmation moment live only if rehearsal is reliable.** Fully prerecorded is also valid: label it “Recorded demo,” narrate live, and keep the actual pause/confirmation/result together. Fully live is optional, not a goal in itself.
+Use the completed [75.5-second MP4](presentation/Countersign-demo.mp4) on slide 3. Label it **“Recorded demo”**, click the embedded video in Slide Show, and narrate live. Keep the standalone MP4 ready as the playback backup; the PDF is static-poster-only. This uses the two real user-supplied Chrome recordings, including the visibly captured native Touch ID prompt, Done, success, and matching audit.
 
-Keep the one main demo inside its **1:45 allocation**:
+Keep the one main demo inside its **1:45 allocation**: the clip leaves **29.5 seconds** for the introduction, landing line, and transition.
 
-| Within slide 3 | What the audience sees | Format |
+| Video clock | What the audience sees | Format |
 |---|---|---|
-| 0:00–0:20 | Chrome extension completes/submits the ungoverned quiz | Short recorded excerpt; skip dead time, not outcome |
-| 0:20–0:50 | Same task governed; assistant reaches the confirmation boundary | Recorded preparation, then live handoff if chosen |
-| 0:50–1:15 | Fresh prompt, human confirmation, successful submission | Live, or the contiguous recorded interaction |
-| 1:15–1:35 | That run's audit event, zoomed to the rule and proof | Same run's live dashboard or recorded crop |
-| 1:35–1:45 | Landing line and transition | Narrator |
+| 0:00–0:30 | Chrome extension completes/submits the ungoverned quiz | Recorded excerpt; waiting intervals trimmed |
+| 0:30–1:04.5 | Governed preparation, native prompt, human confirmation, successful submission | Recorded; the confirmation interval remains contiguous real time |
+| 1:04.5–1:15.5 | That run's audit event, zoomed to the rule and proof | Recorded audit followed by an explicitly labeled eight-second same-video still |
+
+There is **no retiming**: governed source 34–56.5 seconds is contiguous, with spatial zoom only at 41.5 seconds. The final still comes from source time 78 seconds, with session data omitted and the credential identifier visibly masked; the real assertion and UP/UV are unchanged and visible. See [recording/edit evidence](presentation/recording-session.md) and [output metadata](presentation/demo-video.json). The original five UI crops remain unchanged; slide 4's discussion result is still a **virtual-authenticator UI reference**, not part of this physical-confirmation recording.
+
+### Optional live or hybrid delivery
+
+The completed recording is sufficient for the current demo format. If choosing hybrid, use recorded variable-latency navigation/drafting and perform the short human-confirmation moment live **only if rehearsal is reliable**. Fully live is optional. Keep either alternative within the same 1:45 allocation and retain the complete recorded fallback.
 
 **Hybrid handoff:** prefill the live governed quiz, but do **not** leave an authenticator prompt or issued challenge waiting during earlier slides. Trigger a fresh confirmation at the handoff. Disclose “That was the recorded preparation; this is the live confirmation.” Do not present a spliced recording and a different live run as one continuous transaction. A human clicking Submit in the live handoff must not be narrated as the extension clicking it.
 
-### Capture exactly what happened
+### Capture exactly what happened — reference for any replacement take
 
 - Use the **ChatGPT extension in Chrome** for both modes. No alternate-browser montage or unsupported vendor-side/cloud-exfiltration claim. Use the extension's actual displayed name in capture labels; do not imply an official vendor relationship from an informal name.
 - Save the exact successful rehearsal prompt and reuse it. Suggested starting wording: “On this demo training portal, complete the quiz and submit it.” A suggestion is not a verified prompt; prefer the wording already tested.
@@ -232,14 +238,14 @@ Keep the one main demo inside its **1:45 allocation**:
 - A pending/cancelled prompt means no completed submission. The log can show `presence-requested`; `blocked` is recorded when an invalid/missing-proof submission actually reaches the server. Do not manufacture a blocked event to make the story cleaner.
 - Use synthetic demo records only. Do not upload source PDFs, raw reference corpora, `.env`, credentials, or private materials to Beautiful.ai. The local reference corpus also restricts live-demo inputs; do not improvise a raw-corpus ingestion demo.
 
-### Rehearsal / stage checklist — not yet completed by this document
+### Recording status and remaining rehearsal / stage checklist
 
 - [ ] Save the known-good policy and laptop configuration; do not regenerate/approve policy on stage.
-- [ ] Both local modes, demo login, and Chrome extension operate from the presenting account/profile.
-- [ ] Register and rehearse the real passkey in that Chrome profile; confirm the actual prompt and sensor/PIN flow. Use `localhost`, not `127.0.0.1`.
-- [ ] Save the exact quiz prompt and capture the two-mode sequence plus matching audit evidence.
-- [ ] Capture current discussion disclosure, masked-record, and policy-review images. If redoing discussion, use the demo reset deliberately; retain the audit trail.
-- [ ] Crop/zoom for projector readability; captions distinguish recorded material from live interaction. Verify OS-prompt capture before recording the full take.
+- [ ] If choosing live/hybrid, verify both local modes, demo login, and Chrome extension from the presenting account/profile.
+- [ ] If choosing live/hybrid, rehearse the real passkey in that Chrome profile and save the exact quiz prompt. Use `localhost`, not `127.0.0.1`.
+- [x] Capture the real Chrome-extension two-mode quiz sequence, native Touch ID/Done/success, and matching audit evidence; completed in the supplied recordings.
+- [ ] Review the existing discussion disclosure, masked-record, and policy-review images for final deck approval. Slide 4 remains a virtual-authenticator UI reference. If redoing discussion, use the demo reset deliberately; retain the audit trail.
+- [x] Trim/crop/zoom the supplied footage and label recorded material, the final still, and redaction; native OS-prompt capture is visible. Projector readability still needs the laptop rehearsal.
 - [ ] Keep local video files and a local slide export ready; test playback and fonts on the presenting laptop. Test internet/tethering only for the live extension portion.
 - [ ] Pre-open only necessary tabs; notifications and display sleep off. No private accounts or unrelated data visible.
 - [ ] Rehearse to 6:30, including browser/deck transitions, then rehearse once with forced fallback. If live progress stalls for roughly ten seconds, switch to the queued clip—do not debug on stage.
@@ -369,7 +375,7 @@ Use tight crops, not whole-page screenshots. A video frame should make one fact 
 | Slide | Available repo asset / preparation |
 |---|---|
 | 1–2 | Build simple session/checkpoint diagrams. App colors and icons are in [`site.css`](../countersign/client/site.css) and [`ui.ts`](../countersign/server/ui.ts). |
-| 3 | **Record the chosen Chrome-extension sequence.** [`presentation-quiz-desktop.png`](build-log/presentation-quiz-desktop.png) is a UI reference only. Capture the matching expanded dashboard event from that run. |
+| 3 | **Completed:** [real Chrome-extension MP4](presentation/Countersign-demo.mp4), [Touch ID poster](presentation/assets/demo-poster.png), and [same-run audit still](presentation/assets/demo-proof.png). See [recording/edit evidence](presentation/recording-session.md). [`presentation-quiz-desktop.png`](build-log/presentation-quiz-desktop.png) remains a UI reference only. |
 | 4 | [`presentation-discussion-demo-desktop.png`](build-log/presentation-discussion-demo-desktop.png) shows the disclosure UI; [`presentation-record-desktop.png`](build-log/presentation-record-desktop.png) shows default masking. Capture a current published AI-assisted badge if using that result. |
 | 5 | Rebuild §4 as an editable diagram; do not use a code screenshot. |
 | 6 | Capture one current rule and its rationale on `/countersign/policy/review`. Keep approval state legible; a screenshot is not a new live-generation run. |
@@ -406,6 +412,7 @@ These are presenter references, not extra slides:
 | Claim / topic | Repo grounding |
 |---|---|
 | Six flow/mode functional checks confirmed by the tester | [`manual-acceptance-testing.md`](manual-acceptance-testing.md#tester-confirmed-functional-acceptance); do not infer a recording from a functional pass. |
+| Real Chrome-extension quiz recording, native confirmation, and matching proof | [`presentation/recording-session.md`](presentation/recording-session.md), [edit/source manifest](presentation/demo-edit.json), and [actual output metadata](presentation/demo-video.json). Chrome evidence does not establish Comet behavior or presenting-laptop slide playback. |
 | Quiz and independent-first discussion use supplied training material | [`quiz.json`](../portal/data/quiz.json), [`forum.json`](../portal/data/forum.json), and [dataset-import evidence](build-log/dataset-import-verification.md). The forum and personnel records are synthetic. |
 | Action-bound, fresh, single-use proof and server enforcement | [`webauthn.ts`](../countersign/server/webauthn.ts), [`middleware.ts`](../countersign/server/middleware.ts), and [`contracts.md`](contracts.md). |
 | Disclosure UI, confirmation context, responsive demo pages | [Presentation verification](build-log/presentation-refresh-verification.md); its virtual-authenticator checks are not physical-sensor evidence. |

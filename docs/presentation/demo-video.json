@@ -1,0 +1,140 @@
+{
+  "output": "Countersign-demo.mp4",
+  "sha256": "8d7a73b28ec19d13891199ecf3c90133e3a42f92db5a1d0ac5c07955b303733f",
+  "bytes": 2805037,
+  "duration_seconds": 75.5,
+  "fps": 30,
+  "size": [
+    1920,
+    1080
+  ],
+  "audio": false,
+  "segments": [
+    {
+      "kind": "title",
+      "stage": "off",
+      "seconds": 2,
+      "output_start": 0.0,
+      "output_end": 2.0,
+      "frames": 60
+    },
+    {
+      "kind": "video",
+      "stage": "off",
+      "input": "off",
+      "start": 6,
+      "end": 15,
+      "view": "browser",
+      "output_start": 2.0,
+      "output_end": 11.0,
+      "frames": 270
+    },
+    {
+      "kind": "video",
+      "stage": "off",
+      "input": "off",
+      "start": 39,
+      "end": 58,
+      "view": "browser",
+      "output_start": 11.0,
+      "output_end": 30.0,
+      "frames": 570
+    },
+    {
+      "kind": "title",
+      "stage": "on",
+      "seconds": 2,
+      "output_start": 30.0,
+      "output_end": 32.0,
+      "frames": 60
+    },
+    {
+      "kind": "video",
+      "stage": "on",
+      "input": "on",
+      "start": 6,
+      "end": 16,
+      "view": "browser",
+      "output_start": 32.0,
+      "output_end": 42.0,
+      "frames": 300
+    },
+    {
+      "kind": "video",
+      "stage": "on",
+      "input": "on",
+      "start": 34,
+      "end": 41.5,
+      "view": "browser",
+      "output_start": 42.0,
+      "output_end": 49.5,
+      "frames": 225
+    },
+    {
+      "kind": "video",
+      "stage": "on",
+      "input": "on",
+      "start": 41.5,
+      "end": 56.5,
+      "view": "confirmation",
+      "output_start": 49.5,
+      "output_end": 64.5,
+      "frames": 450
+    },
+    {
+      "kind": "video",
+      "stage": "proof",
+      "input": "on",
+      "start": 69,
+      "end": 72,
+      "view": "browser",
+      "output_start": 64.5,
+      "output_end": 67.5,
+      "frames": 90
+    },
+    {
+      "kind": "proof-still",
+      "stage": "proof",
+      "input": "on",
+      "source_time": 78,
+      "seconds": 8,
+      "output_start": 67.5,
+      "output_end": 75.5,
+      "frames": 240
+    }
+  ],
+  "evidence": {
+    "action": "POST /quiz/1/submit",
+    "rule_id": "quiz-submit",
+    "presence_requested_at": "2026-09-17T13:55:27.757Z",
+    "verified_at": "2026-09-17T13:55:34.532Z",
+    "event_id": "evt_3ea776d201de4b59961e7123fa571fd3",
+    "assertion_id": "asr_20a3eda1-bc17-4d87-ba58-2e44c966eaf8",
+    "up": true,
+    "uv": true,
+    "age_ms": 6775
+  },
+  "editing_rules": [
+    "Retained motion footage plays at real time; waiting intervals are removed with visible edits.",
+    "No time is cut, sped up, slowed, or frozen between governed source times 34 and 56.5 seconds; the crop changes at 41.5 seconds only.",
+    "The final audit detail is explicitly labeled as a still from source time 78 seconds in the same governed recording.",
+    "Native system prompt, submission status, and assertion values come from the supplied real recordings, not generated UI.",
+    "Menu bar and Dock are cropped out. The audit still omits session data and visibly masks the unnecessary credential identifier.",
+    "Desktop originals and ignored full-quality working copies remain unchanged. Exported video omits source hardware metadata and contains no audio."
+  ],
+  "derived_assets": {
+    "assets/demo-poster.png": {
+      "sha256": "b1dfc787c9fe2c87d223485057c21bbb07fb5131fe02e110895d0df7904165d5",
+      "source": "on",
+      "source_time_seconds": 45,
+      "treatment": "Real prompt frame from final edit; play-button annotation."
+    },
+    "assets/demo-proof.png": {
+      "sha256": "6de3817b6e9784b90308429b43dc31dc87b56e183e3e8b1c665ad56e4d665cce",
+      "source": "on",
+      "source_time_seconds": 78,
+      "treatment": "Real audit still; session data cropped out, credential identifier visibly masked, editor annotations."
+    }
+  },
+  "sources_unchanged": true
+}
