@@ -2,6 +2,8 @@
 
 Stable IDs preserve the ordering and grouping in `docs/countersign-plan.md` sections 1-3.
 
+**Functional acceptance:** The tester confirmed the quiz, discussion post, and record flows all worked as expected with governance enabled and disabled. All six flow/mode checks are recorded in [manual acceptance](manual-acceptance-testing.md#tester-confirmed-functional-acceptance). Recording, browser/device-specific evidence, edge-case checks, deployment acceptance, and rehearsal remain separately tracked below and in the manual checklist.
+
 ## Wednesday Morning - Adversary Checks
 
 - [ ] **M1** Create a fresh macOS user account for demo work. Enroll Touch ID for it.
