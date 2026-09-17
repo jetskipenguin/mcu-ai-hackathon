@@ -30,7 +30,7 @@ Stable IDs preserve the ordering and grouping in `docs/countersign-plan.md` sect
 
 - [x] **M17** Iterate on the spec, pitch, and plan documents.
 - [x] **M18** Lock the stack, extension adversary, and slide ownership.
-- [ ] **M19** Create the skeleton slide deck with the 11 pitch-outline titles.
+- [x] **M19** Create the slide deck with the current eight pitch-outline titles. [Editable PowerPoint and preview](presentation/README.md) are drafted; final review, media insertion, and timed rehearsal remain separate.
 - [x] **M20** Create the repository, commit the docs, and start `docs/BUILD-LOG.md` from commit timestamps.
 - [x] **M21** Confirm presentation format, semifinal/final schedule, and deliverables.
 - [x] **M22** Select the coursebook chapter, extract the CUI category/LDC files, note dataset fields, and register all three datasets on the hackathon portal.
@@ -66,7 +66,7 @@ Stable IDs preserve the ordering and grouping in `docs/countersign-plan.md` sect
 
 - [x] **B1** Build dashboard v1 with one-second JSONL polling, actor-class colors, and per-user drill-down. Exact-ID user links/filter, shareable URLs, expandable event/proof details, stable focus/expanded rows, and polling failure recovery passed Chrome checks (see [evidence](build-log/dashboard-provenance-verification.md)).
 - [x] **B2** Draft and hand-test the policy generator prompt against all three pages. Live GPT-6 generation used the source-derived localhost pages and all 126 categories/10 LDCs, producing a validated draft with rationales and exact Registry-definition citations.
-- [ ] **B3** Draft pitch slides 2, 3, 8, 9, and 10.
+- [x] **B3** Draft all eight current pitch slides and speaker notes for the confirmed 7-minute presentation plus 3-minute Q&A. [PowerPoint draft](presentation/README.md) includes native diagrams, real UI crops, and a clearly identified demo slot; no actual extension recording is claimed.
 
 ## Track B - Afternoon
 

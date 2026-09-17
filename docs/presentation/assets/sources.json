@@ -1,0 +1,102 @@
+[
+  {
+    "asset": "quiz-submit.png",
+    "source": "docs/build-log/presentation-quiz-desktop.png",
+    "source_sha256": "532435a64c54da391d50d5589c57445b231460d21bb58e9ee48a0747fb2b42e8",
+    "source_size": [
+      1280,
+      2954
+    ],
+    "crop_box": [
+      160,
+      2250,
+      1120,
+      2740
+    ],
+    "size": [
+      960,
+      490
+    ],
+    "status": "Governed quiz UI; automated layout capture. Not a pending native prompt or an extension run."
+  },
+  {
+    "asset": "record-masked.png",
+    "source": "docs/build-log/presentation-record-desktop.png",
+    "source_sha256": "32927a21ac7be7fabcdd4fbd2399ab1c3e3a94aacd5de6551b761c4e29b6ee57",
+    "source_size": [
+      1280,
+      1338
+    ],
+    "crop_box": [
+      68,
+      805,
+      742,
+      997
+    ],
+    "size": [
+      674,
+      192
+    ],
+    "status": "Default-masked synthetic record fields; automated layout capture, not a completed reveal."
+  },
+  {
+    "asset": "discussion-disclosure.png",
+    "source": "node_modules/.cache/pitch-capture/current-ui-zmqUem/discussion-ai-assisted-virtual-post.png",
+    "source_sha256": "2d0bd1e167112bf42983ad1b24053c9c5da6b300360b9249a9664c3da396c377",
+    "source_size": [
+      1920,
+      716
+    ],
+    "crop_box": [
+      38,
+      180,
+      850,
+      315
+    ],
+    "size": [
+      812,
+      135
+    ],
+    "status": "Actual published disclosure badges from an isolated Chrome virtual-authenticator flow. Not physical-sensor or ChatGPT-extension evidence."
+  },
+  {
+    "asset": "policy-rule-heading.png",
+    "source": "node_modules/.cache/pitch-capture/current-ui-zmqUem/policy-current-quiz-summary.png",
+    "source_sha256": "e3bfb16ac0ce2b93671748495590779c550a1f8c26049e8d484a5e3b23bfbccd",
+    "source_size": [
+      2368,
+      450
+    ],
+    "crop_box": [
+      36,
+      28,
+      1090,
+      155
+    ],
+    "size": [
+      1054,
+      127
+    ],
+    "status": "Current policy-review quiz rule. Active and draft are identical; no model generation or approval was performed for capture."
+  },
+  {
+    "asset": "policy-approve-control.png",
+    "source": "node_modules/.cache/pitch-capture/current-ui-zmqUem/policy-current-quiz-summary.png",
+    "source_sha256": "e3bfb16ac0ce2b93671748495590779c550a1f8c26049e8d484a5e3b23bfbccd",
+    "source_size": [
+      2368,
+      450
+    ],
+    "crop_box": [
+      342,
+      351,
+      672,
+      450
+    ],
+    "size": [
+      330,
+      99
+    ],
+    "status": "The real per-rule approval control, cropped separately. No approval was performed."
+  }
+]

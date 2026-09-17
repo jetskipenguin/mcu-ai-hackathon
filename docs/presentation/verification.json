@@ -1,0 +1,57 @@
+{
+  "slides": 8,
+  "notes_pages": 8,
+  "format": "16:9",
+  "native_text_font": "Arial",
+  "presentation_seconds": 390,
+  "buffer_seconds": 30,
+  "qa_seconds": 180,
+  "package_xml": "valid",
+  "external_links": [
+    "http://localhost:3001/quiz/1",
+    "http://localhost:3000/quiz/1"
+  ],
+  "embedded_video": false,
+  "source_object_bounds": "pass",
+  "rendered_text_bounds": "pass",
+  "renderer": "LibreOffice PDF export; PyMuPDF rasterization",
+  "limitations": [
+    "No physical-passkey or ChatGPT-extension demo recording is embedded.",
+    "UI screenshots are automated/virtual-authenticator references.",
+    "PowerPoint/Keynote playback and final live rehearsal remain human checks."
+  ],
+  "slide_text": [
+    {
+      "slide": 1,
+      "text": "WHAT / THE TRAINING USE CASE\ncountersign.\nHUMAN VERIFICATION FOR WEB APPS\n01\nA valid session is not a\nhuman decision.\nONE LOGGED-IN SESSION\nLearner\nAI assistant\nSubmit\n?\n"
+    },
+    {
+      "slide": 2,
+      "text": "WHAT / THE HUMAN CHECKPOINT\ncountersign.\nHUMAN VERIFICATION FOR WEB APPS\n02\nCountersign.\nAI where it helps. Humans where it matters.\nAction\nHuman\nconfirmation\nDecision record\nA challenge. A human response.\nWebAuthn / passkeys\n"
+    },
+    {
+      "slide": 3,
+      "text": "SO WHAT / THE DEMO\ncountersign.\nHUMAN VERIFICATION FOR WEB APPS\n03\nSame task. Different boundary.\nChatGPT extension \u00b7 Chrome\nGoverned quiz \u00b7 UI reference\nGovernance off\nGovernance on\nLive demo\nor insert your recording\nPrepare \u2192 Confirm \u2192 Inspect proof\n"
+    },
+    {
+      "slide": 4,
+      "text": "SO WHAT / ACCOUNTABLE PARTICIPATION\ncountersign.\nHUMAN VERIFICATION FOR WEB APPS\n04\nParticipation \u2260 authorship.\nDISCUSSION\nOwn work\nAI-assisted\nConfirm\nPUBLISHED DISCLOSURE\nAutomated UI reference \u00b7 virtual authenticator\nProtected record\nMasked \u2192 Confirm \u2192 Reveal\nExtensions can read after reveal.\n"
+    },
+    {
+      "slide": 5,
+      "text": "NOW WHAT / REUSABLE INTEGRATION\ncountersign.\nHUMAN VERIFICATION FOR WEB APPS\n05\nAdd a checkpoint, not a new app.\nNew application or existing application\nBROWSER\nYOUR APPLICATION SERVER\nVerified\nYour page\n+ countersign.js\nCountersign\nserver gate\nYour action\n+ data\nHuman +\npasskey\nPolicy\nReject\nDecision log\nClient + server integration \u00b7 Demonstrated in Express\n"
+    },
+    {
+      "slide": 6,
+      "text": "NOW WHAT / AI IN THE SOLUTION\ncountersign.\nHUMAN VERIFICATION FOR WEB APPS\n06\nAI drafts. People approve.\nApp pages\nAI draft\nHuman review\nActive policy\nTHE ACTIVATION BOUNDARY\nDraft \u2260 active.\nPolicy-review UI \u00b7 detail crops\n"
+    },
+    {
+      "slide": 7,
+      "text": "NOW WHAT / BEYOND TRAINING\ncountersign.\nHUMAN VERIFICATION FOR WEB APPS\n07\nTraining is the starting point.\nBUILT\nPOTENTIAL APPLICATIONS\nTraining\nConfirm\nsubmission\nFinance\nRelease\npayment\nAccess\nGrant\nprivilege\nOperations\nAuthorize\nproduction change\nSame checkpoint. Higher stakes.\n"
+    },
+    {
+      "slide": 8,
+      "text": "NOW WHAT / YOUR FIRST COUNTERSIGN\ncountersign.\nHUMAN VERIFICATION FOR WEB APPS\n08\nWhich action in your application\nneeds a human\u2019s confirmation?\nChoose one action.\nRequire a countersign.\nAI where it helps. Humans where it matters.\n"
+    }
+  ]
+}

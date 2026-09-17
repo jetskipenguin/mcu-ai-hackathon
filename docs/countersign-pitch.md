@@ -5,7 +5,7 @@
 - **Demo:** the **ChatGPT extension in Chrome only**, in both governance modes.
 - **Central idea:** AI can assist with the work; the application decides which actions require fresh human confirmation.
 
-This is a presentation plan, not a claim that the deck or recordings already exist.
+**First-draft deck:** [Editable PowerPoint](presentation/Countersign.pptx) · [PDF preview](presentation/Countersign.pdf) · [All-slide contact sheet](presentation/Countersign-preview.png). The deck includes editable diagrams, speaker notes, and a live-demo/video slot; **no Chrome-extension or physical-passkey recording is embedded**. See [deck usage notes](presentation/README.md) before presenting.
 The tester has [confirmed all three flows in both modes](manual-acceptance-testing.md#tester-confirmed-functional-acceptance); recording, exact Chrome/passkey behavior, and timed rehearsal remain separate checks.
 
 **How to use this file:** rehearse from §§2–3; prepare the demo from §5; paste **only the brief in §6** into Beautiful.ai and add the assets in §7. Keep §8 for Q&A. This eight-slide outline replaces the earlier eleven-slide/three-act pitch; historical task and test records are not new demo instructions.
