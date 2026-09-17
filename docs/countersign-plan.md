@@ -64,7 +64,7 @@ Then split into tracks.
 ### 1.3 Together (before splitting)
 - [x] Iterate on the spec/pitch/plan docs.
 - [x] Lock: stack, extension adversary, who presents which slide. (Name is decided: Countersign — spec §0 explains it.)
-- [ ] Skeleton slide deck with the 11 slide titles from the pitch outline. No content yet.
+- [x] Slide deck with the current eight pitch-outline titles. [Editable PowerPoint and preview](presentation/README.md) are drafted; final review, media insertion, and timed rehearsal remain separate.
 - [x] Repo created, docs committed. Start `docs/BUILD-LOG.md` with that as the first entry (timestamps from the commits).
 - [x] Rubric is in hand (pitch §0). Presentation format, semi/final schedule, and deliverables confirmed (M21).
 - [x] Datasets (spec §11.1): select the coursebook chapter, extract the CUI category/LDC files, note dataset fields, and register all three on the hackathon portal.
@@ -113,7 +113,7 @@ Then split into tracks.
 **Morning (to 13:00)**
 - [x] Dashboard v1: live timeline reading the JSONL log (poll every 1s); event rows colored by actor class; per-user drill-down. Exact-ID user links/filter, shareable URLs, expandable event/proof details, stable focus/expanded rows, and polling failure recovery passed Chrome checks (see [evidence](build-log/dashboard-provenance-verification.md)).
 - [x] Draft the policy generator prompt: input = rendered HTML of each route + list of form actions; output = policy JSON per spec §7 with rationale strings. Live GPT-6 generation against all three source-derived local pages passed with all 126 categories/10 LDCs and exact Registry-definition citations.
-- [ ] Pitch slides 2, 3, 8, 9, 10 first-draft (the ones that don't depend on the build).
+- [x] All eight current pitch slides and speaker notes drafted for the confirmed 7-minute presentation plus 3-minute Q&A. [PowerPoint draft](presentation/README.md) includes native diagrams, real UI crops, and a clearly identified demo slot; no actual extension recording is claimed.
 
 **Afternoon (to 18:00)**
 - [x] Policy generator CLI/endpoint: crawl routes → LLM → draft policy → write `countersign.policy.draft.json`. Load the 126 Registry categories + 10 LDCs from the CUI dataset as structured input; the generator may only emit identifiers from that list (spec §5.6). Live GPT-6 generation passed with `placeholder: false`; draft-only writes and post-approval enforcement passed regression checks (see [dataset evidence](build-log/dataset-import-verification.md)).
