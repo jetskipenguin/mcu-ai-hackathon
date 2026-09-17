@@ -1,173 +1,416 @@
-# Countersign — Pitch Outline (Semi-final, v0.1)
+# Countersign — Pitch, Demo, and Deck Brief
 
-**Assumption:** 7 minutes of pitch + demo, followed by judge Q&A. **Verify on the portal tonight** — if the 7 minutes *includes* Q&A, cut to the 5-minute variant in §6.
+- **Format:** 7 minutes for presentation and demo, **then 3 minutes for Q&A**.
+- **Target:** eight slides, rehearsed to 6:30, with 0:30 of recovery time.
+- **Demo:** the **ChatGPT extension in Chrome only**, in both governance modes.
+- **Central idea:** AI can assist with the work; the application decides which actions require fresh human confirmation.
 
----
+This is a presentation plan, not a claim that the deck or recordings already exist.
+The tester has [confirmed all three flows in both modes](manual-acceptance-testing.md#tester-confirmed-functional-acceptance); recording, exact Chrome/passkey behavior, and timed rehearsal remain separate checks.
 
-## 0. What the judges score, and where we earn it
+**How to use this file:** rehearse from §§2–3; prepare the demo from §5; paste **only the brief in §6** into Beautiful.ai and add the assets in §7. Keep §8 for Q&A. This eight-slide outline replaces the earlier eleven-slide/three-act pitch; historical task and test records are not new demo instructions.
 
-| Criterion | Weight | What they wrote | Where it's earned in this pitch |
+## 1. Story: what → so what → now what
+
+Use this as the narrative structure, not three extra divider slides:
+
+- **What — slides 1–2:** a logged-in session lets an assistant act, but it does not establish fresh human confirmation. Countersign adds that checkpoint.
+- **So what — slides 3–4:** demonstrate the difference at Submit, show the evidence, and distinguish participation from authorship. This is accountable AI assistance, not an AI ban.
+- **Now what — slides 5–8:** show how to instrument an app, how AI helps draft its policy, and where the same pattern could matter beyond training. End with a concrete challenge to the audience.
+
+### Acknowledge the use case; do not read it aloud
+
+Give the judges one sentence connecting to the assignment:
+
+> “We started with the training use case: when an AI assistant operates inside a learner's logged-in browser, what should the learning application still require the human to confirm?”
+
+This is **our framing**, not a quotation from the organizer's problem statement. The repo contains the team's interpretation, but no independently verified copy of the full original prompt. Do not invent a quotation, rubric weight, or official endorsement.
+
+Then show the supplied-material connection: a coursebook-derived quiz and the synthetic MCU seminar discussion, whose model is **“post before you read.”** A submitted response is not automatically evidence of independent thinking. Countersign adds a confirmation and disclosure boundary; it does not measure learning.
+
+Keep the emphasis on the **human-in-the-loop action gate and its record**. Include protected records for about ten seconds to acknowledge the data-sensitivity concern, not as a second main pitch. Do not claim to replace endpoint controls or data-loss prevention.
+
+### Explain the name once
+
+> “A sentry issues a challenge; the countersign is the response that lets you pass. Here, the challenge comes when an action matters. A valid session gets you to Submit; a fresh human confirmation gets that governed action through.”
+
+The second meaning—countersigning a document—also fits, but save it for conversation. Do not spend the opening on etymology or imply a legally binding digital-signature service.
+
+## 2. Seven-minute run of show
+
+| Slide | Story beat | Duration | Clock |
 |---|---|---|---|
-| **Mission Impact** | 30% | Alignment with defense priorities and real-world use cases | Slide 2 (PME distance-ed scenario, their population), Slide 8 (education / finance / HR-medical; Zero Trust per-action verification; CUI markings), Slide 10 (pilot ask) |
-| **Technical Innovation** | 25% | Originality, feasibility, technical depth | Slide 3 (the three-enforcement-point insight), Act 3 (presence-bound WebAuthn — nobody else is doing this for agents), Act 2 (AI-drafted policy), Slide 9½ (built in 1.5 days) |
-| **Usability & Design** | 20% | Clarity of the demo, ease of use, potential for reuse or extension | Acts 1–3 (one story, three beats), Slide 8 (SDK + reverse-proxy modes, open policy schema — reuse on any app) |
-| **Security & Sustainability** | 15% | Readiness for DoW testing, long-term viability, maintainability | Slide 8 (standards we ride, not invent: WebAuthn/FIDO2 — DoD-accepted authenticator class; CAC as root), Slide 9 (honest limits), repo hygiene (README, tests, pinned deps) |
-| **Team Collaboration** | 10% | Teamwork, presentation quality, resilience under pressure | Two presenters, one driving while the other narrates; rehearsed fallback to backup video; Slide 9½ |
+| 1 | A valid session is not a human decision | 0:35 | 0:00–0:35 |
+| 2 | Countersign: the human checkpoint | 0:35 | 0:35–1:10 |
+| 3 | Same task. Different boundary. **Main demo + audit** | 1:45 | 1:10–2:55 |
+| 4 | Participation is not authorship; briefly, protected records | 0:45 | 2:55–3:40 |
+| 5 | Add a checkpoint, not a new app: integration diagram | 0:50 | 3:40–4:30 |
+| 6 | AI drafts. People approve. | 0:45 | 4:30–5:15 |
+| 7 | Start with training. Apply the pattern elsewhere. | 0:45 | 5:15–6:00 |
+| 8 | Choose one action. Require a countersign. | 0:30 | 6:00–6:30 |
+| — | Recovery / transitions, not more content | 0:30 | 6:30–7:00 |
+| — | Judge Q&A; leave the closing slide visible | 3:00 | 7:00–10:00 |
 
-Bonus criteria (1% each) — mention only where free: policy generator can run on GenAI.mil models ("Sanctioned"); CAC/LMS integration on the roadmap ("Reach the Enterprise"). Don't build for them.
+One person narrates while the other drives. Assign names at rehearsal; avoid a speaker handoff at the passkey prompt. If behind, shorten slides 4 and 6 to one sentence each. Preserve the confirmation, the audit evidence, and the close. Do not add a development timeline or another live browser comparison.
 
-**Mission-impact language to use, verbatim from their own documents:** TECOM Campaign Plan LOE 4B "leveraging data and AI"; Training & Education 2030 "utilizing AI to enhance human performance." Countersign is how you let AI enhance human performance *without* losing the ability to certify the human performed.
+## 3. Slide-by-slide specification
 
----
+**Design rule:** one idea, one dominant visual, roughly 25–30 visible words per slide. UI crops and diagram labels can exceed that slightly; narration belongs in speaker notes. No paragraphs, JSON screenshots, tiny dashboard tables, stock robot art, or walls of security acronyms.
 
-## 1. What "shark-tank style" means for us
+### Slide 1 — A valid session is not a human decision
 
-On the show, founders pitch investors: a hook, the product, a live demo, then the sharks interrogate — market, viability, cost, "what's your ask." Judges who adopt that framing tend to:
+**On screen:**
 
-- **interrupt** — so every slide must survive being cut short, and the demo must land early;
-- ask **"who pays / who adopts / why now"** — so we need an adoption path, not just a prototype;
-- reward **confidence and honesty in equal measure** — a clean "no, and here's why that's fine" beats a hedge;
-- expect **an ask** — for us, that's a pilot, not money.
+> A valid session is not a human decision.
 
-Practical rules: never read the slide; one idea per slide; the demo is the pitch, slides are connective tissue; be at 6:15 in rehearsal so a 45-second interruption doesn't kill the close.
+Small Countersign wordmark and team names; a simple graphic of **learner → AI assistant → Submit** inside one logged-in session. Put a question mark at Submit, not a “malicious bot” label.
 
----
+**Say:**
 
-## 2. Time budget (7:00)
+> “We started with the training use case: a Marine working in a distance-learning portal. Their browser assistant can work inside their logged-in session. To the application, the submission still arrives as the learner. But being logged in does not tell us whether the human confirmed this action. We want AI to help—without quietly removing the human from decisions that matter.”
 
-| Segment | Time | Cumulative |
+**Transition:** “So we put the checkpoint in the application.”
+
+### Slide 2 — Countersign
+
+**On screen:**
+
+> **Countersign**
+>
+> AI where it helps. Humans where it matters.
+
+A clean checkpoint graphic: **Action → Human confirmation → Decision record**. Highlight the human, not an AI-detection score.
+
+**Say:**
+
+> “A sentry's challenge needs a countersign before someone passes. Our version is a fresh passkey confirmation at a governed action. The app's policy decides where to require it; the server checks the proof before allowing the action and records the decision. We use WebAuthn, the standard behind passkeys. We're not asking the AI vendor to enforce our application's rules.”
+
+**Technical note, not slide copy:** enrollment and the app's authentication establish the credential/session relationship. Countersign verifies presence and policy-required user verification at action time; it does not independently establish a person's real-world identity.
+
+### Slide 3 — Same task. Different boundary.
+
+**On screen:** a large video/demo region, with labels **Governance off** and **Governance on**. End on an enlarged crop of the actual accepted-proof event, not the whole log.
+
+This is the main event. Use the same ChatGPT extension, Chrome profile, demo user, and rehearsed quiz request in both instances. Keep the mode indicator visible. The full sequence is in §5.
+
+**Narrate four beats:**
+
+1. “Without governance, the assistant completes the quiz submission in the learner's session.” Show the real result; do not claim all assistants or all prompts behave this way.
+2. “Now the app requires a human. The assistant can prepare the answers, but submission waits for confirmation.” Let the real prompt/status remain visible briefly.
+3. “I confirm. The server verifies a fresh proof bound to this submission, and the action proceeds.”
+4. “The record shows the rule, the action, and the verified assertion—not just that someone had a session.” Highlight `human-verified`, the actual assertion ID, and UP/UV evidence if legible.
+
+**Landing line:** “The important part isn't whether the assistant looks human. It's that the application requires human confirmation.”
+
+Do not suggest the quiz is graded, that presence proves the answers are the learner's work, or that a waiting browser prompt is itself a logged `blocked` HTTP request.
+
+### Slide 4 — Participation ≠ authorship
+
+**On screen:** the headline above a large discussion crop: **Own work / AI-assisted → Confirm → Published disclosure**. A smaller record inset: **Masked → Confirm → Revealed**.
+
+**Say, about 35 seconds on discussion:**
+
+> “Touching the sensor doesn't prove who wrote the answer. Our discussion page makes that distinction explicit: disclose ‘Own work’ or ‘AI-assisted,’ then confirm the submission. The post carries the disclosure and verified presence. Composition signals can raise a review flag; they are not an AI-writing verdict. The training content uses a ‘post before you read’ discussion model, so this is a concrete place to make participation more accountable.”
+
+**Then, about ten seconds on data:**
+
+> “Protected records are masked until fresh confirmation, with machine-readable markings. Once revealed, an extension can read them—we don't claim otherwise.”
+
+Use prepared screenshots or a very short clip; do not run two more full live workflows. If showing an AI-written discussion, select **AI-assisted**. Save contradiction/flag demonstrations for Q&A. Do not portray client telemetry as proof of cheating.
+
+### Slide 5 — Add a checkpoint, not a new app
+
+**On screen:** the diagram in §4, rebuilt as simple editable boxes. Gray is the app you already have; teal/mint is Countersign. Caption: **New app or existing app. Client + server integration.**
+
+**Say:**
+
+> “The learning portal is our demonstration, not the product boundary. Countersign is intended as reusable instrumentation: a small client script provides the confirmation flow; server-side checks sit before the actions you choose to govern. Your app keeps its sign-in, business logic, and data. Approved policy tells the gate what to require, and the decision goes to the log. A new app can add this from the start; an existing app can add it at selected endpoints.”
+
+**Important qualification:** “This prototype demonstrates that pattern in Express. It is not yet a zero-change installer for every legacy system.”
+
+The server gate is essential: hiding a button or adding a script alone does not secure a directly callable endpoint. There is no implemented general-purpose governance-injection proxy or packaged cross-framework SDK.
+
+### Slide 6 — AI drafts. People approve.
+
+**On screen:** **App pages → AI draft → Human review → Active policy**. Place one tightly cropped, real policy-review rule below the flow, with its rationale/approval control visible.
+
+**Say:**
+
+> “AI is also part of our solution. The generator reads the demo app's pages and forms, drafts rules and rationales within our supported policy schema, and uses Registry-backed vocabulary for content markings. A person reviews the draft before activation. Generation alone never changes the active policy. That helps an application owner start from a concrete proposal rather than an empty policy file. At runtime, the gate checks the approved rules and the cryptographic proof—not an LLM's opinion about who clicked.”
+
+Use a saved draft/review view, not a fresh model call or a live change to the known-good demo policy. Say clearly that the current crawler targets the three demo routes; arbitrary-app discovery is future integration work. The documented policy-generation run used OpenAI; configurable provider support is not evidence of a GovCloud deployment.
+
+### Slide 7 — Training is the starting point
+
+**On screen:** four simple icons/cards, with a visible separation between **Built** and **Potential applications**:
+
+- **Built: Training** — Confirm submission
+- **Potential: Finance** — Release payment
+- **Potential: Access** — Grant privilege
+- **Potential: Operations** — Authorize production change
+
+**Say:**
+
+> “We focused on training because that was the use case. The same boundary becomes even more consequential when an assistant prepares a payment, a privileged-access change, or a production-system change. Let it do the preparation; require the authorized human's fresh confirmation before the final action. These are future integrations, not deployments we've built. Each would still need its own identity, authorization, approval rules, and safety controls.”
+
+**Optional Q&A example, not a fifth card:** a clinician confirming a medication order. The checkpoint would not establish clinical correctness or replace clinical safeguards. Prefer the three on-slide examples to avoid turning the pitch into a claim of medical or mission-critical readiness.
+
+### Slide 8 — Choose one action. Require a countersign.
+
+**On screen:**
+
+> Which action in your application needs a human's confirmation?
+>
+> **Choose one action. Require a countersign.**
+
+One strong checkpoint/checkmark visual and the Countersign wordmark. No roadmap grid, invented QR code, funding ask, or promised 90-day deployment.
+
+**Close:**
+
+> “We don't have to choose between useful AI and human control. Countersign makes that boundary explicit: let AI assist, require a human where the action matters, and keep the record. Our challenge to you is simple: pick one consequential action in an application you own. That is where to put the first countersign.”
+
+Stop. Leave this slide up for questions.
+
+## 4. Reusable-integration diagram
+
+This is a **logical integration diagram**, not a claim of an independently deployed gateway. In Beautiful.ai, rebuild it with editable boxes and connectors; Mermaid is included for repo rendering/reference, not as a required import format.
+
+```mermaid
+flowchart LR
+    subgraph Browser["Browser — your new or existing UI"]
+        Page["Your page + countersign.js"]
+        Human["Human / passkey"]
+        Page <-->|"Fresh confirmation"| Human
+    end
+    subgraph Server["Your application server"]
+        Gate["Countersign server gate"]
+        Action["Your action + data"]
+        Gate -->|"Valid proof"| Action
+    end
+    Page -->|"Request + assertion"| Gate
+    Policy["Approved policy"] --> Gate
+    Gate --> Log["Decision log"]
+    Gate -->|"Missing / invalid proof"| Reject["Reject; no action"]
+```
+
+Draw the governed-action path prominently; policy, log, and reject are smaller side branches. Keep the human outside the agent's path. The LLM is intentionally absent from the runtime request path; slide 6 shows how a policy is prepared.
+
+**Integration checklist for speaker notes / Q&A:**
+
+1. Connect trusted application user/session identity and enroll an appropriate credential.
+2. Identify governed actions, annotate the forms, and include the vanilla client script.
+3. Register challenge/assertion services and enforce policy **on the server before the action**. Adapt other backends as needed; Express is the built example.
+4. Bind the challenge to user/session, action, submitted data, and any disclosure; verify signature, origin, relying party, freshness, single use, and required UP/UV.
+5. Log decisions. For protected reads, additionally withhold values server-side until the reveal check succeeds; visual masking alone is insufficient.
+
+## 5. Demo production and stage plan
+
+### Recommended: hybrid, with a complete recorded fallback
+
+**Record variable-latency agent navigation/drafting; perform the short human-confirmation moment live only if rehearsal is reliable.** Fully prerecorded is also valid: label it “Recorded demo,” narrate live, and keep the actual pause/confirmation/result together. Fully live is optional, not a goal in itself.
+
+Keep the one main demo inside its **1:45 allocation**:
+
+| Within slide 3 | What the audience sees | Format |
 |---|---|---|
-| Hook + problem | 1:00 | 1:00 |
-| The insight (three problems, three enforcement points) | 0:20 | 1:20 |
-| Act 1 — the problem, live/recorded | 1:00 | 2:20 |
-| Act 2 — turn Countersign on (policy generator) | 0:45 | 3:05 |
-| Act 3 — same agent hits the wall (live, Touch ID) | 1:30 | 4:35 |
-| Provenance dashboard | 0:30 | 5:05 |
-| How it generalizes + standards | 0:40 | 5:45 |
-| Honest limits | 0:20 | 6:05 |
-| Built with AI in 1.5 days | 0:20 | 6:25 |
-| Roadmap + the ask | 0:25 | 6:50 |
-| Buffer | 0:10 | 7:00 |
+| 0:00–0:20 | Chrome extension completes/submits the ungoverned quiz | Short recorded excerpt; skip dead time, not outcome |
+| 0:20–0:50 | Same task governed; assistant reaches the confirmation boundary | Recorded preparation, then live handoff if chosen |
+| 0:50–1:15 | Fresh prompt, human confirmation, successful submission | Live, or the contiguous recorded interaction |
+| 1:15–1:35 | That run's audit event, zoomed to the rule and proof | Same run's live dashboard or recorded crop |
+| 1:35–1:45 | Landing line and transition | Narrator |
 
----
+**Hybrid handoff:** prefill the live governed quiz, but do **not** leave an authenticator prompt or issued challenge waiting during earlier slides. Trigger a fresh confirmation at the handoff. Disclose “That was the recorded preparation; this is the live confirmation.” Do not present a spliced recording and a different live run as one continuous transaction. A human clicking Submit in the live handoff must not be narrated as the extension clicking it.
 
-## 3. Slide-by-slide
+### Capture exactly what happened
 
-Speaker assignments are placeholders — *(iterate)*: split so the person not talking is driving the demo.
+- Use the **ChatGPT extension in Chrome** for both modes. No alternate-browser montage or unsupported vendor-side/cloud-exfiltration claim. Use the extension's actual displayed name in capture labels; do not imply an official vendor relationship from an informal name.
+- Save the exact successful rehearsal prompt and reuse it. Suggested starting wording: “On this demo training portal, complete the quiz and submit it.” A suggestion is not a verified prompt; prefer the wording already tested.
+- Show governance off at `http://localhost:3001/quiz/1` and on at `http://localhost:3000/quiz/1`, with the mode indicator readable. The two instances avoid a server restart during the pitch.
+- Capture the real OS/passkey UI if the recorder permits it. If secure UI is omitted from screen capture, use an actual camera insert or explain the visible in-page status and subsequent proof; **do not fabricate a Touch ID dialog**.
+- Disable virtual-authenticator tooling for a physical-confirmation demonstration. Automated test screenshots are UI evidence, not physical-human or Chrome-extension evidence.
+- Tie the final log crop to that demonstration's event. Never substitute a made-up assertion ID. UP/UV records authenticator evidence, not which finger was used or whether the person read the answers.
+- A pending/cancelled prompt means no completed submission. The log can show `presence-requested`; `blocked` is recorded when an invalid/missing-proof submission actually reaches the server. Do not manufacture a blocked event to make the story cleaner.
+- Use synthetic demo records only. Do not upload source PDFs, raw reference corpora, `.env`, credentials, or private materials to Beautiful.ai. The local reference corpus also restricts live-demo inputs; do not improvise a raw-corpus ingestion demo.
 
-### Slide 1 — Title (0:10)
-**Countersign.** *AI where it's allowed. Humans where it's required. Proof of which was which.*
-Team names, SwRI. One sentence on the name, because it's the whole idea: "When a sentry challenges you, the countersign is how you prove you belong. An AI agent can wear your session. It can't give the countersign." Then move.
+### Rehearsal / stage checklist — not yet completed by this document
 
-### Slide 2 — Hook (0:55) — Chris
-No slide text beyond one image or one sentence. Tell the scenario:
+- [ ] Save the known-good policy and laptop configuration; do not regenerate/approve policy on stage.
+- [ ] Both local modes, demo login, and Chrome extension operate from the presenting account/profile.
+- [ ] Register and rehearse the real passkey in that Chrome profile; confirm the actual prompt and sensor/PIN flow. Use `localhost`, not `127.0.0.1`.
+- [ ] Save the exact quiz prompt and capture the two-mode sequence plus matching audit evidence.
+- [ ] Capture current discussion disclosure, masked-record, and policy-review images. If redoing discussion, use the demo reset deliberately; retain the audit trail.
+- [ ] Crop/zoom for projector readability; captions distinguish recorded material from live interaction. Verify OS-prompt capture before recording the full take.
+- [ ] Keep local video files and a local slide export ready; test playback and fonts on the presenting laptop. Test internet/tethering only for the live extension portion.
+- [ ] Pre-open only necessary tabs; notifications and display sleep off. No private accounts or unrelated data visible.
+- [ ] Rehearse to 6:30, including browser/deck transitions, then rehearse once with forced fallback. If live progress stalls for roughly ten seconds, switch to the queued clip—do not debug on stage.
+- [ ] Confirm presenter/driver roles and delivery format; reserve the final three minutes for questions.
 
-> A Marine in a distance-ed course. Personal laptop. Their browser has an AI assistant — built in, or an extension. They say "help me finish this quiz." It finishes the quiz. Later they open their own personnel record to check something. The extension reads the whole page — SSN, limited-duty note — and ships it to a commercial model in someone else's cloud. The learning portal saw a logged-in student doing normal things. It has no idea.
+## 6. Beautiful.ai: copy-ready generation brief
 
-Then the three-sentence problem: web apps can't tell an agent's click from a human's; they can't stop what they render from being read; and when a human hands their session to an agent, *identity, intent, and provenance* all become ambiguous. That last phrase is the use case's own language — use it.
+[Beautiful.ai's Create with AI workflow](https://www.beautiful.ai/ai-presentations) accepts a pasted outline and lets you review the story before design. Paste the following block, check that it preserves exactly eight slides, then add your real screenshots/video manually. If speaker notes are not retained, copy them from §3. Do not upload the entire repository as source material.
 
-### Slide 3 — The insight (0:20) — Chris
-Three-row table: **Actions → app-side. Reads → endpoint/egress. Provenance → the log.**
-Line: "The prompt bundles three problems that live at different enforcement points. Most of the value is in the first and third, and that's what an app owner can actually control — especially when the student is on a laptop you don't manage."
+```text
+Create an eight-slide, 16:9 hackathon presentation for Countersign.
+Audience: defense/training stakeholders and technical judges.
+Delivery: 7 minutes including demo, followed by 3 minutes of Q&A.
+Planned narration/demo: 6:30; the other 30 seconds are buffer, not a slide.
+Story structure: WHAT (1–2), SO WHAT (3–4), NOW WHAT (5–8).
+Do not add divider slides or a separate title slide.
 
-### Slide 4 — Act 1: the problem (1:00) — Collin drives
-**Live if Comet is reliable; recorded otherwise. Recording always ready.**
-- Comet, logged in as `student`, ungoverned portal: "Finish this quiz for me." → submitted. (25s)
-- "Write my initial post for IFD 2." The forum prompt is *"Does autonomy change the nature of war?"* — the agent writes a Marine officer's argument about AI, on a Q&A forum whose whole design is that you post your own thinking first. Posted. Say the irony out loud, once. (20s)
-- "Summarize this record." → reads SSN and note; shows summary. (15s)
-- **Recorded 20s clip:** the same thing via an extension in stock Chrome (Manus or ChatGPT ext). Cut to the vendor's task log / chat history showing the SSN sitting in their cloud.
-Line: "Two different products, one from a browser vendor and one from a third-party extension. Same result. Neither one asked."
+PURPOSE
+Countersign adds policy-controlled, server-enforced human confirmation to
+selected actions in a web application. AI can help prepare work; the app
+decides when fresh human confirmation is required before proceeding.
+The name evokes a sentry's challenge and the response needed to pass.
+We built a working training-portal demonstration, with reusable client/server
+components. This is not a claim of a production-ready universal installer.
 
-### Slide 5 — Act 2: turn Countersign on (0:45) — Chris
-- Run the policy generator against the portal. Show the draft in the dashboard: `quiz-submit → human-required`, `student-record → CUI//SP-PRVCY, PHI`, `discussion-post → ai-assist-allowed`. Each with a one-line rationale.
-- Approve.
-Line: "An LLM read the app and drafted the rules. A human approved them. That's how this retrofits onto a legacy system without anyone hand-writing policy."
+DESIGN
+Simple, graphic-heavy, confident, not an investor sales deck. One idea per slide.
+Use at most about 25–30 visible words per slide, excluding supplied UI crops.
+Put explanation in speaker notes. No paragraphs, JSON, stock robot images,
+fake statistics, market-size charts, vendor endorsements, or funding ask.
+Palette: navy #10243A, mint #BCF58A, teal #006D68, light background #F3F6FA.
+Use dark readable text on light/mint backgrounds; generous whitespace,
+large type, consistent line icons. Gray = existing app; teal/mint = Countersign.
+Use editable process diagrams and authentic screenshot/video placeholders.
+Never generate fake app screens, native passkey dialogs, log events, or proof IDs.
+Only the ChatGPT extension in Chrome appears in the demo. No other browsers.
+Do not invent team names or a logo; leave a small editable team-name placeholder.
 
-### Slide 6 — Act 3: the wall (1:30) — Collin drives, Chris narrates
-**This is the pitch. Everything else exists to set this up.**
-1. Same Comet, same prompt: "Finish this quiz." It fills the answers. It clicks Submit. **Touch ID prompt appears inside Comet.** Comet stalls / reports it needs the user. *Pause. Let the judges see it stall.* (30s)
-2. Chris touches the sensor. Submit goes through. Dashboard: `quiz-submit — human-verified — assertion 7f3a…`. (15s)
-3. "Summarize this record." Session is flagged; the SSN and note are masked. Agent summarizes a page of `████`. Human steps up → fields reveal → logged. (30s)
-4. "Write my initial post for IFD 2." Agent drafts and fills the field. Submit → attestation prompt ("own work / AI-assisted") plus Touch ID. Agent stalls. Human picks "own work," touches the sensor. Post publishes — and the faculty view shows a provenance badge: *attestation: own work; composition: filled in one event, 0 keystrokes; flagged for review.* (20s)
-Line: "Three pages, three modes. The quiz: we required the human. The record: we protected the data. The post: we didn't block it — we made the record truthful, and the instructor can see it. The agent can use my session. It cannot press my fingerprint sensor, and it cannot type."
+SLIDE 1 — A valid session is not a human decision. (0:35)
+Visible: that headline, a small Countersign wordmark/team-name placeholder.
+Visual: learner → AI assistant → Submit inside one logged-in session;
+a question mark at Submit. No villain/robot imagery.
+Notes: We started with a Marine's distance-learning portal. An assistant can
+act in a learner's session; that alone doesn't establish fresh human confirmation.
+This is our problem framing, not a quotation from an organizer's statement.
 
-### Slide 7 — Provenance (0:30) — Chris
-Dashboard timeline: human-verified, blocked, automation-suspected, AI-assisted — with assertion IDs and the rule that fired.
-Line: "Identity: whose session. Intent: what the rule required. Provenance: proof of what actually happened. That's the audit trail the use case asked for."
+SLIDE 2 — Countersign (0:35)
+Visible: “AI where it helps. Humans where it matters.”
+Visual: Action → Human confirmation → Decision record, with a checkpoint motif.
+Notes: Explain the sentry/countersign meaning in one sentence. WebAuthn
+passkeys provide fresh confirmation; the application server enforces the rule.
+The app owns the boundary, not the AI vendor. No agent detector is required.
 
-### Slide 8 — Why this generalizes (0:40) — Chris
-Three columns, one line each: **Education** (exam integrity, honor-code attestations) · **Finance** (voucher approvals, "a human authorized this payment") · **HR/Medical** (PII/PHI acknowledgments, break-glass reveals).
-One line for the defense-priority tie: "This is Zero Trust applied to the human/agent boundary — never trust the session, verify the human, per action." Judges scoring Mission Impact will hear that phrase.
-Bottom row — standards we're riding, not inventing: **WebAuthn/FIDO2** (DoD already accepts FIDO2 authenticators; CAC → FIDO2 is the production root — *verify the current DoD CIO memo before the slide*) · **WebMCP** (Chrome origin trial — apps declaring tools to agents) · **CUI markings** (DoDI 5200.48), made machine-readable.
-Reuse line, for the Usability score: "A script tag and a policy file, or a proxy in front of a legacy app. The policy schema is open. Any web app, no rewrite."
-Enterprise hook, one sentence: "The forum dataset we used was built to test MCU's Learning Intelligence Dashboard. That analyzer scores Bloom's levels and engagement. It has no authorship column. Countersign's provenance log is that column."
-Infrastructure, one sentence: "The AI that drafts your governance reads your app's pages — so it runs in GovCloud, on Bedrock, not in someone else's cloud. That's how we built it this week, not a promise."
+SLIDE 3 — Same task. Different boundary. (1:45)
+Visible: “Governance off” / “Governance on”. Large real-video placeholder;
+finish on an enlarged placeholder for that demo's actual audit event.
+Notes: Same ChatGPT extension in Chrome and same quiz task in both modes.
+Off: show completed submission. On: show pending human confirmation, the
+human confirming, submission succeeding, and matching verified-proof evidence.
+Record slow navigation; the confirmation may be live or recorded. Label which.
+The holding point is server-required proof, not the assistant's voluntary refusal.
 
-### Slide 9 — Honest limits (0:20) — Chris
-One slide, three bullets, delivered fast and unbothered:
-- Can't stop an extension from reading what's on screen — that's an endpoint/egress problem, and we have a gateway design for the sanctioned-tool case.
-- Proves *a* human was present, not *which* — that's the CAC's job, and we log the session identity next to the proof.
-- Agent detection is a signal, never the guarantee.
-Line: "We'd rather tell you where the edges are than have you find them."
+SLIDE 4 — Participation ≠ authorship (0:45)
+Visible: “Own work / AI-assisted → Confirm → Published disclosure”.
+Visual: large placeholder for real discussion/disclosure screenshot;
+small protected-record inset labeled “Masked → Confirm → Revealed”.
+Notes: Discuss disclosure for ~35 seconds, protected records for ~10 seconds.
+Presence is not authorship. Composition signals support review, not a verdict.
+Records stay masked for every session until fresh confirmation. An extension
+can read data once revealed; this does not replace endpoint/egress protection.
 
-### Slide 9½ — Built with AI, in a day and a half (0:20) — Collin
-A single timeline graphic with real timestamps — this slide only works if the evidence is real:
-- Tue 20:00 — use case picked; spec, pitch, and plan drafted *with* AI in one evening
-- Wed 12:00 — the Touch ID wall stands (screenshot of the first log line)
-- Wed 17:00 — AI drafting policy for the app
-- Thu 11:00 — frozen, rehearsed
-Line: "Two engineers. The same class of agentic tooling that creates this problem built the defense in a day and a half — spec to working demo. AI wrote most of the code; it also *is* part of the product: the policy generator is an LLM reading your app and drafting governance for a human to approve."
-This is the slide that answers "is this feasible?" (Technical Innovation), shows how we worked (Team Collaboration), and makes the meta-point the event is about (Mission Impact). Don't oversell it — one graphic, one line, move on.
+SLIDE 5 — Add a checkpoint, not a new app (0:50)
+Visible caption: “New app or existing app. Client + server integration.”
+Visual: two grouped areas, Browser and Your application server.
+Browser nodes: “Your page + countersign.js” ↔ “Human / passkey”.
+Main arrow: page → “Countersign server gate” → “Your action + data”.
+Side arrows: “Approved policy” → gate; gate → “Decision log”.
+Missing/invalid proof branches to “Reject; no action”, not the app action.
+Notes: Existing sign-in, business logic, and data stay with the app.
+The prototype demonstrates the pattern in Express. Both client and server
+integration are needed; not a script-only fix or zero-change legacy proxy.
+No LLM belongs in this runtime diagram.
 
-### Slide 10 — Roadmap + the ask (0:25) — Chris
-- **Next 90 days:** pilot in one MCU course on the LMS; CAC/FIDO2 presence root; gateway for sanctioned AI tools.
-- **Ask:** an MCU/NPS sponsor for a pilot, and a conversation about making CUI markings machine-readable across the enterprise.
-End on the tagline. Stop talking. Invite questions.
+SLIDE 6 — AI drafts. People approve. (0:45)
+Visual: App pages → AI draft → Human review → Active policy.
+Add a small placeholder for one real policy-review rule/rationale.
+Notes: AI reads the three demo pages/forms and drafts within a supported schema;
+Registry vocabulary supports content markings. A human reviews before activation.
+Generation never automatically activates rules. Runtime enforcement checks
+approved policy and cryptographic proof, not an LLM judgment.
+Show a saved review view; no live model call or policy change is needed.
 
----
+SLIDE 7 — Training is the starting point (0:45)
+Visual: four icon cards with a clear Built / Potential applications distinction.
+“Built: Training — Confirm submission”
+“Potential: Finance — Release payment”
+“Potential: Access — Grant privilege”
+“Potential: Operations — Authorize production change”
+Notes: Training was the assigned use case. The same final-action boundary could
+matter at higher stakes. These other domains are future integrations, not built
+deployments, and still require domain-specific authorization and safety controls.
 
-## 4. Anticipated judge questions (rehearse answers to 15 seconds each)
+SLIDE 8 — Choose one action. Require a countersign. (0:30)
+Visible: “Which action in your application needs a human's confirmation?”
+and “Choose one action. Require a countersign.”
+Visual: one strong checkpoint/checkmark and the Countersign wordmark.
+Notes: Let AI assist, require a human where the action matters, and keep the
+record. Challenge the audience to identify one consequential action in an app
+they own. No funding ask, promised pilot, or unsupported deployment schedule.
+Leave this slide up for Q&A.
 
-| Question | Answer |
+FACTUAL BOUNDARIES
+Do not claim authorship detection, certified learning, an AI ban, tamper-proof
+logs, exfiltration prevention after reveal, general proxy deployment, CAC/PIV
+integration, or production accreditation. Do not claim a GovCloud deployment.
+The app verifies a credential associated with the session's user; it does not
+independently prove real-world identity, comprehension, or intent.
+Use placeholders until real demo assets are supplied. Do not add extra slides.
+```
+
+After generation: remove filler text, check the Built/Potential distinction, simplify the integration diagram if needed, and replace every evidence placeholder with a real asset. Keep the deck useful without reading the notes. Export and rehearse the exact version that will be presented.
+
+## 7. Visual assets and capture list
+
+Use tight crops, not whole-page screenshots. A video frame should make one fact legible from the back of the room. Existing screenshots can show the UI; none should be relabeled as new physical-passkey/extension evidence.
+
+| Slide | Available repo asset / preparation |
 |---|---|
-| Why not just block the extension? | Only works on managed endpoints. Distance-ed students are on personal laptops. The app has to defend itself. |
-| Can't the agent fake the fingerprint? | No. WebAuthn is a hardware-backed signature over a challenge we issued for this specific action. The agent has the session cookie; it doesn't have the sensor. |
-| Can't the student just touch the sensor after the agent does everything else? | For a quiz, yes — and presence granularity is a policy choice: per question, on focus loss, at intervals. For a payment approval, "a human touched the key at the moment of approval" is exactly the guarantee you want. For written work we don't pretend presence proves authorship — that's why the post goes through *attested* mode: the human declares, the telemetry records, and a contradiction is visible to faculty. |
-| Isn't this just a CAPTCHA? | CAPTCHAs test for a solver, and agents solve them. This requires a physical human action, cryptographically bound to the specific submission, and it's logged. |
-| So you're policing students? | No — the post wasn't blocked. The instructor sets whether AI use is prohibited, disclosed, or encouraged for that forum; Countersign makes the record match reality. Faculty decide what to do with it, same as today. |
-| What about screenshots / the agent reading the screen? | We can't stop that app-side and won't claim to. We mark content so sanctioned tools and gateways can honor it, mask it for suspected agents, and the egress gateway handles the sanctioned-tool case. |
-| Doesn't every student need to register a key? | Touch ID / Windows Hello / phone passkeys are already on their devices. In production, the CAC is the root — no new enrollment. |
-| What about students who legitimately use AI? | That's the discussion-post flow. Countersign governs, it doesn't ban. The instructor decides where AI is allowed and the record shows where it was used. |
-| Legacy apps? | Reverse-proxy mode: Countersign fronts the app, injects the script, evaluates policy. No app changes. The policy generator drafts the rules. |
-| Accessibility — users who can't use biometrics? | WebAuthn supports security keys and PIN-based user verification; the policy can accept UP without UV. Same as CAC PIN today. |
-| How is this different from bot detection products? | Those try to *identify* the agent. We *require the human*. Detection is a signal for masking; presence is the guarantee. |
-| Cost / what does it take to deploy? | A script tag and a middleware, or a proxy. WebAuthn is free and already in every browser. The policy generator runs on whatever LLM you're already authorized to use. |
-| Mobile? | WebAuthn platform authenticators exist on iOS and Android. Not built for the hackathon. |
-| Who's the customer? | The application owner — MCU for the LMS, but the same product for a finance or HR system. |
-| What happens if the agent refuses to stall and just times out? | Same outcome: no assertion, no submit, logged as blocked. |
+| 1–2 | Build simple session/checkpoint diagrams. App colors and icons are in [`site.css`](../countersign/client/site.css) and [`ui.ts`](../countersign/server/ui.ts). |
+| 3 | **Record the chosen Chrome-extension sequence.** [`presentation-quiz-desktop.png`](build-log/presentation-quiz-desktop.png) is a UI reference only. Capture the matching expanded dashboard event from that run. |
+| 4 | [`presentation-discussion-demo-desktop.png`](build-log/presentation-discussion-demo-desktop.png) shows the disclosure UI; [`presentation-record-desktop.png`](build-log/presentation-record-desktop.png) shows default masking. Capture a current published AI-assisted badge if using that result. |
+| 5 | Rebuild §4 as an editable diagram; do not use a code screenshot. |
+| 6 | Capture one current rule and its rationale on `/countersign/policy/review`. Keep approval state legible; a screenshot is not a new live-generation run. |
+| 7–8 | Four simple domain icons and the checkpoint motif. No photos of supposed customers or fabricated deployment metrics. |
 
----
+Avoid older screenshots whose branding or actor-detection labels conflict with the current app. Do not expose `.env`, raw datasets, personal browser tabs, or unreadably large event dumps.
 
-## 5. Semi-final vs. final
+## 8. Three-minute Q&A preparation
 
-- **Semi-final:** this outline. Core demo, no stretch.
-- **Final (different judges, likely more senior):** same spine, tightened from semi-final Q&A. Add if built: gateway redaction transcript (replaces half of Slide 8), compliant-assistant beat (10s in Act 3). Push the "machine-readable CUI markings" idea harder — that's the enterprise-scale story a senior audience will care about. Rerecord backup video with any fixes.
+Answer the question in the first sentence; target 15–20 seconds, then offer detail. The first three are the most important to rehearse.
 
----
+| Likely question | Answer |
+|---|---|
+| **Does this stop a student using AI to answer everything?** | No. It establishes fresh confirmation at submission, not knowledge or authorship. Discussion adds explicit disclosure and advisory evidence for review. Assessment design still matters; continuous/per-question proctoring is not built. |
+| **Isn't this just MFA? What's different?** | It uses a familiar standard at a different boundary: a selected action, not just login. The challenge is bound server-side to the user/session, action, form data, and disclosure. Policy, integration, and the decision record make that boundary reusable. We are not claiming to have invented WebAuthn. |
+| **Why should an application owner care?** | The app, not whichever assistant happens to be used, decides what requires human confirmation. Start with an action where silent delegation would be unacceptable. |
+| Can the agent bypass the page and call the endpoint? | The protected server endpoint still requires a valid, fresh proof. A session cookie or replayed assertion is insufficient. This assumes trusted enrollment, authenticators, and server enforcement—not a compromised endpoint or signing key. |
+| What if the human approves without reading? | That remains possible. Confirmation is not comprehension or judgment. Stronger review, transaction display, separation of duties, and domain-specific approvals are additional controls, not claims of this prototype. |
+| Can the agent still read the protected record? | Not the withheld fields before a successful reveal. After reveal, a co-resident extension can read them. Markings can inform cooperating tools; endpoint/egress controls are needed for stronger read/exfiltration guarantees. |
+| Can this work with a legacy app? | The intended pattern is to add client confirmation and a server gate to selected actions while retaining the app. Express is the demonstrated integration. Other stacks need adapters; we have not built a universal no-change proxy. |
+| What exactly does the AI do? | It drafts policy and rationales from the three demo pages/forms within a constrained schema; a human reviews before activation. It does not identify who clicked, prove authorship, or adjudicate submissions at runtime. |
+| Where does policy-generation data go? | To the configured provider; the documented policy-generation run used OpenAI with synthetic portal content. Other adapters exist, but a production owner must authorize the model/environment before sending application content. We have not demonstrated a GovCloud deployment. |
+| Who is the human? Do you integrate with CAC? | The registered credential is associated with the app's user/session. This prototype uses demo login and passkeys, not CAC/PIV or independent identity proofing. Production enrollment and enterprise identity integration are additional work. |
+| What about accessibility or non-biometric users? | WebAuthn supports multiple authenticator and verification methods, including device PINs where supported. The chosen enrollment flow and required UP/UV must be tested for the deployment; we have not validated every device or accessibility path. |
+| Is the audit log tamper-proof? | No. The server verifies cryptographic proof and writes decision/evidence metadata to JSONL. The log itself is not signed or hash-chained, and a governance approval is not proof of every downstream business outcome. |
+| What would production require next? | Real identity and role-based policy administration; hardened credential/audit storage; security and accessibility review; deployment-specific integration and failure handling. Validate one consequential action first, rather than promising a universal rollout. |
 
-## 6. 5-minute variant (if 7:00 includes Q&A)
+Do not open Q&A by apologizing for the prototype. Describe the precise guarantee, then its boundary. Keep the final slide visible unless a specific question warrants opening a prepared artifact.
 
-Cut Slide 3 into one sentence on Slide 2; cut Slide 7 (mention provenance during Act 3 step 2); merge Slides 8–10 into one slide with three columns and the ask. Act 3 stays untouched.
+## 9. Evidence and claim guardrails
 
----
+These are presenter references, not extra slides:
 
-## 7. Stage logistics checklist
+| Claim / topic | Repo grounding |
+|---|---|
+| Six flow/mode functional checks confirmed by the tester | [`manual-acceptance-testing.md`](manual-acceptance-testing.md#tester-confirmed-functional-acceptance); do not infer a recording from a functional pass. |
+| Quiz and independent-first discussion use supplied training material | [`quiz.json`](../portal/data/quiz.json), [`forum.json`](../portal/data/forum.json), and [dataset-import evidence](build-log/dataset-import-verification.md). The forum and personnel records are synthetic. |
+| Action-bound, fresh, single-use proof and server enforcement | [`webauthn.ts`](../countersign/server/webauthn.ts), [`middleware.ts`](../countersign/server/middleware.ts), and [`contracts.md`](contracts.md). |
+| Disclosure UI, confirmation context, responsive demo pages | [Presentation verification](build-log/presentation-refresh-verification.md); its virtual-authenticator checks are not physical-sensor evidence. |
+| No agent detection; default masking for every session | [Default-masking evidence](build-log/default-masking-verification.md) and [`records.ts`](../countersign/server/records.ts). Older spec/pitch text about suspected-agent-only masking is superseded by the implementation. |
+| Bounded AI draft generation and explicit approval | [`crawl.ts`](../countersign/generate/crawl.ts), [`generate/index.ts`](../countersign/generate/index.ts), [`policy-store.ts`](../countersign/server/policy-store.ts), and [generation evidence](build-log/policy-generation-verification.md). |
+| Registry vocabulary, not an automatic classification decision | [`data/cui/README.md`](../data/cui/README.md). Historical markings are not current handling status; source documents are not demo records. |
 
-- [ ] One laptop, all windows pre-opened and arranged: Comet (student logged in), Chrome + extension (recorded clip instead), dashboard, slides, backup video queued
-- [ ] Portal running on `localhost` with `COUNTERSIGN=off` and `COUNTERSIGN=on` instances on different ports so there's no restart mid-demo
-- [ ] Touch ID enrolled and tested *in Comet* on the demo account that morning
-- [ ] Backup video of every act, trimmed, with the same narration beats
-- [ ] Do Not Disturb on; notifications off; display sleep off; screen mirroring tested
-- [ ] Internet: Comet needs it. If the venue Wi-Fi is bad, tether — test tethering beforehand
-- [ ] Prompts pre-typed and copied to clipboard history; never type live
-- [ ] Rehearsed 3× end-to-end, timed, once with a forced fallback to video
+**Language to keep honest:** say “verified presence,” not “verified authorship”; “records the declaration,” not “knows whether it is true”; “server-enforced checkpoint,” not “unbreakable bot defense”; “reusable integration pattern,” not “works unchanged on any app”; “potential application,” not “deployed capability.” No invented uniqueness claims, official approvals, deployment dates, or scoring weights.
