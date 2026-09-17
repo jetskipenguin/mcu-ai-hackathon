@@ -187,6 +187,8 @@ article[data-post-id] h2 { font-size: 1.15rem; }
 .timeline-scroll table { width: 100%; min-width: 64rem; border-collapse: collapse; font-size: .78rem; }
 th, td { text-align: left; padding: 1rem .85rem; border-bottom: 1px solid var(--line); vertical-align: top; }
 th { color: #4d6076; background: #edf2f7; font-size: .65rem; letter-spacing: .07em; text-transform: uppercase; font-weight: 800; }
+.sort-column { display: flex; align-items: center; justify-content: flex-start; gap: .4rem; width: 100%; margin: 0; padding: 0; border: 0; border-radius: 0; background: transparent; color: inherit; font: inherit; font-weight: inherit; text-align: left; }
+.sort-column:hover { background: transparent; color: var(--teal); }
 tbody tr:last-child td { border-bottom: 0; }
 tbody tr.human-verified { background: #f0faf2; }
 tbody tr.unverified { background: #fff; }

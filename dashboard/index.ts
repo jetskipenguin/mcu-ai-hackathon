@@ -4,6 +4,13 @@ import { portalOrigin } from "../countersign/server/origin.js";
 import { escapeHtml, renderHero, renderShell } from "../countersign/server/ui.js";
 
 export function renderDashboard(enabled = true): string {
+  const columns = [
+    ["time", "Time"], ["user", "User"], ["route", "Route / action"],
+    ["rule", "Rule"], ["decision", "Decision"], ["actor", "Actor"],
+  ];
+  const headers = columns.map(([key, label]) =>
+    `<th scope="col"><button type="button" class="sort-column" data-sort="${key}" data-label="${label}" aria-label="${label}: sort ${key === "time" ? "newest first" : "A to Z"}">${label} <span aria-hidden="true">↕</span></button></th>`
+  ).join("");
   return renderShell({
     title: "Activity log", active: "timeline", enabled,
     body: `${renderHero({
@@ -13,7 +20,7 @@ export function renderDashboard(enabled = true): string {
     <div class="console-summary" aria-label="How to read the audit trail">
       <section class="panel">
         <p class="eyebrow">Audit source</p><h2>Recorded actions</h2>
-        <p class="muted">Polling <code>/countersign/events</code> once per second. Events stay in append order; newest appear last.</p>
+        <p class="muted">Polling <code>/countersign/events</code> once per second. Events initially follow append order, newest last. Select a column heading to sort or reverse its order.</p>
       </section>
       <section class="panel">
         <p class="eyebrow">Presence evidence</p><h2>Human verification</h2>
@@ -41,8 +48,8 @@ export function renderDashboard(enabled = true): string {
       <p id="timeline-status" role="status">Waiting for events…</p>
     </section>
     <div class="timeline-scroll"><table>
-      <caption class="sr-only">Governed events in append order</caption>
-      <thead><tr><th scope="col">Time</th><th scope="col">User</th><th scope="col">Route / action</th><th scope="col">Rule</th><th scope="col">Decision</th><th scope="col">Actor</th><th scope="col">Evidence</th></tr></thead>
+      <caption class="sr-only">Governed events. Select a column heading to change the sort order.</caption>
+      <thead><tr>${headers}<th scope="col">Evidence</th></tr></thead>
       <tbody id="events"><tr><td colspan="7">Waiting for events…</td></tr></tbody>
     </table></div>`,
     scripts: `<script>
@@ -51,6 +58,18 @@ export function renderDashboard(enabled = true): string {
     const status = document.querySelector("#timeline-status");
     const actors = ["human-verified", "unverified"];
     const rows = new Map();
+    const sortButtons = [...document.querySelectorAll("[data-sort]")];
+    const collator = new Intl.Collator(undefined, { sensitivity: "base" });
+    const sortValues = {
+      time: event => Date.parse(event.ts),
+      user: event => event.user.name + " (" + event.user.id + ")",
+      route: event => event.route + " / " + event.action,
+      rule: event => event.rule_id || "",
+      decision: event => event.decision,
+      actor: event => event.actor_class,
+    };
+    let sortColumn = null;
+    let sortDirection = "ascending";
     let events = [];
     let selectedUser = new URL(location.href).searchParams.get("user") || "";
     let busy = false;
@@ -104,6 +123,13 @@ export function renderDashboard(enabled = true): string {
       }
       filter.value = selectedUser;
       const visible = events.filter(event => !selectedUser || event.user.id === selectedUser);
+      if (sortColumn) {
+        const value = sortValues[sortColumn];
+        const direction = sortDirection === "ascending" ? 1 : -1;
+        visible.sort((a, b) => direction * (sortColumn === "time"
+          ? value(a) - value(b)
+          : collator.compare(value(a), value(b))));
+      }
       let index = 0;
       for (const event of visible) {
         let row = rows.get(event.event_id);
@@ -148,6 +174,27 @@ export function renderDashboard(enabled = true): string {
 
     filter.addEventListener("change", () => selectUser(filter.value));
     document.querySelector("#all-users").addEventListener("click", () => selectUser(""));
+    for (const button of sortButtons) {
+      button.addEventListener("click", () => {
+        const column = button.dataset.sort;
+        sortDirection = sortColumn === column
+          ? (sortDirection === "ascending" ? "descending" : "ascending")
+          : (column === "time" ? "descending" : "ascending");
+        sortColumn = column;
+        for (const control of sortButtons) {
+          const active = control.dataset.sort === sortColumn;
+          if (active) control.closest("th").setAttribute("aria-sort", sortDirection);
+          else control.closest("th").removeAttribute("aria-sort");
+          control.querySelector("span").textContent = active ? (sortDirection === "ascending" ? "↑" : "↓") : "↕";
+          const nextAscending = active ? sortDirection !== "ascending" : control.dataset.sort !== "time";
+          const nextOrder = control.dataset.sort === "time"
+            ? (nextAscending ? "oldest first" : "newest first")
+            : (nextAscending ? "A to Z" : "Z to A");
+          control.setAttribute("aria-label", control.dataset.label + ": sort " + nextOrder);
+        }
+        render();
+      });
+    }
     refresh();
     setInterval(refresh, 1000);
   </script>`,

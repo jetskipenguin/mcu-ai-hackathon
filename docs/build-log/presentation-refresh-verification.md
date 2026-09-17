@@ -133,6 +133,37 @@ the console renderer. Human-owned pitch/spec documents were left alone.
 rehearsal.** Virtual proofs and viewport checks do not certify the OS dialog's
 appearance or close those manual checkpoints.
 
+## Pre-PR sorting integration — 2026-09-17T02:57:14Z
+
+`main` added column sorting in `08d7a55` after the initial branch push. Its
+dashboard conflict was resolved by retaining the shared shell and all upstream
+sorting behavior, moving the sort-button styling into the shared CSS. The
+caption and instructions now describe the selectable order accurately. The
+published feature commits were retained rather than rebased or force-pushed.
+
+Re-ran the full suite (**129 passed**), build, whitespace checks, and strict
+TypeScript checking of `dashboard-browser-smoke.mts`. The dashboard browser
+script now verifies all six sortable columns in both directions using pointer
+and keyboard activation, one correct `aria-sort`, and initial append order.
+Existing user filtering, polling/focus/error recovery, virtual enrollment,
+quiz/discussion proofs, and pending/revealed record checks also pass.
+
+```sh
+SCREENSHOT_PATH="$PWD/node_modules/.cache/presentation-sorting-dashboard.png" \
+TMPDIR="$PWD/node_modules/.cache" ./node_modules/.bin/tsx \
+  docs/build-log/dashboard-browser-smoke.mts
+
+TMPDIR="$PWD/node_modules/.cache" ./node_modules/.bin/tsx \
+  docs/build-log/content-layout-browser-smoke.mts --label=presentation-sorting
+```
+
+The second command passed **75 cases / 150 snapshots**, including navigation
+round trips, with zero findings or setup errors. Post-integration measurements
+and screenshots: `node_modules/.cache/content-layout-presentation-sorting-WmFZKc/`.
+The retained screenshots below predate the sort-header integration; no other
+presentation changes were needed. The three user-modified policy JSON files
+remain local and outside this PR.
+
 ## Screenshots
 
 - [Demo home](presentation-login-desktop.png)

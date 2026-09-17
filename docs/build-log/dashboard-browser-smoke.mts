@@ -6,6 +6,7 @@ import { join } from "node:path";
 import { chromium, type Browser, type Page } from "playwright";
 import { createApp } from "../../portal/app.ts";
 import { appendProvenanceEvent, readProvenanceEvents } from "../../countersign/server/log.ts";
+import type { ProvenanceEvent } from "../../countersign/server/types.ts";
 
 type ConfirmationPart = {
   text: string; visible: boolean; unobscured: boolean;
@@ -151,7 +152,7 @@ try {
     notes: index === 0 ? '</script><img src=x onerror="window.xss=true"> Synthetic display fixture.' : "Synthetic display fixture.",
   }, provenancePath);
 
-  const initial = [];
+  const initial: ProvenanceEvent[] = [];
   for (let index = 0; index < 4; index++) initial.push(await seed(index));
   await page.goto("http://localhost:3000/countersign/");
   await page.waitForFunction(() => document.querySelectorAll("#events tr[data-event-id]").length === 4);
@@ -162,6 +163,31 @@ try {
     assert.equal(JSON.parse(evidence!).actor_class, actor, "Historical actor labels remain intact in evidence.");
   }
   assert.equal(await page.locator("#user-filter option").count(), 3);
+  const rowIds = () => page.locator("#events tr[data-event-id]").evaluateAll(rows => rows.map(row => row.getAttribute("data-event-id")));
+  assert.deepEqual(await rowIds(), initial.map(event => event.event_id), "Initial order remains append order.");
+  const sortValues: Record<string, (event: ProvenanceEvent) => string | number> = {
+    time: event => Date.parse(event.ts),
+    user: event => `${event.user.name} (${event.user.id})`,
+    route: event => `${event.route} / ${event.action}`,
+    rule: event => event.rule_id ?? "", decision: event => event.decision, actor: event => event.actor_class,
+  };
+  const collator = new Intl.Collator(undefined, { sensitivity: "base" });
+  for (const [column, value] of Object.entries(sortValues)) {
+    const button = page.locator(`button[data-sort="${column}"]`);
+    const directions = column === "time" ? [-1, 1] : [1, -1];
+    for (const [index, direction] of directions.entries()) {
+      if (index === 0) await button.click();
+      else await button.press("Enter");
+      assert.equal(await button.locator("..").getAttribute("aria-sort"), direction === 1 ? "ascending" : "descending");
+      assert.equal(await page.locator("th[aria-sort]").count(), 1);
+      const expected = [...initial].sort((a, b) => {
+        const first = value(a); const second = value(b);
+        return direction * (typeof first === "number" && typeof second === "number" ? first - second : collator.compare(String(first), String(second)));
+      });
+      assert.deepEqual(await rowIds(), expected.map(event => event.event_id), `${column} sort direction ${direction}`);
+    }
+  }
+  console.log("PASS: all six sortable columns retain both directions and accessible state through pointer and keyboard activation.");
   await page.locator(`#events tr[data-event-id="${initial[0].event_id}"] a`).click();
   assert.equal(new URL(page.url()).searchParams.get("user"), "stu-ui-a");
   assert.equal(await page.locator("#events tr[data-event-id]").count(), 2);
