@@ -6,18 +6,18 @@ Stable IDs preserve the ordering and grouping in `docs/countersign-plan.md` sect
 
 - [ ] **M1** Create a fresh macOS user account for demo work. Enroll Touch ID for it.
 - [ ] **M2** Install Comet in that account. Sign in to nothing real.
-- [ ] **M3** Create a throwaway HTML page with a 3-question quiz and submit; create another with a fake SSN and clinical note; serve both on `localhost`.
+- [x] **M3** Create a throwaway HTML page with a 3-question quiz and submit; create another with a fake SSN and clinical note; serve both on `localhost`.
 - [x] **M4** Test A: determine whether Comet completes and submits the quiz with 2-3 prompt phrasings. Outcome: two reported refusals; follow the planned fallback (see [NOTES.md](../NOTES.md)).
 - [x] **M5** Test B: determine whether Comet reads and summarizes the sensitive page. Outcome: reproduced the synthetic SSN, DoD ID, and medical note; values match the fixture (see [NOTES.md](../NOTES.md)).
 - [ ] **M6** Test C: determine whether a WebAuthn prompt fires inside Comet on `localhost` and Touch ID completes it. Preliminary WebAuthn.io registration/authentication check passed by tester report; localhost verification remains pending (see [NOTES.md](../NOTES.md)).
 - [ ] **M7** Record each adversary test in `NOTES.md`, including pass/fail and the phrasing that worked.
-- [ ] **M8** Check the ChatGPT Chrome extension; if unavailable, buy the cheapest Manus Browser Operator tier and time-box Tests A and B to 60 minutes.
+- [x] **M8** Check the ChatGPT Chrome extension; if unavailable, buy the cheapest Manus Browser Operator tier and time-box Tests A and B to 60 minutes.
 
 ## Wednesday Morning - Scaffold
 
 - [x] **M9** Create the repository layout with `portal/`, `countersign/{client,server,policy,generate}/`, `dashboard/`, and `docs/`.
 - [x] **M10** Decide Node/TypeScript versus Python. Default: Node, Express, and SimpleWebAuthn.
-- [ ] **M11** Confirm Codex CLI and OpenCode authentication and record each model in `NOTES.md`.
+- [x] **M11** Confirm Codex CLI and OpenCode authentication and record each model in `NOTES.md`.
 - [x] **M12** Write root `AGENTS.md` with the stack, layout, toggle, fake-data rule, and contracts pointer.
 - [x] **M13** Scaffold the Express app, fake-SSO login, three routes, static `countersign.js`, `COUNTERSIGN=off|on`, and JSONL writer.
 - [x] **M14** Add three fictional students plus the demo student, 900-series SSNs, and fabricated notes.
@@ -27,13 +27,13 @@ Stable IDs preserve the ordering and grouping in `docs/countersign-plan.md` sect
 ## Wednesday Morning - Together
 
 - [x] **M17** Iterate on the spec, pitch, and plan documents.
-- [ ] **M18** Lock the stack, extension adversary, and slide ownership.
+- [x] **M18** Lock the stack, extension adversary, and slide ownership.
 - [ ] **M19** Create the skeleton slide deck with the 11 pitch-outline titles.
 - [x] **M20** Create the repository, commit the docs, and start `docs/BUILD-LOG.md` from commit timestamps.
-- [ ] **M21** Confirm presentation format, semifinal/final schedule, and deliverables.
-- [ ] **M22** Select the coursebook chapter, extract the CUI category/LDC files, note dataset fields, and register all three datasets on the hackathon portal.
+- [x] **M21** Confirm presentation format, semifinal/final schedule, and deliverables.
+- [x] **M22** Select the coursebook chapter, extract the CUI category/LDC files, note dataset fields, and register all three datasets on the hackathon portal.
   - [x] Local dataset preparation: Lesson 2 selected; full IFD 2 imported; 126 categories/10 LDCs extracted; chunk JSONL located and field mappings recorded in [dataset evidence](build-log/dataset-import-verification.md).
-  - [ ] Confirm all three datasets are registered on the hackathon portal (separate from importing files locally).
+  - [x] Confirm all three datasets are registered on the hackathon portal (separate from importing files locally).
 
 ## Track A - Morning
 
@@ -53,7 +53,7 @@ Stable IDs preserve the ordering and grouping in `docs/countersign-plan.md` sect
 
 ## Track A - Evening
 
-- [ ] **A11** Fix bugs from the integrated run; add nothing new.
+- [x] **A11** Fix bugs from the integrated run; add nothing new.
 - [x] **A12** Add the user-requested discussion demo reset: restore Capt J. Demo's initial-post state on the current instance, retain fixtures/passkeys/audit, record the reset, and require a fresh governed submission after reset. Both modes, stale/concurrent requests, audit failure, and unaffected quiz/record/registration were verified; 108 tests and Chrome checks pass (see [reset evidence](build-log/discussion-reset-verification.md)).
 - [x] **A13** Add Docker/EC2 deployment: two-container Compose, persistent data/policies, manual setup and first-boot automation. Upstream local image/container, enforcement, generator-crawl, and persistence checks are recorded in the [deployment guide](ec2-deployment.md).
   - [ ] Verify first-boot deployment on EC2 and physical Touch ID in Comet through the SSH tunnel.
