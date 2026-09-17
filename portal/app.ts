@@ -95,26 +95,36 @@ function page(
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>${escapeHtml(title)} - MCU Learning Portal</title>
   <style>
-    :root { font-family: Georgia, "Times New Roman", serif; color: #1c2720; background: #ede9dc; }
+    :root { font-family: Georgia, "Times New Roman", serif; line-height: 1.5; overflow-wrap: anywhere; color: #1c2720; background: #ede9dc; }
+    *, *::before, *::after { box-sizing: border-box; }
     body { margin: 0; }
     header { background: #24382b; color: #f8f3e2; padding: 1rem max(1rem, calc((100% - 960px) / 2)); }
     nav { margin-top: .65rem; display: flex; flex-wrap: wrap; gap: 1rem; }
     nav a { color: #e4d28d; }
     main { max-width: 960px; margin: 0 auto; padding: 2rem 1rem 3rem; }
-    article, fieldset, .panel { background: #fffdf6; border: 1px solid #bbb6a7; padding: 1rem; margin: 0 0 1rem; }
-    fieldset { padding: 1.25rem; }
+    article, fieldset, .panel { min-width: 0; background: #fffdf6; border: 1px solid #bbb6a7; padding: 1rem; margin: 0 0 1rem; }
+    fieldset { min-inline-size: 0; padding: 1.25rem; }
+    legend { max-width: 100%; padding: 0 .25rem; font-weight: bold; }
+    .quiz-question { padding: 1.25rem; }
+    .quiz-question > fieldset { border: 0; padding: 0; margin: 0; background: transparent; }
+    .quiz-question legend { padding: 0; margin-bottom: .75rem; }
     label { display: block; margin: .55rem 0; }
-    textarea { box-sizing: border-box; width: 100%; min-height: 12rem; padding: .75rem; }
+    .quiz-option { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: start; gap: .6rem; }
+    .quiz-option input { margin: .35em 0 0; }
+    fieldset small { display: block; margin-top: 1rem; }
+    button, textarea, select { max-width: 100%; font: inherit; }
+    textarea { width: 100%; min-height: 12rem; padding: .75rem; }
     button { padding: .65rem 1rem; background: #24382b; color: white; border: 0; cursor: pointer; }
     .mode { float: right; font-family: ui-monospace, monospace; color: #e4d28d; }
     .notice { border-left: .35rem solid #a16c20; padding: .75rem 1rem; background: #fff7dc; }
     .provenance-tag { display: inline-block; border: 1px solid #bbb6a7; padding: .2rem .45rem; margin: 0 .4rem .4rem 0; font-family: sans-serif; font-size: .85rem; }
     .post-provenance details { margin: .35rem 0 1rem; overflow-wrap: anywhere; }
-    .forum-text { white-space: pre-wrap; }
+    .forum-text { max-width: 75ch; white-space: pre-wrap; }
     .record dt { font-weight: bold; margin-top: .8rem; }
     .record dd { margin: .2rem 0 .7rem; }
     [data-marking] { outline: 1px dotted #8a5c13; outline-offset: .15rem; }
     footer { padding: 1rem; text-align: center; background: #ddd6c4; font-size: .9rem; }
+    footer p { max-width: 75ch; margin: 0 auto; }
     @media (max-width: 600px) { main { padding-top: 1rem; } .mode { float: none; display: block; margin-bottom: .5rem; } }
   </style>
 </head>
@@ -132,7 +142,7 @@ function page(
     </nav>
   </header>
   <main>${body}</main>
-  <footer>${escapeHtml(footer)}</footer>
+  <footer><p>${escapeHtml(footer)}</p></footer>
   ${scripts}
 </body>
 </html>`;
@@ -336,17 +346,19 @@ export function createApp(options: AppOptions = {}): express.Express {
     requireUser(),
     governedPageVisit(enabled, options.provenancePath),
     (_request, response) => {
+      // Paint the card outside the fieldset so its accessible legend sits inside
+      // the padding instead of straddling the fieldset's native top border.
       const questions = quiz.questions
         .map(
-          (question, index) => `<fieldset>
+          (question, index) => `<div class="panel quiz-question"><fieldset>
             <legend>${index + 1}. ${escapeHtml(question.prompt)}</legend>
             ${Object.entries(question.options)
               .map(
-                ([value, label]) => `<label><input required type="radio" name="answers[${escapeHtml(question.id)}]" value="${escapeHtml(value)}"> ${escapeHtml(label)}</label>`,
+                ([value, label]) => `<label class="quiz-option"><input required type="radio" name="answers[${escapeHtml(question.id)}]" value="${escapeHtml(value)}"> <span>${escapeHtml(label)}</span></label>`,
               )
               .join("")}
             <small>Source: ${escapeHtml(question.source_ref)}</small>
-          </fieldset>`,
+          </fieldset></div>`,
         )
         .join("");
       response.type("html").send(

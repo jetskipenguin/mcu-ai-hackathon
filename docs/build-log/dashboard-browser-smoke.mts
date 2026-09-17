@@ -67,7 +67,12 @@ try {
   for (let index = 0; index < 4; index++) initial.push(await seed(index));
   await page.goto("http://localhost:3000/countersign/");
   await page.waitForFunction(() => document.querySelectorAll("#events tr[data-event-id]").length === 4);
-  for (const actor of actors) assert.equal(await page.locator(`#events tr.${actor}`).count(), 1);
+  assert.equal(await page.locator("#events tr.human-verified").count(), 1);
+  assert.equal(await page.locator("#events tr.unverified").count(), 3);
+  for (const [index, actor] of actors.entries()) {
+    const evidence = await page.locator(`#events tr[data-event-id="${initial[index].event_id}"] pre`).textContent();
+    assert.equal(JSON.parse(evidence!).actor_class, actor, "Historical actor labels remain intact in evidence.");
+  }
   assert.equal(await page.locator("#user-filter option").count(), 3);
   await page.locator(`#events tr[data-event-id="${initial[0].event_id}"] a`).click();
   assert.equal(new URL(page.url()).searchParams.get("user"), "stu-ui-a");
@@ -99,7 +104,7 @@ try {
   await page.getByText("No events for this user yet.", { exact: true }).waitFor();
   assert.equal(await page.locator("#user-filter").inputValue(), "unknown-synthetic");
   await page.getByRole("button", { name: "Show all users", exact: true }).click();
-  console.log("PASS: all actor colors, exact-ID drill-down for duplicate names, deep links, empty user, inert XSS text, live append, and persistent details/focus.");
+  console.log("PASS: presence-only colors with intact historical evidence, exact-ID drill-down for duplicate names, deep links, empty user, inert XSS text, live append, and persistent details/focus.");
 
   failEvents = true;
   await page.waitForFunction(() => document.querySelector("#timeline-status")!.textContent!.includes("HTTP 500"));
@@ -147,7 +152,7 @@ try {
   const proofRow = page.locator(`#events tr[data-event-id="${quiz.event_id}"]`);
   await proofRow.locator("summary").click();
   assert.match(await proofRow.locator("pre").innerText(), new RegExp(quiz.presence!.assertion_id));
-  await page.screenshot({ path: join(root, "docs/build-log/dashboard-user-drilldown.png"), fullPage: true });
+  await page.screenshot({ path: process.env.SCREENSHOT_PATH ?? join(root, "docs/build-log/dashboard-user-drilldown.png"), fullPage: true });
   assert.deepEqual(errors, []);
   console.log("PASS: dashboard links the real verified quiz decision to its assertion and preserves the new discussion review event.");
 } finally {
