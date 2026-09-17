@@ -24,14 +24,14 @@ services:
       ungoverned:
         condition: service_healthy
 
-  # ungoverned:
-  #   <<: *app
-  #   environment:
-  #     HOST: 0.0.0.0
-  #     PORT: "3001"
-  #     COUNTERSIGN: "off"
-  #   ports:
-  #     - "127.0.0.1:3001:3001"
+  ungoverned:
+    <<: *app
+    environment:
+      HOST: 0.0.0.0
+      PORT: "3001"
+      COUNTERSIGN: "off"
+    ports:
+      - "127.0.0.1:3001:3001"
 
 volumes:
   app-data:
