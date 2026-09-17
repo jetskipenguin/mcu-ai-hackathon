@@ -1,5 +1,5 @@
 {
-  "version": "draft-2026-09-16-human-authentication",
+  "version": "draft-2026-09-17-registry-aligned-human-presence",
   "app": "mcu-learning-portal",
   "defaults": {
     "class": "unrestricted"
@@ -16,7 +16,7 @@
         "uv": "required",
         "max_age_s": 60
       },
-      "rationale": "The observed form submits five required multiple-choice answers for the Fundamentals of National Defense prerequisite review. Require human presence with user verification no more than 60 seconds old at this assessment submission boundary, rather than restricting ordinary quiz viewing. This verifies participation in the submission action; it does not certify authorship, independent reasoning, or absence of AI assistance. This is a proposed governance rule for synthetic demonstration data.",
+      "rationale": "The observed form submits five required multiple-choice answers for the Fundamentals of National Defense prerequisite review. Require human authentication with user verification within 60 seconds when committing this assessment submission. This establishes human participation in the submission action, not independent authorship, unaided reasoning, or correctness of the answers. The requirement does not depend on browser behavior.",
       "citations": []
     },
     {
@@ -34,7 +34,7 @@
         "uv": "preferred",
         "max_age_s": 60
       },
-      "rationale": "The discussion form publishes an initial analytical response while peer posts remain hidden until that response is published. Attestation supports this independent-first sequence by asking the learner to affirm compliance and disclose AI use, without equating independence from peer posts with an unsupported claim of unaided authorship. Apply the rule only to initial posts, not subsequent peer responses. User presence is required and user verification is preferred. Human presence does not certify authorship. This is a proposed rule for the synthetic discussion interface.",
+      "rationale": "The discussion form publishes an initial response assessing whether autonomy changes war's nature or character. Peer posts remain hidden until that response is published, supporting an independent-first contribution before exposure to peers' arguments. Require an attestation to that process and disclosure of AI assistance rather than inferring authorship from writing style or browser behavior. User verification is preferred within 60 seconds; human presence does not certify authorship or prove that the response was unaided. This rule applies only to initial posts.",
       "citations": []
     },
     {
@@ -83,7 +83,7 @@
           "max_age_s": 300
         }
       },
-      "rationale": "The name identifies the student in context, the SSN is a direct personal identifier with substantial disclosure risk, and the DoD ID is a unique identifier linkable to that student. General Privacy is the supported non-provisional category for these three fields. The provisional Privacy Information and Sensitive Personally Identifiable Information entries are not selected merely because their descriptions overlap; the page does not establish an applicable provisional authority scope. A rank and DoD identifier alone also do not establish that the narrower authorities associated with Military Personnel Records govern this record. The medical field describes an evaluation and a temporary physical-activity limitation, making Health Information the appropriate content-specific proposal; the PHI label does not itself establish HIPAA applicability. Student Records is the page-level proposal because the assembled record directly relates to a student, while field markings preserve the distinctions between identifiers and health content. Legacy placeholder attributes are not authoritative. Mask these fields for every session by default. Require fresh student-record.unmask human authentication with user verification no more than 300 seconds old to reveal this view; successful verification does not establish additional access entitlement. These are proposed governance mappings for fabricated data, not a classification determination or a determination that CUI Basic, CUI Specified, or any limited dissemination control applies.",
+      "rationale": "The name identifies the learner, while the SSN and DoD ID are direct personal identifiers; General Privacy fits all three fields. The SSN warrants particularly careful handling, but sensitivity alone does not establish the authority scope of the provisional Sensitive Personally Identifiable Information category. General Privacy is selected instead of that provisional category or provisional Privacy Information. A rank and DoD identifier alone do not establish applicability of the narrower military-personnel authorities. The medical field describes an evaluation and temporary physical-activity restriction, fitting Health Information and the demonstration's PHI handling category. Student Records is proposed for the page because it assembles information directly related to a learner; actual education-record authority coverage must be confirmed before production use. All protected fields remain masked by default in every session and may be revealed only through student-record.unmask with user verification within 300 seconds. Protected PII, PHI, and CUI-marked content requires human authentication regardless of browser behavior. These selections derive from field contents and supplied definitions, not legacy attributes. They are proposed governance rules for synthetic demonstration data, not a classification determination, a finding of statutory coverage, or a determination that CUI Basic or Specified applies.",
       "citations": [
         {
           "source": "cui-registry",

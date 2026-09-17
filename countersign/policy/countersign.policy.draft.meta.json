@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-09-16T17:54:06.439Z",
+  "generated_at": "2026-09-17T01:17:13.344Z",
   "provider": "openai",
   "model": "gpt-6-astra",
   "source_urls": [
@@ -12,5 +12,5 @@
     "ldcs": 10,
     "placeholder": false
   },
-  "draft_revision": "3d5be54ec30cb450a7755c4f9d1d8cbff3d201d5ff5d884302f709e48b1438e3"
+  "draft_revision": "72d80df6d4cddb73bb84961054733ef430f908129c7e47d4c6e48ac84d2e5175"
 }
