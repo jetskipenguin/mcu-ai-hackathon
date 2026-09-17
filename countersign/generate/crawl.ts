@@ -34,8 +34,12 @@ export function snapshot(route: string, origin: string, raw: string): PageSnapsh
 
 export async function crawlPortal(options: { baseUrl?: string; userId?: string } = {}): Promise<PageSnapshot[]> {
   const base = new URL(options.baseUrl ?? process.env.GENERATOR_BASE_URL ?? "http://localhost:3001");
-  if (base.hostname !== "localhost" || base.protocol !== "http:" || base.username || base.password ||
-      base.pathname !== "/" || base.search || base.hash) throw new Error("GENERATOR_BASE_URL must be an http://localhost:<port> origin.");
+  // Compose runs the ungoverned portal in a separate container.
+  const localPortal = base.hostname === "localhost" || base.origin === "http://ungoverned:3001";
+  if (!localPortal || base.protocol !== "http:" || base.username || base.password ||
+      base.pathname !== "/" || base.search || base.hash) {
+    throw new Error("GENERATOR_BASE_URL must be an http://localhost:<port> or http://ungoverned:3001 origin.");
+  }
   const request = (path: string, init?: RequestInit) => fetch(new URL(path, base), {
     ...init, redirect: "manual", signal: AbortSignal.timeout(10_000),
   });

@@ -30,6 +30,9 @@ A sentry asks for a countersign before allowing someone to pass, even when that 
 
 ## Run
 
+**Docker / Amazon EC2:** see [the deployment guide](docs/ec2-deployment.md) for
+local Compose, manual EC2 setup, and automatic first-boot deployment.
+
 Use Node.js 20.12 or newer for native `.env` loading. Install the pinned dependencies:
 
 ```sh

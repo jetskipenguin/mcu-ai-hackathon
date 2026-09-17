@@ -434,7 +434,8 @@ and 403 for an unexpected Origin. This is the demo's fake-SSO workflow, not an
 administrator role system.
 
 - **Generation:** uses server-configured `GENERATOR_BASE_URL` (HTTP localhost
-  only) and `GENERATOR_USER_ID`. It logs into the ungoverned instance and fetches
+  or the Docker Compose origin `http://ungoverned:3001`) and `GENERATOR_USER_ID`.
+  It logs into the ungoverned instance and fetches
   only the three demo pages, without submitting their forms. Cookies/credentials
   are not part of the model prompt. Concurrent generation returns 409; provider,
   crawl, or model-validation failures return 502 with an error/message envelope.

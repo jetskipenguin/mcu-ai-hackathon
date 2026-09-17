@@ -1,0 +1,38 @@
+name: countersign
+
+x-app: &app
+  image: countersign:local
+  build: .
+  restart: unless-stopped
+  init: true
+  env_file: .env
+  volumes:
+    - app-data:/app/data
+    - policy:/app/countersign/policy
+
+services:
+  governed:
+    <<: *app
+    environment:
+      HOST: 0.0.0.0
+      PORT: "3000"
+      COUNTERSIGN: "on"
+      GENERATOR_BASE_URL: http://ungoverned:3001
+    ports:
+      - "127.0.0.1:3000:3000"
+    depends_on:
+      ungoverned:
+        condition: service_healthy
+
+  # ungoverned:
+  #   <<: *app
+  #   environment:
+  #     HOST: 0.0.0.0
+  #     PORT: "3001"
+  #     COUNTERSIGN: "off"
+  #   ports:
+  #     - "127.0.0.1:3001:3001"
+
+volumes:
+  app-data:
+  policy:
