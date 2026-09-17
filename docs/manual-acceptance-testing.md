@@ -52,8 +52,9 @@ The human rehearsal checkboxes below remain separate.
 - [ ] On `/discussion/2` in both modes, confirm **Demo controls** starts collapsed
   and contains the native **Reset discussion demo** form and required confirmation
   checkbox. Another signed-in learner must not see these controls.
-- [ ] Publish an initial response on each instance. On port 3000, choose an
-  attestation and complete WebAuthn; record the post, event, and assertion IDs.
+- [ ] Publish an initial response on each instance. On port 3000, choose **Own
+  work** or **AI-assisted** in **How was this response prepared?**, then select
+  **Publish response** and complete WebAuthn; record the post, event, and assertion IDs.
   On port 3001, publish without attestation or presence proof and confirm there is
   no ordinary-post governance event. Peers become visible and the initial-response
   composer disappears. Retain seeded post IDs and any other learner's runtime
@@ -100,10 +101,32 @@ The human rehearsal checkboxes below remain separate.
 
 #### Physical Touch ID checkpoint — separate from virtual checks
 
-- [ ] Disable any DevTools virtual authenticator. In Comet, let the agent reach
-  Publish on the governed initial response, complete the attestation, and confirm
+- [ ] Disable any DevTools virtual authenticator. In Comet, select the disclosure
+  from the dropdown, let the agent reach Publish on the governed initial response, and confirm
   it waits at the physical Touch ID prompt. A human touches the sensor; the post
   publishes with `human-verified` and an assertion ID. Reset, then repeat with a
   fresh prompt and assertion ID while preserving the old timeline. Capture this
   physical-browser evidence separately; virtual-authenticator checks do not close
   the live Touch ID checkpoint.
+
+### Presentation refresh and disclosure dropdown (A15)
+
+Automated evidence is in [presentation verification](build-log/presentation-refresh-verification.md).
+These manual checks remain separate:
+
+- [ ] From Demo home, visit Quiz, Discussion, Protected record, Activity log, and
+  Policy review. Both navigation groups remain available, the current page is
+  indicated, and Demo home is reachable from every page. Confirm the mode badge
+  and comparison link identify the intended governed/ungoverned instance.
+- [ ] In the governed discussion, **Choose a disclosure** is initially selected.
+  Attempting Publish without a choice should not open WebAuthn or publish.
+  Select each valid choice in separate rehearsals and check the displayed/audited
+  declaration. Confirm there is no free-form JavaScript attestation prompt.
+- [ ] Cancel a native presence request: the choice and response remain, and retry
+  is available. Changing the choice during confirmation must prevent publication
+  until a fresh submission verifies the new declaration.
+- [ ] For passkey setup, quiz, discussion, and record reveal, confirm the in-page
+  **Human confirmation required** message explains the action while the browser's
+  own dialog is open. Record fields remain masked until verification succeeds.
+  Native dialog wording is browser/OS-controlled; do not expect our explanation
+  inside the Touch ID dialog itself.

@@ -105,16 +105,36 @@ form.addEventListener("submit", async (e) => {
   const rule = form.dataset.countersignRule;
   if (!rule) return;                                   // ungoverned form
   e.preventDefault();
+  const select = form.querySelector("select[data-countersign-attestation]");
+  const attestation = form.dataset.countersignClass === "attested" ? readAttestation(select) : null;
   const fields = serialize(form);                       // excludes countersign fields
   const form_hash = await sha256Canonical(fields);      // see contracts.md §6
-  const attestation = rule === "discussion-initial-post" ? await askAttestation() : null;
   const { challenge_id, options } = await postJSON("/countersign/challenge", { rule_id: rule, action: form.dataset.countersignAction, form_hash, attestation });
   const assertion = await startAuthentication({ optionsJSON: options });   // ← Touch ID prompt appears here; an agent stalls here
+  if (await sha256Canonical(serialize(form)) !== form_hash || (select && select.value !== attestation)) {
+    throw new Error("The form or disclosure changed. Submit again for a fresh confirmation.");
+  }
   await postJSON(form.action, { ...fields, countersign: { challenge_id, assertion, attestation, telemetry: telemetryFor(form) } });
 });
 ```
 
 `startAuthentication` throws `NotAllowedError` on cancel/timeout. Show a plain message ("A human must confirm this action.") and write nothing — the server will log `presence-requested` at challenge time and `blocked` only if a submit arrives without a valid assertion.
+
+The disclosure is a required **Own work / AI-assisted** dropdown with an empty
+placeholder, replacing the scaffold's `window.prompt`. Its name is
+`countersign[attestation]`, so serialization excludes it from business fields;
+the server binds its enum separately. The client also supplies a dropdown for
+annotated attested forms without server-rendered controls. A changed declaration
+aborts publication; retry uses a new challenge. Cancellation keeps the choice.
+
+**Native prompt wording:** the browser/OS owns Touch ID and passkey-dialog text.
+[`PublicKeyCredentialRequestOptions`](https://developer.mozilla.org/en-US/docs/Web/API/PublicKeyCredentialRequestOptions)
+has no custom per-action instruction field. RP identity/account information may
+be displayed differently by different browsers; it is not an action-message API.
+Countersign instead displays **Human confirmation required — [action]** in a
+visible in-page status region before invoking native credentials. This adds no
+extra click, does not imitate system UI, and does not change RP identity or proof
+requirements. Verify the actual Comet/Touch ID appearance during human rehearsal.
 
 ### 3.3 Server verification — inside the governed route middleware
 

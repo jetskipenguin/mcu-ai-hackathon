@@ -248,6 +248,29 @@ The quiz's JSON success response is `{ "ok": true, "message": "…", "assertion_
 the success message in the form. Editing a form during confirmation requires a
 new ceremony.
 
+### Discussion disclosure control (A15)
+
+The governed initial-response form includes a labeled, required
+`select[data-countersign-attestation]` named `countersign[attestation]`. It starts
+with an empty placeholder; the selectable labels **Own work** and **AI-assisted**
+map to the existing `own-work` and `ai-assisted` enum values. The injectable
+client creates the same accessible control when an annotated attested form does
+not provide one. Ungoverned forms have no disclosure requirement or ceremony.
+
+The control belongs to the existing `countersign` namespace, which is excluded
+from business-field serialization and `form_hash`. Its value is sent separately
+as challenge `attestation` and submission `countersign.attestation`, using the
+existing server binding checks. Missing/invalid selections cannot start a
+challenge. If the selection changes while confirmation is pending, the client
+does not publish and requests a new ceremony on retry. Cancellation preserves
+the selected disclosure and restores the submit control.
+
+Action-specific **Human confirmation required** text is rendered in the page's
+existing status region and scrolled into view before `credentials.create/get`.
+This application text does not customize or replace the browser/OS dialog, and
+adds no approval step or server-side bypass. Endpoints and event schemas are
+unchanged.
+
 ### Discussion post provenance (A9)
 
 `POST /discussion/2/post` saves the server-generated `SubmissionProvenance` with

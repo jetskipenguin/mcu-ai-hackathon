@@ -1,6 +1,6 @@
 # Countersign
 
-Countersign is a governance layer for web applications that declares which actions require a physically present human and which content is off-limits to AI. It enforces action-time presence checks, attaches machine-readable content markings, and records provenance for governed decisions. This repository contains a mock MCU Learning Portal, the Countersign middleware and client, a policy generator entry point, and a small dashboard.
+Countersign is a governance layer for web applications that declares which actions require a physically present human and which content is off-limits to AI. It enforces action-time presence checks, attaches machine-readable content markings, and records provenance for governed decisions. This repository contains a synthetic **Demo portal** and the **Countersign console** for inspecting activity and reviewing policy.
 
 ## Name
 
@@ -16,7 +16,7 @@ A sentry asks for a countersign before allowing someone to pass, even when that 
 └─────────────────────────────────┬──────────────────────────────────────────┘
                                   │ HTTPS / localhost
 ┌─────────────────────────────────▼──────────────────────────────────────────┐
-│  Mock "MCU Learning Portal" (the governed app)                             │
+│  Demo portal (synthetic governed app)                                     │
 │    routes: /quiz  /discussion  /record/:id  /login                         │
 │    ─ countersign middleware: policy eval, WebAuthn verify, markings,       │
 │      provenance log                                                        │
@@ -97,14 +97,33 @@ confirmation. See [dataset import evidence](docs/build-log/dataset-import-verifi
 
 ## Demo Walkthrough
 
+Every page has the same two navigation groups:
+
+| Workspace | Pages | Purpose |
+|---|---|---|
+| **Demo portal** | Demo home, Quiz, Discussion, Protected record | The example app, using synthetic data |
+| **Countersign console** | Activity log, Policy review | Inspect action evidence and review/approve governance rules |
+
+**Governance on/off** identifies the current instance. The comparison link opens
+the corresponding page on the other instance; configured public origins are
+respected. **Choose demo user** returns to the identity chooser, and **Passkey
+setup** is available on the governed instance. Routes and API identifiers have
+not changed with the presentation refresh.
+
 1. Open `http://localhost:3001/login`, choose `Capt J. Demo`, and visit the three portal pages without Countersign enforcement or ordinary-action provenance writes. The demo-only discussion reset is the explicit audit exception described below.
-2. Open `http://localhost:3000/login` in the browser/profile used by the demo agent and choose the same user. First login redirects to `/register`: click **Register passkey with Touch ID** and complete registration. Use the **Register passkey** navigation link to add a credential if another profile cannot access the existing one. Credentials survive server restarts in gitignored `data/credentials.json`.
+2. Open `http://localhost:3000/login` in the browser/profile used by the demo agent and choose the same user. First login redirects to `/register`: click **Register passkey with Touch ID** and complete registration. Use **Passkey setup** to add a credential if another profile cannot access the existing one. Credentials survive server restarts in gitignored `data/credentials.json`.
 3. On `/quiz/1`, let the agent fill the form and submit. A fresh WebAuthn prompt requires human confirmation. After Touch ID, the page shows **Quiz submitted. Human presence verified.** The log records `presence-requested`, then `allowed` / `human-verified` with an assertion ID. Canceling leaves the form available for a fresh attempt; direct submissions without a valid assertion return a logged 403.
-4. On `/discussion/2`, `independent_first` hides peer posts until the learner submits an initial response. Declare `own-work` or `ai-assisted` at Publish, then complete the presence check. The published post displays **Own work (declared)** or **AI-assisted (disclosed)** separately from **Human presence verified at submit**. Contradictions publish with **Flagged for review**; expand **Provenance details** for the assertion and matching event IDs. Seeded posts show **Provenance not recorded**. Demo posts/badges last for the current server run unless removed by the demo reset; the JSONL audit persists.
+4. On `/discussion/2`, `independent_first` hides peer posts until the learner submits an initial response. Choose **Own work** or **AI-assisted** in the required **How was this response prepared?** dropdown, then select **Publish response** and complete the presence check. Neither declaration is preselected. Changing the disclosure during confirmation requires a fresh submission; canceling preserves the choice for retry. The published post displays **Own work (declared)** or **AI-assisted (disclosed)** separately from **Human presence verified at submit**. Contradictions publish with **Flagged for review**; expand **Provenance details** for the assertion and matching event IDs. Seeded posts show **Provenance not recorded**. Demo posts/badges last for the current server run unless removed by the demo reset; the JSONL audit persists.
 5. On `/record/1`, the `marking` rule masks all protected PII, PHI, and CUI-marked fields for every session. Register a passkey and select **Verify presence to view** to authenticate with WebAuthn. Only a valid, fresh human-presence and user-verification assertion reveals this view. Reloading or returning after backgrounding requires another check.
 6. Open `/countersign/` on port 3000 to watch the provenance timeline. Click a user or use **Show user** for exact-ID filtering; `/countersign/?user=stu-0011` is a shareable drill-down. Expand **Event details** for the assertion ID, UP/UV, age, attestation, signals, telemetry, hash, and notes. One-second polling preserves open details and retains the last rows during a recoverable read error. Use `/countersign/policy/review` to compare active and draft policies.
 
 A2–A4 implement registration, action-bound WebAuthn verification, and governed submission enforcement. Challenges are single-use and bound to the user, session, action, form contents, and attestation; required UP/UV and age checks run server-side. A9 stores and renders the attested discussion's disclosure, presence status, and advisory review flags. Default record masking and action-bound reveal from A6–A8 share the same credential and verification service. Agent detection has been removed; actor status depends only on accepted presence proof. A1's source-derived fixtures and B4's Registry-backed GPT-6 drafting are implemented and verified alongside policy approval.
+
+The page shows **Human confirmation required — [action]** before the native
+passkey request, with an explanation of the quiz, publication, setup, or reveal
+being confirmed. This adds no extra click. The browser and OS control the native
+Touch ID dialog; WebAuthn does not provide a custom per-action message field.
+See [presentation and dropdown verification](docs/build-log/presentation-refresh-verification.md).
 
 ### Repeat the discussion demo
 

@@ -1,77 +1,51 @@
 import type { CountersignPolicy } from "../countersign/server/types.js";
 import type { DraftMetadata } from "../countersign/server/policy-store.js";
+import { portalOrigin } from "../countersign/server/origin.js";
+import { escapeHtml, renderHero, renderShell } from "../countersign/server/ui.js";
 
-function escapeHtml(value: string): string {
-  return value
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#039;");
-}
-
-const styles = `
-  :root { color-scheme: light; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; line-height: 1.5; overflow-wrap: anywhere; }
-  *, *::before, *::after { box-sizing: border-box; }
-  body { margin: 0; background: #f3f0e8; color: #17211b; }
-  header { padding: 1.25rem 2rem; background: #17211b; color: #f8f4e8; }
-  header a { color: #d7c783; }
-  main { padding: 1.5rem 2rem; }
-  table { width: 100%; border-collapse: collapse; background: white; }
-  th, td { padding: .65rem; border: 1px solid #c7c9c4; text-align: left; vertical-align: top; }
-  th { background: #e4e0d4; }
-  .human-verified { border-left: .4rem solid #28784b; }
-  .unverified { border-left: .4rem solid #777; }
-  .actor-key span { display: inline-block; padding: .3rem .6rem; margin: .2rem; }
-  .timeline-controls { display: flex; align-items: center; flex-wrap: wrap; gap: .6rem; }
-  select { padding: .5rem; max-width: 100%; }
-  .timeline-scroll { overflow-x: auto; }
-  .timeline-scroll table { min-width: 64rem; }
-  #events pre { max-width: 40rem; max-height: 28rem; white-space: pre-wrap; overflow-wrap: anywhere; }
-  .policy-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }
-  .policy-grid > section { min-width: 0; }
-  pre { max-width: 100%; max-height: 30rem; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; padding: 1rem; background: #fff; border: 1px solid #c7c9c4; }
-  button { max-width: 100%; white-space: normal; padding: .6rem .9rem; margin: .3rem .5rem .3rem 0; cursor: pointer; }
-  button:disabled { cursor: default; opacity: .55; }
-  .notice { padding: .8rem; border-left: .35rem solid #b86b1b; background: #fff5d9; }
-  .policy-rule { border-top: 1px solid #c7c9c4; margin-top: 1.5rem; }
-  @media (max-width: 800px) { .policy-grid { grid-template-columns: minmax(0, 1fr); } main, header { padding: 1rem; } }
-`;
-
-export function renderDashboard(): string {
-  return `<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Countersign timeline</title>
-  <style>${styles}</style>
-</head>
-<body>
-  <header>
-    <strong>Countersign provenance timeline</strong>
-    &middot; <a href="/countersign/policy/review">Policy review</a>
-    &middot; <a href="/quiz/1">Portal</a>
-  </header>
-  <main>
-    <p>Polling <code>/countersign/events</code> once per second. Events stay in append order; newest appear last.</p>
-    <div class="timeline-controls">
-      <label for="user-filter">Show user</label>
-      <select id="user-filter"><option value="">All users</option></select>
-      <button type="button" id="all-users">Show all users</button>
+export function renderDashboard(enabled = true): string {
+  return renderShell({
+    title: "Activity log", active: "timeline", enabled,
+    body: `${renderHero({
+      eyebrow: "Countersign console / Evidence", title: "Activity log", icon: "timeline",
+      description: "Inspect the real audit trail from the demo portal in the Countersign console. Each event preserves the decision and its supporting evidence.",
+    })}
+    <div class="console-summary" aria-label="How to read the audit trail">
+      <section class="panel">
+        <p class="eyebrow">Audit source</p><h2>Recorded actions</h2>
+        <p class="muted">Polling <code>/countersign/events</code> once per second. Events stay in append order; newest appear last.</p>
+      </section>
+      <section class="panel">
+        <p class="eyebrow">Presence evidence</p><h2>Human verification</h2>
+        <p class="muted">Open Event details to inspect the presence proof and assertion ID when present. Authorship labels reflect the user’s disclosure.</p>
+      </section>
+      <section class="panel">
+        <p class="eyebrow">Review context</p><h2>Advisory findings</h2>
+        <p class="muted">Agent detection is disabled. Historical events retain their original labels; composition review flags are advisory.</p>
+      </section>
     </div>
-    <p class="actor-key" aria-label="Actor color key">
-      <span class="human-verified">human-verified</span>
-      <span class="unverified">unverified</span>
-    </p>
-    <p>Presence verifies participation at the action, not authorship. Agent detection is disabled. Historical events retain their original labels; composition review flags are advisory.</p>
-    <p id="timeline-status" role="status">Waiting for events…</p>
+    <div class="section-heading">
+      <div><p class="eyebrow">Provenance timeline</p><h2>Governed events</h2></div>
+      <p>Filter by user, then expand the evidence.</p>
+    </div>
+    <section class="panel" aria-label="Timeline controls">
+      <div class="timeline-controls">
+        <label for="user-filter">Show user</label>
+        <select id="user-filter"><option value="">All users</option></select>
+        <button type="button" id="all-users" class="button-quiet">Show all users</button>
+      </div>
+      <p class="actor-key legend" aria-label="Actor color key">
+        <span class="human-verified">human-verified</span>
+        <span class="unverified">unverified</span>
+      </p>
+      <p id="timeline-status" role="status">Waiting for events…</p>
+    </section>
     <div class="timeline-scroll"><table>
+      <caption class="sr-only">Governed events in append order</caption>
       <thead><tr><th scope="col">Time</th><th scope="col">User</th><th scope="col">Route / action</th><th scope="col">Rule</th><th scope="col">Decision</th><th scope="col">Actor</th><th scope="col">Evidence</th></tr></thead>
       <tbody id="events"><tr><td colspan="7">Waiting for events…</td></tr></tbody>
-    </table></div>
-  </main>
-  <script>
+    </table></div>`,
+    scripts: `<script>
     const body = document.querySelector("#events");
     const filter = document.querySelector("#user-filter");
     const status = document.querySelector("#timeline-status");
@@ -176,9 +150,8 @@ export function renderDashboard(): string {
     document.querySelector("#all-users").addEventListener("click", () => selectUser(""));
     refresh();
     setInterval(refresh, 1000);
-  </script>
-</body>
-</html>`;
+  </script>`,
+  });
 }
 
 export function renderPolicyReview(
@@ -199,51 +172,80 @@ export function renderPolicyReview(
   const cards = (draft?.rules ?? []).map((rule) => {
     const current = active.rules.find((item) => item.id === rule.id);
     const changed = JSON.stringify(current) !== JSON.stringify(rule);
+    const title = {
+      "human-required": "Human presence required", attested: "Presence and disclosure",
+      marking: "Protected content", unrestricted: "Open access",
+    }[rule.class];
     return `<section class="policy-rule" data-rule="${escapeHtml(rule.id)}">
-      <h2>${escapeHtml(rule.id)} — ${changed ? "proposed change" : "unchanged"}</h2>
+      <div class="policy-toolbar">
+        <h3>${title}</h3><span class="badge${changed ? " badge-purple" : ""}">${changed ? "proposed change" : "unchanged"}</span>
+      </div>
+      <small class="muted">Rule <code class="mono">${escapeHtml(rule.id)}</code> · <code>${escapeHtml(rule.match.route)}</code>${rule.match.action ? ` · <code>${escapeHtml(rule.match.action)}</code>` : ""}</small>
       <p>${escapeHtml(rule.rationale)}</p>
-      <label><input type="checkbox" name="rule_ids" value="${escapeHtml(rule.id)}" ${disabled}> Select this rule</label>
-      <button type="button" data-approve-rule="${escapeHtml(rule.id)}" ${disabled}>Approve this rule</button>
+      <div class="action-row">
+        <label><input type="checkbox" name="rule_ids" value="${escapeHtml(rule.id)}" ${disabled}> Select this rule</label>
+        <button type="button" class="button-secondary" data-approve-rule="${escapeHtml(rule.id)}" ${disabled}>Approve this rule</button>
+      </div>
       <div class="policy-grid">
-        <section><h3>Active rule</h3><pre>${escapeHtml(current ? JSON.stringify(current, null, 2) : "Not active")}</pre></section>
-        <section><h3>Draft rule (including citations)</h3><pre>${escapeHtml(JSON.stringify(rule, null, 2))}</pre></section>
+        <section><h4 class="eyebrow muted">Active rule</h4><pre>${escapeHtml(current ? JSON.stringify(current, null, 2) : "Not active")}</pre></section>
+        <section><h4 class="eyebrow muted">Draft rule (including citations)</h4><pre>${escapeHtml(JSON.stringify(rule, null, 2))}</pre></section>
       </div>
     </section>`;
   }).join("");
 
-  return `<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Countersign policy review</title>
-  <style>${styles}</style>
-</head>
-<body>
-  <header>
-    <strong>Policy review</strong>
-    &middot; <a href="/countersign/">Timeline</a>
-  </header>
-  <main>
-    <p>Model: <strong>${escapeHtml(options.model)}</strong>. Source pages are crawled from the configured local ungoverned portal.</p>
-    <p>Vocabulary: ${options.vocabulary.categories} categories, ${options.vocabulary.ldcs} limited-dissemination controls.</p>
-    ${options.vocabulary.placeholder ? '<p class="notice">Scaffold vocabulary only — these identifiers and definitions are not authoritative Registry data. Import the hackathon dataset before claiming Registry-backed generation.</p>' : ""}
-    ${!options.enabled ? '<p class="notice">Policy management is available on <a href="http://localhost:3000/countersign/policy/review">the governed instance</a>.</p>' : !options.signedIn ? '<p class="notice"><a href="/login">Sign in</a> to generate or approve a policy.</p>' : ""}
-    <button type="button" id="generate" ${mayManage ? "" : "disabled"}>Generate draft</button>
-    <p role="status" id="policy-status">${escapeHtml(options.draftError || "Generation writes a draft only. Review before approval.")}</p>
-    ${options.metadata ? `<details><summary>Generation provenance</summary><pre>${escapeHtml(JSON.stringify(options.metadata, null, 2))}</pre></details>` : ""}
-    <section id="approval" data-active-revision="${options.activeRevision}" data-draft-revision="${options.draftRevision}">
-      <p>Per-rule approval preserves active defaults and unselected rules. Approve all replaces the complete policy. Changes take effect on the next request without restarting.</p>
-      <button type="button" id="approve-selected" ${disabled}>Approve selected</button>
-      <button type="button" id="approve-all" ${disabled}>Approve all</button>
-      ${cards || `<p>${escapeHtml(options.draftError ? "The invalid draft cannot be approved. Generate a new draft." : "No draft policy exists.")}</p>`}
+  return renderShell({
+    title: "Policy review", active: "policy", enabled: options.enabled,
+    body: `${renderHero({
+      eyebrow: "Countersign console / Policy", title: "Policy review", icon: "policy",
+      description: "Review the rules that govern the demo portal in the Countersign console. Compare generated proposals with active policy, inspect their rationale, and approve changes explicitly.",
+    })}
+    <div class="console-summary" aria-label="Policy state">
+      <section class="panel">
+        <p class="eyebrow">Active configuration</p><h2>${active.rules.length} rules configured</h2>
+        <p class="muted">Version <code class="mono">${escapeHtml(active.version)}</code></p>
+        <span class="badge${options.enabled ? " badge-success" : " badge-warning"}">${options.enabled ? "Governance on" : "Governance off"}</span>
+      </section>
+      <section class="panel">
+        <p class="eyebrow">Generated draft</p><h2>${options.draftError ? "Draft needs attention" : draft ? "Ready for review" : "No draft yet"}</h2>
+        <p class="muted">${options.draftError ? "Generate a new draft before approving changes." : draft ? `${draft.rules.length} proposed rules. Compare the rationale and citations below.` : "Generate a proposal to compare with the active configuration."}</p>
+        <span class="badge${options.draftError ? " badge-warning" : " badge-purple"}">${options.draftError ? "Invalid draft" : "Approval required to activate"}</span>
+      </section>
+      <section class="panel">
+        <p class="eyebrow">Management access</p><h2>${!options.enabled ? "Governed instance required" : !options.signedIn ? "Sign-in required" : "Ready to manage"}</h2>
+        <p class="muted">${!options.enabled ? "Open the governed instance to generate and approve policy." : !options.signedIn ? "Sign in to generate a draft and approve reviewed rules." : "Generate a draft, then choose the reviewed rules to approve."}</p>
+      </section>
+    </div>
+    ${!options.enabled ? `<p class="notice notice-warning">Policy management is available on <a href="${escapeHtml(portalOrigin(true) + "/countersign/policy/review")}">the governed instance</a>.</p>` : !options.signedIn ? '<p class="notice notice-warning"><a href="/login">Sign in</a> to generate or approve a policy.</p>' : ""}
+    <section class="panel" aria-labelledby="generation-heading">
+      <div class="policy-toolbar">
+        <div><p class="eyebrow">Draft generation</p><h2 id="generation-heading">Propose a policy</h2></div>
+        <button type="button" id="generate" class="button-primary" ${mayManage ? "" : "disabled"}>Generate draft</button>
+      </div>
+      <p class="muted">Model: <strong class="mono">${escapeHtml(options.model)}</strong>. Source pages are crawled from the configured local ungoverned portal.</p>
+      <p class="muted">Vocabulary: ${options.vocabulary.categories} categories, ${options.vocabulary.ldcs} limited-dissemination controls.</p>
+      ${options.vocabulary.placeholder ? '<p class="notice notice-warning">Scaffold vocabulary only — these identifiers and definitions are not authoritative Registry data. Import the hackathon dataset before claiming Registry-backed generation.</p>' : ""}
+      <p role="status" id="policy-status">${escapeHtml(options.draftError || "Generation writes a draft only. Review before approval.")}</p>
     </section>
-    <details><summary>Complete active / draft JSON</summary><div class="policy-grid">
+    ${options.metadata ? `<details class="panel policy-json"><summary>Generation provenance</summary><pre>${escapeHtml(JSON.stringify(options.metadata, null, 2))}</pre></details>` : ""}
+    <section id="approval" aria-labelledby="approval-heading" data-active-revision="${escapeHtml(options.activeRevision)}" data-draft-revision="${escapeHtml(options.draftRevision)}">
+      <div class="section-heading">
+        <div><p class="eyebrow">Approval queue</p><h2 id="approval-heading">Review proposed rules</h2></div>
+        <p>Read the rationale. Compare the complete rule.</p>
+      </div>
+      <div class="panel">
+        <p class="muted">Per-rule approval preserves active defaults and unselected rules. Approve all replaces the complete policy. Changes take effect on the next request without restarting.</p>
+        <div class="action-row">
+          <button type="button" id="approve-selected" class="button-primary" ${disabled}>Approve selected</button>
+          <button type="button" id="approve-all" class="button-secondary" ${disabled}>Approve all</button>
+        </div>
+      </div>
+      ${cards || `<p class="notice${options.draftError ? " notice-warning" : ""}">${escapeHtml(options.draftError ? "The invalid draft cannot be approved. Generate a new draft." : "No draft policy exists.")}</p>`}
+    </section>
+    <details class="panel policy-json"><summary>Complete active / draft JSON</summary><div class="policy-grid">
       <section><h2>Active — ${escapeHtml(active.version)}</h2><pre>${activeJson}</pre></section>
       <section><h2>Draft</h2><pre>${draftJson}</pre></section>
-    </div></details>
-  </main>
-  <script>
+    </div></details>`,
+    scripts: `<script>
     const status = document.querySelector("#policy-status");
     const approval = document.querySelector("#approval");
     const buttons = [...document.querySelectorAll("button")];
@@ -279,7 +281,6 @@ export function renderPolicyReview(
     for (const button of document.querySelectorAll("[data-approve-rule]")) {
       button.addEventListener("click", () => approve({ rule_ids: [button.dataset.approveRule] }));
     }
-  </script>
-</body>
-</html>`;
+  </script>`,
+  });
 }

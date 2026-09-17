@@ -58,6 +58,7 @@ Stable IDs preserve the ordering and grouping in `docs/countersign-plan.md` sect
 - [x] **A13** Add Docker/EC2 deployment: two-container Compose, persistent data/policies, manual setup and first-boot automation. Upstream local image/container, enforcement, generator-crawl, and persistence checks are recorded in the [deployment guide](ec2-deployment.md).
   - [ ] Verify first-boot deployment on EC2 and physical Touch ID in Comet through the SSH tunnel.
 - [x] **A14** Fix imported-content wrapping and readability on portal and dashboard pages without truncating source text or changing governance, including quiz legends fully inside their cards. Verified 60 browser cases across five desktop/mobile widths in both modes, vertical-containment regression, 112 tests/build, and virtual-authenticator quiz/record/discussion flows (see [layout evidence](build-log/content-layout-verification.md)).
+- [x] **A15** Polish the demo portal and Countersign console with a shared design, complete navigation, plain copy, required disclosure dropdown, and action-specific in-page human-confirmation messages. Verified 129 tests/build, 75 responsive cases, navigation/keyboard checks, seven dropdown scenarios, and virtual-authenticator submission/reset/pending-mask checks. Native OS prompt and proof requirements remain unchanged; physical Comet rehearsal stays separate (see [presentation evidence](build-log/presentation-refresh-verification.md)).
 
 ## Track B - Morning
 

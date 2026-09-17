@@ -22,7 +22,7 @@ export function createCountersignRouter(
   router.use(createWebAuthnRouter(enabled, services, actions));
 
   router.get("/", (_request, response) => {
-    response.type("html").send(renderDashboard());
+    response.type("html").send(renderDashboard(enabled));
   });
 
   router.get("/policy/review", (_request, response) => {

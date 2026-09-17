@@ -19,6 +19,7 @@ import type { CountersignPolicy, PolicyRule, PortalUser, SubmissionProvenance } 
 import { PolicyStore, type PolicyStorePaths } from "../countersign/server/policy-store.js";
 import { WebAuthnService, type GovernedAction, type WebAuthnOptions } from "../countersign/server/webauthn.js";
 import { portalOrigin } from "../countersign/server/origin.js";
+import { icon, renderHero, renderShell, type PageId } from "../countersign/server/ui.js";
 
 interface Student extends PortalUser {
   email: string;
@@ -79,6 +80,7 @@ function escapeHtml(value: unknown): string {
 }
 
 function page(
+  active: PageId,
   title: string,
   body: string,
   enabled: boolean,
@@ -88,64 +90,7 @@ function page(
     ? `<script src="/assets/vendor/simplewebauthn-browser.umd.min.js"></script>
        <script type="module" src="/assets/countersign.js"></script>`
     : "";
-  return `<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>${escapeHtml(title)} - MCU Learning Portal</title>
-  <style>
-    :root { font-family: Georgia, "Times New Roman", serif; line-height: 1.5; overflow-wrap: anywhere; color: #1c2720; background: #ede9dc; }
-    *, *::before, *::after { box-sizing: border-box; }
-    body { margin: 0; }
-    header { background: #24382b; color: #f8f3e2; padding: 1rem max(1rem, calc((100% - 960px) / 2)); }
-    nav { margin-top: .65rem; display: flex; flex-wrap: wrap; gap: 1rem; }
-    nav a { color: #e4d28d; }
-    main { max-width: 960px; margin: 0 auto; padding: 2rem 1rem 3rem; }
-    article, fieldset, .panel { min-width: 0; background: #fffdf6; border: 1px solid #bbb6a7; padding: 1rem; margin: 0 0 1rem; }
-    fieldset { min-inline-size: 0; padding: 1.25rem; }
-    legend { max-width: 100%; padding: 0 .25rem; font-weight: bold; }
-    .quiz-question { padding: 1.25rem; }
-    .quiz-question > fieldset { border: 0; padding: 0; margin: 0; background: transparent; }
-    .quiz-question legend { padding: 0; margin-bottom: .75rem; }
-    label { display: block; margin: .55rem 0; }
-    .quiz-option { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: start; gap: .6rem; }
-    .quiz-option input { margin: .35em 0 0; }
-    fieldset small { display: block; margin-top: 1rem; }
-    button, textarea, select { max-width: 100%; font: inherit; }
-    textarea { width: 100%; min-height: 12rem; padding: .75rem; }
-    button { padding: .65rem 1rem; background: #24382b; color: white; border: 0; cursor: pointer; }
-    .mode { float: right; font-family: ui-monospace, monospace; color: #e4d28d; }
-    .notice { border-left: .35rem solid #a16c20; padding: .75rem 1rem; background: #fff7dc; }
-    .provenance-tag { display: inline-block; border: 1px solid #bbb6a7; padding: .2rem .45rem; margin: 0 .4rem .4rem 0; font-family: sans-serif; font-size: .85rem; }
-    .post-provenance details { margin: .35rem 0 1rem; overflow-wrap: anywhere; }
-    .forum-text { max-width: 75ch; white-space: pre-wrap; }
-    .record dt { font-weight: bold; margin-top: .8rem; }
-    .record dd { margin: .2rem 0 .7rem; }
-    [data-marking] { outline: 1px dotted #8a5c13; outline-offset: .15rem; }
-    footer { padding: 1rem; text-align: center; background: #ddd6c4; font-size: .9rem; }
-    footer p { max-width: 75ch; margin: 0 auto; }
-    @media (max-width: 600px) { main { padding-top: 1rem; } .mode { float: none; display: block; margin-bottom: .5rem; } }
-  </style>
-</head>
-<body>
-  <header>
-    <span class="mode">COUNTERSIGN=${enabled ? "on" : "off"}</span>
-    <strong>MCU Learning Portal</strong>
-    <nav>
-      <a href="/quiz/1">Quiz</a>
-      <a href="/discussion/2">Discussion</a>
-       <a href="/record/1">Student record</a>
-      ${enabled ? '<a href="/register">Register passkey</a>' : ""}
-      <a href="/countersign/">Countersign</a>
-      <a href="/login">Switch user</a>
-    </nav>
-  </header>
-  <main>${body}</main>
-  <footer><p>${escapeHtml(footer)}</p></footer>
-  ${scripts}
-</body>
-</html>`;
+  return renderShell({ active, title, body, enabled, footer, scripts });
 }
 
 function requireUser(): RequestHandler {
@@ -287,13 +232,14 @@ export function createApp(options: AppOptions = {}): express.Express {
   app.get("/", (_request, response) => response.redirect(302, "/login"));
 
   app.get("/login", (_request, response) => {
+    const destination = (route: string) => response.locals.user ? route : "#demo-users";
     const choices = students
       .map(
-        (student) => `<form method="post" action="/login" class="panel">
+        (student) => `<form method="post" action="/login" class="panel user-card${student.id === demoUserId ? " is-featured" : ""}">
           <input type="hidden" name="user_id" value="${escapeHtml(student.id)}">
-          <strong>${escapeHtml(student.name)}</strong><br>
-          <small>${escapeHtml(student.id)} &middot; ${escapeHtml(student.email)}</small><br><br>
-          <button type="submit">Continue as ${escapeHtml(student.name)}</button>
+          <div class="user-name"><strong>${escapeHtml(student.name)}</strong>${student.id === demoUserId ? '<span class="badge badge-success">Start here</span>' : '<span class="badge">Seeded peer</span>'}</div>
+          <small>${escapeHtml(student.id)} &middot; ${escapeHtml(student.email)}</small>
+          <button type="submit" class="${student.id === demoUserId ? "button-primary" : "button-secondary"}">Continue as ${escapeHtml(student.name)}</button>
         </form>`,
       )
       .join("");
@@ -301,8 +247,20 @@ export function createApp(options: AppOptions = {}): express.Express {
       .type("html")
       .send(
         page(
-          "Fake SSO login",
-          `<h1>Choose a synthetic user</h1><p>No password is required for this mock portal.</p>${choices}`,
+          "home", "Demo home",
+          `${renderHero({ eyebrow: "Countersign / interactive demonstration", title: "Explore the demo",
+            description: "Try a quiz, publish a discussion response, or open a protected record. See how Countersign verifies human presence and records what happened.",
+            icon: "shield", meta: enabled ? "Governed experience · fresh presence checks enabled" : "Baseline experience · presence checks disabled" })}
+           <div class="section-heading"><div><p class="eyebrow">01 / The demo portal</p><h2>Explore the demo activities</h2></div><p>These activities make up the example app.</p></div>
+           <div class="activity-grid" id="demo-activities">
+             <section class="panel activity-card"><div class="activity-icon">${icon("quiz")}</div><h3>Quiz demo</h3><span class="badge">Require the human</span><p>A five-question assessment. ${enabled ? "Submitting requires a fresh human-presence check." : "Submit without a human-presence check in this baseline."}</p><a href="${destination("/quiz/1")}">Explore the quiz ${icon("arrow")}</a></section>
+             <section class="panel activity-card"><div class="activity-icon">${icon("discussion")}</div><h3>Discussion demo</h3><span class="badge badge-purple">Record the disclosure</span><p>${enabled ? "Choose Own work or AI-assisted, then verify presence to publish. Your disclosure is saved with the action’s evidence." : "Publish a response without a presence check or authorship disclosure in this baseline."}</p><a href="${destination("/discussion/2")}">Explore the discussion ${icon("arrow")}</a></section>
+             <section class="panel activity-card"><div class="activity-icon">${icon("record")}</div><h3>Protected record demo</h3><span class="badge">Protect the data</span><p>${enabled ? "Synthetic sensitive fields stay masked until a human verifies presence for this view." : "Read the synthetic fields immediately, without the governed view’s presence check."}</p><a href="${destination("/record/1")}">Explore the record ${icon("arrow")}</a></section>
+           </div>
+           <div class="section-heading" id="demo-users"><div><p class="eyebrow">02 / Enter the example app</p><h2>Choose a demo user</h2></div><p>Synthetic identities only. No password required.</p></div>
+           <p class="form-note">Start with Capt J. Demo for a fresh discussion. ${enabled ? "First-time users will set up a passkey before opening the quiz." : "This baseline skips passkey setup and governance."} The password-free chooser is provided for this demonstration.</p>
+           <div class="user-grid">${choices}</div>
+           <section class="panel console-intro"><div class="section-heading"><div><p class="eyebrow">03 / The Countersign console</p><h2>Review activity and policy</h2></div>${icon("timeline")}</div><p class="muted">Use the console to inspect action records and review the rules governing the demo portal.</p><div class="action-row"><a class="button button-secondary" href="/countersign/">Open activity log ${icon("arrow")}</a><a class="button button-secondary" href="/countersign/policy/review">Review policies ${icon("policy")}</a></div></section>`,
           enabled,
         ),
       );
@@ -331,14 +289,13 @@ export function createApp(options: AppOptions = {}): express.Express {
       return;
     }
     const user = response.locals.user as PortalUser;
-    response.type("html").send(page("Register passkey", `
-      <h1>Register a passkey for ${escapeHtml(user.name)}</h1>
-      <p>Use Touch ID on this Mac to register in the browser profile you will use for the demo.</p>
-      <p>If your passkey is unavailable in another browser, register an additional one here.</p>
-      <form data-countersign-register>
-        <button type="submit">Register passkey with Touch ID</button>
-        <p role="status" data-countersign-status></p>
-      </form>`, enabled));
+    response.type("html").send(page("register", "Passkey setup", `
+      ${renderHero({ eyebrow: "Demo portal / one-time setup", title: "Passkey setup", description: "Register a passkey in the browser you will use for the demo. Your device handles the fingerprint or PIN check. Your biometric data stays on the device.", icon: "key" })}
+      <div class="setup-layout"><section class="panel"><span class="panel-label">${icon("key")}Your countersign</span><h2>Register a passkey for ${escapeHtml(user.name)}</h2>
+        <p class="muted">Use Touch ID on this Mac to register in the browser profile you will use for the demo.</p>
+        <form data-countersign-register><button type="submit" class="button-primary">Register passkey with Touch ID</button><p role="status" data-countersign-status></p></form>
+        <p class="form-note">If your passkey is unavailable in another browser, register an additional one here.</p>
+      </section><aside class="panel"><p class="eyebrow">What happens next</p><h2>Using your passkey</h2><ol class="steps"><li>Register this browser’s passkey using your device prompt.</li><li>Complete a demo activity as you normally would.</li><li>Verify your presence when the policy requires it.</li></ol><a href="/login">Back to demo home</a></aside></div>`, enabled));
   });
 
   app.get(
@@ -363,14 +320,17 @@ export function createApp(options: AppOptions = {}): express.Express {
         .join("");
       response.type("html").send(
         page(
-          quiz.title,
-          `<h1>${escapeHtml(quiz.title)}</h1>
-           <p class="notice">${escapeHtml(quiz.notice)}</p>
-            <form method="post" action="/quiz/1/submit" ${presenceAttributes(enabled, quizAction, response.locals.user, readPolicy)}>
+          "quiz", "Quiz demo",
+          `${renderHero({ eyebrow: "Demo portal / 01 · Require the human", title: "Quiz demo", description: enabled
+            ? "Complete the assessment. Submitting on the governed instance requires a fresh human-presence check through your device."
+            : "The same assessment, without a presence check. Use this baseline to compare what changes when Countersign is enabled.", icon: "quiz", meta: enabled ? "Human-required submission" : "Baseline · no presence check" })}
+           <div class="reading-column"><section class="panel"><span class="panel-label">Source-based assessment</span><h2 class="source-heading" data-source-title>${escapeHtml(quiz.title)}</h2>
+           <p class="notice source-notice" data-source-notice>${escapeHtml(quiz.notice)}</p></section>
+            <form class="quiz-form" method="post" action="/quiz/1/submit" ${presenceAttributes(enabled, quizAction, response.locals.user, readPolicy)}>
              ${questions}
-             <button type="submit">Submit quiz</button>
+             <div class="panel"><div class="action-row"><button type="submit" class="button-primary">Submit quiz ${icon("arrow")}</button><p>${enabled ? "Your device will ask you to verify presence." : "This baseline submits without human verification."}</p></div>
              <p role="status" data-countersign-status></p>
-           </form>`,
+             </div></form></div>`,
           enabled,
         ),
       );
@@ -392,8 +352,9 @@ export function createApp(options: AppOptions = {}): express.Express {
       }
       response.type("html").send(
         page(
-          "Quiz submitted",
-          "<h1>Quiz submitted</h1><p>Your submission was accepted.</p>",
+          "quiz", "Quiz submitted",
+          `${renderHero({ eyebrow: "Demo portal / submission complete", title: "Quiz submitted", description: "Your submission was accepted.", icon: "check" })}
+           <section class="panel"><h2>${response.locals.presence ? "Human presence verified" : "Baseline submission complete"}</h2><p class="muted">${response.locals.presence ? "A fresh presence assertion is attached to this governed action. Inspect the activity log to see the evidence." : "No presence proof was required on this ungoverned instance."}</p><div class="action-row"><a class="button button-primary" href="/discussion/2">Try the discussion ${icon("arrow")}</a><a class="button button-secondary" href="/countersign/">Open activity log</a><a href="/quiz/1">Back to quiz</a></div></section>`,
           enabled,
         ),
       );
@@ -416,7 +377,7 @@ export function createApp(options: AppOptions = {}): express.Express {
         <form method="post" action="/discussion/2/reset">
           <input type="hidden" name="reset_token" value="${escapeHtml(resetToken(response.locals.sessionId))}">
           <label><input type="checkbox" name="confirmation" value="reset-discussion" required> I want to reset this discussion demo.</label>
-          <button type="submit">Reset discussion demo</button>
+          <button type="submit" class="button-danger">Reset discussion demo</button>
         </form>
       </details>` : "";
       const postMarkup = hasPosted
@@ -425,31 +386,38 @@ export function createApp(options: AppOptions = {}): express.Express {
             .map(
               (post) => `<article id="${escapeHtml(post.post_id)}" data-post-id="${escapeHtml(post.post_id)}">
                 <h2>${escapeHtml(post.subject)}</h2>
-                <p><strong>${escapeHtml(post.author)}</strong> &middot; <time>${escapeHtml(post.timestamp)}</time></p>
+                <p class="post-meta"><strong>${escapeHtml(post.author)}</strong><span aria-hidden="true">&middot;</span><time>${escapeHtml(post.timestamp)}</time></p>
                 ${enabled ? postProvenance(post.provenance) : ""}
                 <p class="forum-text">${escapeHtml(post.body)}</p>
               </article>`,
             )
             .join("")
-        : '<p class="notice">Peer posts are hidden until you publish your initial response (independent_first).</p>';
+        : '<p class="notice">Peer posts are hidden until you publish your initial response.</p>';
       const form = hasPosted
         ? ""
-        : `<form method="post" action="/discussion/2/post" ${presenceAttributes(enabled, discussionAction, user, readPolicy)}>
+        : `<form method="post" action="/discussion/2/post" class="panel discussion-composer" ${presenceAttributes(enabled, discussionAction, user, readPolicy)}>
+            <span class="panel-label">${icon("discussion")}Your contribution</span><h2>Write an initial response</h2>
+            <p class="form-note">Publish an initial response to unlock the peer discussion.</p>
             <label for="body"><strong>Your initial response</strong></label>
-            <textarea id="body" name="body" required></textarea>
-            <button type="submit">Publish response</button>
+            <textarea id="body" name="body" required placeholder="Write your response to the discussion prompt…"></textarea>
+            ${enabled ? `<div class="attestation-control"><label for="discussion-attestation">How was this response prepared?</label>
+              <select id="discussion-attestation" name="countersign[attestation]" data-countersign-attestation required aria-describedby="attestation-help">
+                <option value="" disabled selected>Choose a disclosure</option><option value="own-work">Own work</option><option value="ai-assisted">AI-assisted</option>
+              </select><p id="attestation-help" class="form-note">Choose the description that matches how you prepared this response. This disclosure is recorded with your presence check.</p></div>` : ""}
+            <button type="submit" class="button-primary">Publish response ${icon("arrow")}</button>
             <p role="status" data-countersign-status></p>
           </form>`;
       response.type("html").send(
         page(
-          forum.title,
-           `<h1>${escapeHtml(forum.title)}</h1>
-            <section class="panel"><h2>Faculty prompt</h2><p class="forum-text">${escapeHtml(forum.faculty_prompt)}</p></section>
-            ${enabled ? '<p class="notice">Presence verification confirms a human was present at submission. Authorship disclosures and composition signals are recorded separately.</p>' : ""}
+          "discussion", "Discussion demo",
+           `${renderHero({ eyebrow: "Demo portal / 02 · Record the disclosure", title: "Discussion demo", description: enabled
+             ? "Write a response and choose Own work or AI-assisted. Publishing requires a presence check; the activity log records your disclosure and the verification evidence."
+             : "Publish a response without a presence check or authorship disclosure. This is the ungoverned baseline of the same discussion.", icon: "discussion", meta: enabled ? "Disclosure recorded with verified presence" : "Baseline · no attestation ceremony" })}
             ${_request.query.reset === "1" && !hasPosted ? '<p class="notice" role="status">Discussion demo reset. Submit a new initial response to reveal peers again.</p>' : ""}
-            ${resetControls}
-            ${form}
-           <section><h2>Peer discussion</h2>${postMarkup}</section>`,
+            <div class="${hasPosted ? "reading-column" : "setup-layout"}"><section class="panel"><span class="panel-label">Discussion prompt</span><h2 class="source-heading" data-source-title>${escapeHtml(forum.title)}</h2><p class="forum-text">${escapeHtml(forum.faculty_prompt)}</p></section>${form}</div>
+            <div class="reading-column">${enabled ? '<p class="notice">Presence verification confirms a human was present at submission. Authorship disclosures and composition signals are recorded separately.</p>' : ""}
+            <section><div class="section-heading"><div><p class="eyebrow">The conversation</p><h2>Peer discussion</h2></div><p>${hasPosted ? "Initial response recorded · peer discussion available" : "Peer posts become available after you publish."}</p></div>${postMarkup}</section>
+            ${resetControls}</div>`,
           enabled,
           forum.synthetic_data_notice,
         ),
@@ -582,20 +550,23 @@ export function createApp(options: AppOptions = {}): express.Express {
       const value = (raw: string) => enabled ? "[Hidden — verify presence to view]" : escapeHtml(raw);
       response.type("html").send(
         page(
-          "Student record",
-          `<h1>Student record</h1>
+          "record", "Protected record demo",
+          `${renderHero({ eyebrow: "Demo portal / 03 · Protect the data", title: "Protected record demo", description: enabled
+            ? "These synthetic fields stay masked until a human verifies presence for this view. Try the ungoverned instance to compare access without that check."
+            : "This baseline exposes the synthetic record to the session, without requiring a fresh human-presence check.", icon: "record", meta: enabled ? "Masked by default · fresh verification to reveal" : "Baseline · fields visible without verification" })}
            <p class="notice">All values on this page are fabricated.</p>
-           ${enabled ? `<section class="notice">
-              <p role="status" data-record-status>Protected information (PII, PHI, and CUI-marked content) is hidden by default. Human authentication is required to view it.</p>
-             <button type="button" data-record-reveal>Verify presence to view</button>
-             <button type="button" data-record-register>Register a passkey</button>
-           </section>` : ""}
-           <dl class="panel record" ${enabled ? 'data-protected-record' : ""}>
+           <div class="record-layout"><section class="panel"><span class="panel-label">${icon("record")}Synthetic student record</span><h2>Protected information</h2>
+           <dl class="record" ${enabled ? 'data-protected-record' : ""}>
              <dt>Name</dt><dd data-field="name" data-marking="${escapeHtml(markingFor(rule, "name"))}" data-categories="PII">${value(student.name)}</dd>
              <dt>SSN</dt><dd data-field="ssn" data-marking="${escapeHtml(markingFor(rule, "ssn"))}" data-categories="PII">${value(student.ssn)}</dd>
              <dt>DoD ID</dt><dd data-field="dod-id" data-marking="${escapeHtml(markingFor(rule, "dod-id"))}" data-categories="PII">${value(student.dod_id)}</dd>
              <dt>Medical / limited-duty note</dt><dd data-field="medical" data-marking="${escapeHtml(markingFor(rule, "medical"))}" data-categories="PHI">${value(student.medical_note)}</dd>
-           </dl>`,
+           </dl></section>
+           ${enabled ? `<aside class="panel record-aside"><div class="activity-icon">${icon("key")}</div><h2>Verify to view this record</h2>
+             <p role="status" data-record-status>Protected information (PII, PHI, and CUI-marked content) is hidden by default. Human authentication is required to view it.</p>
+             <div class="action-row"><button type="button" class="button-primary" data-record-reveal>Verify presence to view</button><button type="button" class="button-secondary" data-record-register>Register a passkey</button></div>
+             <p class="form-note">A fresh check is required after hiding or reloading this view. Verification does not grant permanent access.</p>
+           </aside>` : `<aside class="panel"><span class="badge badge-warning">Governance off</span><h2>Ungoverned record access</h2><p class="muted">The four fabricated fields are readable immediately. On the governed instance, a human must verify presence to view them.</p><a class="button button-secondary" href="${escapeHtml(portalOrigin(true))}/record/1">Open governed record ${icon("arrow")}</a></aside>`}</div>`,
           enabled,
         ),
       );
