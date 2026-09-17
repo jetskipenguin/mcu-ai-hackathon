@@ -14,17 +14,21 @@ import type { Browser, Page } from "playwright";
 import { createApp } from "../../portal/app.ts";
 import { appendProvenanceEvent } from "../../countersign/server/log.ts";
 import { PolicyStore, revision, type PolicyStorePaths } from "../../countersign/server/policy-store.ts";
+import { portalOrigin } from "../../countersign/server/origin.ts";
 
 const root = process.cwd();
 const cache = join(root, "node_modules/.cache");
 const label = process.argv.find(value => value.startsWith("--label="))?.slice(8) ?? "baseline";
 const publishEvidence = process.argv.includes("--publish-evidence");
+const evidencePrefix = process.argv.find(value => value.startsWith("--evidence-prefix="))?.slice(18) ?? "content-layout";
 const quizOnly = process.argv.includes("--quiz-only");
 assert.match(label, /^[a-z0-9-]+$/i, "Use a simple evidence label, e.g. baseline or after.");
+assert.match(evidencePrefix, /^[a-z0-9-]+$/i, "Use a simple screenshot prefix.");
 const widths = [1280, 801, 799, 390, 320];
 const token = "DOM_ONLY_LAYOUT_PROBE_" + "W".repeat(320);
 const inputPaths = {
   portal: "portal/app.ts", dashboard: "dashboard/index.ts",
+  ui: "countersign/server/ui.ts", siteCss: "countersign/client/site.css", client: "countersign/client/countersign.js",
   quiz: "portal/data/quiz.json", forum: "portal/data/forum.json", students: "portal/data/students.json",
   policyPath: "countersign/policy/countersign.policy.json",
   draftPath: "countersign/policy/countersign.policy.draft.json",
@@ -68,7 +72,7 @@ const setupErrors: string[] = [];
 async function evaluateInPage<Input, Result>(page: Page, callback: (input: Input) => Result, input: Input): Promise<Awaited<Result>> {
   // tsx annotates nested function names with __name. Supply that identity helper
   // inside the serialized callback's scope, without changing page globals/CSS.
-  return page.evaluate(`((__name) => (${callback.toString()})(${JSON.stringify(input)}))((value) => value)`);
+  return await page.evaluate<Result>(`((__name) => (${callback.toString()})(${JSON.stringify(input)}))((value) => value)`);
 }
 
 // Geometry rather than exact CSS strings: catch escaping/clipped text, expanded
@@ -110,19 +114,23 @@ async function measure(page: Page): Promise<Layout> {
       }
     }
     const boxes = document.querySelectorAll<HTMLElement>(
-      "header, main, footer, main > *, article, .panel, fieldset, legend, .forum-text, .policy-grid, .policy-grid > section, pre, label, textarea, button, select, .timeline-scroll",
+      "header, main, footer, main > *, h1, h2, [data-source-title], [data-source-notice], [data-synthetic-notice], article, .panel, fieldset, legend, .forum-text, .policy-grid, .policy-grid > section, pre, label, textarea, button, select, .timeline-scroll",
     );
     for (const element of boxes) {
       if (!visible(element)) continue;
       const parent = element.parentElement;
-      const rect = element.getBoundingClientRect();
+      const css = getComputedStyle(element);
       if (parent && visible(parent) && getComputedStyle(parent).display !== "inline") {
         const bounds = contentBounds(parent);
-        const excess = Math.max(bounds.left - rect.left, rect.right - bounds.right);
-        if (excess > 1) add("box-escapes-parent", element,
-          `box [${rect.left.toFixed(1)}, ${rect.right.toFixed(1)}] outside parent [${bounds.left.toFixed(1)}, ${bounds.right.toFixed(1)}]`, excess);
+        // Wrapped inline children have separate painted fragments. Inspect each
+        // fragment rather than treating their union as a padded block box.
+        const rects = css.display === "inline" ? [...element.getClientRects()] : [element.getBoundingClientRect()];
+        for (const rect of rects) {
+          const excess = Math.max(bounds.left - rect.left, rect.right - bounds.right);
+          if (excess > 1) add("box-escapes-parent", element,
+            `box [${rect.left.toFixed(1)}, ${rect.right.toFixed(1)}] outside parent [${bounds.left.toFixed(1)}, ${bounds.right.toFixed(1)}]`, excess);
+        }
       }
-      const css = getComputedStyle(element);
       if (element.tagName === "PRE" && element.scrollWidth > element.clientWidth + 1) {
         add("pre-horizontal-overflow", element, `pre ${element.scrollWidth}px > client ${element.clientWidth}px`, element.scrollWidth - element.clientWidth);
       }
@@ -156,7 +164,10 @@ async function measure(page: Page): Promise<Layout> {
     while (walker.nextNode()) {
       const node = walker.currentNode;
       const parent = node.parentElement;
-      if (!node.textContent?.trim() || !parent || parent.closest("script, style, select, textarea") || !visible(parent)) continue;
+      // SR-only labels remain part of semantic/accessibility checks, but their
+      // deliberately clipped 1px boxes are not painted user prose. Native select
+      // options and textarea values likewise aren't ordinary DOM text boxes.
+      if (!node.textContent?.trim() || !parent || parent.closest("script, style, select, textarea, .sr-only") || !visible(parent)) continue;
       const boundary = parent.closest(boundarySelector);
       if (!boundary || !visible(boundary)) continue;
       const bounds = contentBounds(boundary);
@@ -174,12 +185,18 @@ async function measure(page: Page): Promise<Layout> {
         }
       }
     }
-    const canvas = document.createElement("canvas").getContext("2d")!;
     const prose = [...document.querySelectorAll<HTMLElement>(".forum-text")].filter(visible).map(element => {
       const css = getComputedStyle(element);
-      canvas.font = `${css.fontSize} ${css.fontFamily}`;
       const bounds = contentBounds(element);
-      const measureCh = (bounds.right - bounds.left) / canvas.measureText("0").width;
+      // Measure a CSS ch using the prose's inherited Avenir/fallback metrics,
+      // including its weight/features; don't approximate it with another font.
+      const ruler = document.createElement("span");
+      ruler.setAttribute("aria-hidden", "true");
+      ruler.style.cssText = "position:absolute;display:block;visibility:hidden;width:1ch;height:0;padding:0;border:0";
+      element.append(ruler);
+      const ch = ruler.getBoundingClientRect().width;
+      ruler.remove();
+      const measureCh = (bounds.right - bounds.left) / ch;
       const range = document.createRange();
       range.selectNodeContents(element);
       const tops = [...new Set([...range.getClientRects()].filter(rect => rect.width > 0.5).map(rect => rect.top))].sort((a, b) => a - b);
@@ -227,7 +244,7 @@ async function measure(page: Page): Promise<Layout> {
 }
 
 async function semantics(page: Page, kind: Kind, enabled: boolean, seed: unknown) {
-  const result = await evaluateInPage(page, ({ kind, enabled, quiz, forum, students, active, draft, metadata, seed }) => {
+  const result = await evaluateInPage(page, ({ kind, enabled, quiz, forum, students, active, draft, metadata, seed, otherOrigin }) => {
     const findings: Finding[] = [];
     let checks = 0;
     const check = (condition: boolean, detail: string) => {
@@ -237,15 +254,59 @@ async function semantics(page: Page, kind: Kind, enabled: boolean, seed: unknown
     const same = (actual: unknown, expected: unknown, detail: string) => check(JSON.stringify(actual) === JSON.stringify(expected), detail);
     const text = (selector: string) => document.querySelector(selector)?.textContent ?? null;
     const parse = (element: Element | null | undefined) => { try { return JSON.parse(element?.textContent ?? ""); } catch { return null; } };
+    const pages: Record<Kind, [string, string]> = {
+      login: ["/login", "Explore the demo"], quiz: ["/quiz/1", "Quiz demo"],
+      "discussion-peer": ["/discussion/2", "Discussion demo"], "discussion-demo": ["/discussion/2", "Discussion demo"],
+      record: ["/record/1", "Protected record demo"], register: ["/register", "Passkey setup"],
+      timeline: ["/countersign/", "Activity log"], policy: ["/countersign/policy/review", "Policy review"],
+    };
+    const [path, heading] = pages[kind];
+    same([...document.querySelectorAll("h1")].map(element => element.textContent), [heading], "One descriptive page heading");
+    check(document.title.includes(kind === "timeline" || kind === "policy" ? "Countersign console" : "Demo portal"), "Document title identifies the portal or console");
+    const main = document.querySelector("main#main-content");
+    same(document.querySelectorAll("main").length, 1, "One main landmark");
+    same(main?.getAttribute("tabindex"), "-1", "Main is a programmatic skip-link focus target");
+    same(text('a.skip-link[href="#main-content"]'), "Skip to content", "Skip-link text and target");
+    same(document.querySelectorAll('link[rel="stylesheet"][href="/assets/site.css"]').length, 1, "Shared local stylesheet");
+    same(document.body.dataset.governance, enabled ? "on" : "off", "Shell mode agrees with the instance");
+    const mode = document.querySelector("header .mode-pill")?.cloneNode(true) as HTMLElement | undefined;
+    mode?.querySelectorAll(".sr-only").forEach(element => element.remove());
+    same(mode?.textContent?.trim(), `Governance ${enabled ? "on" : "off"}`, "Visible governance mode");
+    same(text("header .mode-pill .sr-only")?.trim(), `— COUNTERSIGN=${enabled ? "on" : "off"}`, "Screen-reader governance marker");
+    const navGroups = {
+      "Demo portal": [["/login", "Demo home"], ["/quiz/1", "Quiz"], ["/discussion/2", "Discussion"], ["/record/1", "Protected record"]],
+      "Countersign console": [["/countersign/", "Activity log"], ["/countersign/policy/review", "Policy review"]],
+    };
+    same(document.querySelectorAll("header nav").length, 2, "Separate portal and console navigation groups");
+    for (const [label, links] of Object.entries(navGroups)) {
+      const groups = document.querySelectorAll(`header nav[aria-label="${label}"]`);
+      same(groups.length, 1, `Unique ${label} navigation`);
+      same([...(groups[0]?.querySelectorAll("a") ?? [])].map(link => [link.getAttribute("href"), link.textContent]), links, `Complete ${label} navigation`);
+    }
+    same([...document.querySelectorAll('header a[aria-current="page"]')].map(link => link.getAttribute("href")), [path], "Only the active route is current");
+    const switchLink = document.querySelector<HTMLAnchorElement>("[data-instance-switch]");
+    same(switchLink?.href, otherOrigin + (kind === "register" ? "/login" : path), "Mode switch preserves the destination using configured origins");
+    same(switchLink?.textContent, enabled ? "Compare without governance" : "Open governed demo", "Mode switch accessible text");
+    const presenceForm = (action: string, rule: string, mode: string, button: string) => {
+      const form = document.querySelector<HTMLFormElement>(`form[action="${action}"]`);
+      check(form?.method === "post", `Preserved POST form ${action}`);
+      for (const [key, value] of Object.entries({ rule, class: mode, action: `POST ${action}` })) {
+        same(form?.getAttribute(`data-countersign-${key}`), enabled ? value : null, `${action} ${key} hook`);
+      }
+      same(form?.querySelector("button")?.textContent?.trim(), button, `${action} button label`);
+      check(Boolean(form?.querySelector('[role="status"][data-countersign-status]')), `${action} status hook`);
+    };
     if (kind === "quiz") {
-      same(text("h1"), quiz.title, "Full quiz title");
-      same(text(".notice"), quiz.notice, "Full quiz source notice");
+      same(text("[data-source-title]"), quiz.title, "Full quiz title");
+      same(text("[data-source-notice]"), quiz.notice, "Full quiz source notice");
+      presenceForm("/quiz/1/submit", "quiz-submit", "human-required", "Submit quiz");
       const form = document.querySelector<HTMLFormElement>('form[action="/quiz/1/submit"]');
       check(form?.method === "post", "Quiz submission method/action preserved");
       const fieldsets = [...document.querySelectorAll("fieldset")];
       same(fieldsets.length, quiz.questions.length, "Question count preserved");
       for (const [index, question] of quiz.questions.entries()) {
         const fieldset = fieldsets[index];
+        check(Boolean(fieldset?.parentElement?.matches(".quiz-question")), `Question panel wrapper for ${question.id}`);
         same(fieldset?.querySelector("legend")?.textContent, `${index + 1}. ${question.prompt}`, `Full legend for ${question.id}`);
         same(fieldset?.querySelector("small")?.textContent, `Source: ${question.source_ref}`, `Full source for ${question.id}`);
         const radios = [...(fieldset?.querySelectorAll<HTMLInputElement>('input[type="radio"]') ?? [])];
@@ -258,32 +319,39 @@ async function semantics(page: Page, kind: Kind, enabled: boolean, seed: unknown
       }
     }
     if (kind.startsWith("discussion")) {
-      same(text("h1"), forum.title, "Full imported discussion title");
+      same(text("[data-source-title]"), forum.title, "Full imported discussion title");
       same(text(".panel .forum-text"), forum.faculty_prompt, "Full faculty prompt including paragraph separators");
       same(document.querySelector<HTMLElement>(".panel .forum-text")?.innerText, forum.faculty_prompt, "Faculty paragraphs remain visibly separated");
-      same(text("footer"), forum.synthetic_data_notice, "Full synthetic-data footer");
+      same(text("footer [data-synthetic-notice]"), forum.synthetic_data_notice, "Full synthetic-data footer");
       const posts = forum.posts.filter(post => post.post_id !== forum.faculty_prompt_post_id);
+      same(posts.length, 30, "All 30 imported peer posts are in the source");
       same([...document.querySelectorAll<HTMLElement>("[data-post-id]")].map(element => element.dataset.postId),
         kind === "discussion-peer" ? posts.map(post => post.post_id) : [], "Seeded peer visibility and source order");
       if (kind === "discussion-peer") for (const post of posts) {
         const article = document.querySelector(`[data-post-id="${post.post_id}"]`);
         same(article?.querySelector("h2")?.textContent, post.subject, `Full subject ${post.post_id}`);
-        same(article?.querySelector("strong")?.textContent, post.author, `Full author ${post.post_id}`);
-        same(article?.querySelector("time")?.textContent, post.timestamp, `Full timestamp ${post.post_id}`);
+        same(article?.querySelector(".post-meta strong")?.textContent, post.author, `Full author ${post.post_id}`);
+        same(article?.querySelector(".post-meta time")?.textContent, post.timestamp, `Full timestamp ${post.post_id}`);
         same(article?.querySelector(".forum-text")?.textContent, post.body, `Full imported body ${post.post_id}`);
         same(article?.querySelector<HTMLElement>(".forum-text")?.innerText, post.body, `Visible paragraph separation ${post.post_id}`);
       }
       if (kind === "discussion-demo") {
+        presenceForm("/discussion/2/post", "discussion-initial-post", "attested", "Publish response");
         const input = document.querySelector<HTMLTextAreaElement>('textarea[name="body"]');
         check(Boolean(input?.required && input.labels?.[0]?.textContent === "Your initial response" &&
           input.form?.getAttribute("action") === "/discussion/2/post" && input.form.method === "post"), "Initial response retains its required labeled form");
         check(document.body.innerText.includes("Peer posts are hidden until you publish"), "Independent-first notice remains visible");
+        const reset = document.querySelector<HTMLFormElement>('[data-demo-controls] form[action="/discussion/2/reset"]');
+        check(reset?.method === "post" && Boolean(reset.querySelector<HTMLInputElement>('input[name="reset_token"]')?.value), "Session-bound reset form retained");
+        check(Boolean(reset?.querySelector('input[type="checkbox"][name="confirmation"][value="reset-discussion"][required]')), "Explicit reset confirmation retained");
+        same(reset?.querySelector("button")?.textContent, "Reset discussion demo", "Reset button retained");
       }
     }
     if (kind === "policy") {
       const details = [...document.querySelectorAll("details")];
       const complete = details.find(element => element.querySelector("summary")?.textContent === "Complete active / draft JSON");
       const generation = details.find(element => element.querySelector("summary")?.textContent === "Generation provenance");
+      check(complete?.parentElement === main && (!generation || generation.parentElement === main), "Complete policy details remain main's direct children");
       check(Boolean(complete?.open), "Complete JSON expanded");
       check(metadata ? Boolean(generation?.open) : !generation,
         metadata ? "Matching generation provenance expanded" : "Stale generation provenance is not displayed");
@@ -313,17 +381,34 @@ async function semantics(page: Page, kind: Kind, enabled: boolean, seed: unknown
       check(filter?.labels?.[0]?.textContent === "Show user", "Timeline filter keeps its accessible label");
     }
     if (kind === "login") {
-      const forms = [...document.querySelectorAll<HTMLFormElement>('form[action="/login"]')];
+      const forms = [...document.querySelectorAll<HTMLFormElement>('.user-grid form[action="/login"]')];
       same(forms.length, students.length, "All selectable imported identities remain available");
+      check(Boolean(document.querySelector("#demo-users")), "Chooser remains a linkable destination");
+      same([...document.querySelectorAll(".activity-grid .activity-card a")].map(link => link.getAttribute("href")).sort(),
+        ["/quiz/1", "/discussion/2", "/record/1"].sort(), "Signed-in overview cards open all three activities");
       for (const [index, student] of students.entries()) {
+        same(forms[index]?.method, "post", `Login method ${student.id}`);
         same(forms[index]?.querySelector<HTMLInputElement>('input[name="user_id"]')?.value, student.id, `Login identity ${student.id}`);
         same(forms[index]?.querySelector("button")?.textContent, `Continue as ${student.name}`, `Full login button ${student.id}`);
         check(Boolean(forms[index]?.innerText.includes(student.email)), `Full email ${student.id}`);
       }
     }
-    if (kind === "register") check(text("h1") === "Register a passkey for Capt J. Demo" &&
-      text("form button") === "Register passkey with Touch ID", "Registration explanation and button stay readable; no ceremony performed");
+    if (kind === "register") check(Boolean(main?.textContent?.includes("Capt J. Demo")) &&
+      text("form[data-countersign-register] button") === "Register passkey with Touch ID" &&
+      Boolean(document.querySelector('form[data-countersign-register] [role="status"][data-countersign-status]')),
+      "Registration identity, explanation, and action hooks stay readable; no ceremony performed");
     if (kind === "record") {
+      if (enabled) {
+        same(text("button[data-record-reveal]"), "Verify presence to view", "Protected-record reveal action");
+        check(Boolean(document.querySelector("[data-protected-record]")) && Boolean(document.querySelector("[data-record-status]")) &&
+          Boolean(document.querySelector("[data-record-register]")), "Protected-record masking and setup hooks");
+        // Check all response markup, not only the masked dd nodes: the shared
+        // header/title/metadata must never expose a protected identity or value.
+        for (const student of students) for (const value of [student.name, student.ssn, student.dod_id, student.medical_note]) {
+          check(!document.documentElement.outerHTML.includes(value) && !document.documentElement.textContent?.includes(value),
+            `Protected value absent everywhere for ${student.id}`);
+        }
+      }
       const demo = students.find(student => student.id === "stu-0011")!;
       for (const [field, value] of Object.entries({ name: demo.name, ssn: demo.ssn, "dod-id": demo.dod_id, medical: demo.medical_note })) {
         const rendered = text(`[data-field="${field}"]`);
@@ -332,7 +417,19 @@ async function semantics(page: Page, kind: Kind, enabled: boolean, seed: unknown
       }
     }
     return { findings, checks };
-  }, { kind, enabled, quiz, forum, students, active, draft, metadata, seed });
+  }, { kind, enabled, quiz, forum, students, active, draft, metadata, seed, otherOrigin: portalOrigin(!enabled) });
+  // Scope names to their landmarks: home overview cards intentionally repeat
+  // route names that also appear in the shared header.
+  for (const [label, names] of [["Demo portal", ["Demo home", "Quiz", "Discussion", "Protected record"]],
+    ["Countersign console", ["Activity log", "Policy review"]]] as const) {
+    const nav = page.getByRole("navigation", { name: label, exact: true });
+    for (const name of names) {
+      result.checks++;
+      if (await nav.getByRole("link", { name, exact: true }).count() !== 1) {
+        result.findings.push({ kind: "semantic-preservation", element: label, detail: `Missing uniquely named navigation link: ${name}` });
+      }
+    }
+  }
   if (kind === "quiz") {
     // The browser's accessible-name computation must still agree with the
     // fixture, including when production adds a text span to each option.
@@ -352,6 +449,32 @@ async function semantics(page: Page, kind: Kind, enabled: boolean, seed: unknown
   return result;
 }
 
+async function keyboardSkipLink(page: Page) {
+  const result = { findings: [] as Finding[], checks: 1 };
+  await page.keyboard.press("Tab");
+  const focused = await page.evaluate(() => document.activeElement?.matches('a.skip-link[href="#main-content"]'));
+  if (!focused) {
+    result.findings.push({ kind: "keyboard-navigation", element: ".skip-link", detail: "First Tab must focus Skip to content" });
+    return result; // Never activate another control if the first focus is wrong.
+  }
+  result.checks++;
+  const painted = await page.locator("a.skip-link").evaluate(element => {
+    const rect = element.getBoundingClientRect();
+    const css = getComputedStyle(element);
+    return rect.width > 0 && rect.height > 0 && rect.top >= 0 && rect.left >= 0 &&
+      rect.right <= innerWidth && rect.bottom <= innerHeight && css.visibility !== "hidden" && css.opacity !== "0";
+  });
+  if (!painted) result.findings.push({ kind: "keyboard-navigation", element: ".skip-link", detail: "Focused skip link must be painted inside the viewport" });
+  await page.keyboard.press("Enter");
+  result.checks++;
+  try { await page.waitForFunction(() => document.activeElement?.id === "main-content", undefined, { timeout: 1000 }); }
+  catch { result.findings.push({ kind: "keyboard-navigation", element: "#main-content", detail: "Enter on the skip link must move focus to main" }); }
+  // Remove only the test-added fragment so a subsequent same-route viewport
+  // case reloads its source DOM instead of preserving this case's probe text.
+  await page.evaluate(() => history.replaceState(history.state, "", location.pathname + location.search));
+  return result;
+}
+
 await mkdir(cache, { recursive: true });
 const output = await mkdtemp(join(cache, `content-layout-${label}-`));
 await mkdir(join(output, "screenshots"));
@@ -364,7 +487,7 @@ try {
   console.log(`Evidence: ${relative(root, output)}; Chrome ${browser.version()}`);
   for (const enabled of [true, false]) {
     const mode = enabled ? "governed" : "ungoverned";
-    const origin = `http://localhost:${enabled ? 3000 : 3001}`;
+    const origin = portalOrigin(enabled);
     const state = await mkdtemp(join(output, `state-${mode}-`));
     const policyPaths = Object.fromEntries(await Promise.all(
       (["policyPath", "draftPath", "metadataPath", "categoriesPath", "ldcsPath"] as const).map(async key => {
@@ -423,16 +546,34 @@ try {
           await page.goto(origin + "/login");
           await page.locator('form[action="/login"]').filter({ has: page.locator(`input[name="user_id"][value="${user}"]`) }).locator("button").click();
           await page.waitForURL(origin + (enabled ? "/register" : "/quiz/1"));
+          if (!quizOnly && user === "stu-0011") {
+            // Exercise real links across both workspaces, not just their hrefs.
+            for (const [area, name, path] of [
+              ["Demo portal", "Quiz", "/quiz/1"],
+              ["Countersign console", "Policy review", "/countersign/policy/review"],
+              ["Demo portal", "Protected record", "/record/1"],
+              ["Countersign console", "Activity log", "/countersign/"],
+              ["Demo portal", "Discussion", "/discussion/2"],
+              ["Demo portal", "Demo home", "/login"],
+            ]) {
+              await page.getByRole("navigation", { name: area, exact: true }).getByRole("link", { name, exact: true }).click();
+              await page.waitForURL(origin + path);
+              assert.equal(await page.locator('header [aria-current="page"]').getAttribute("href"), path);
+            }
+            console.log(`PASS ${mode}: cross-workspace navigation round trip with current-page indication.`);
+          }
           for (const width of widths) {
             await page.setViewportSize({ width, height: 1000 });
             const cases: Array<[Kind, string]> = quizOnly ? [["quiz", "/quiz/1"]] : user === "stu-0003" ? [["discussion-peer", "/discussion/2"]] : [
               ["quiz", "/quiz/1"], ["discussion-demo", "/discussion/2"], ["policy", "/countersign/policy/review"],
               ["timeline", "/countersign/?user=stu-layout-evidence"],
-              ...(width <= 390 ? [["login", "/login"], ...(enabled ? [["register", "/register"]] : []), ["record", "/record/1"]] as Array<[Kind, string]> : []),
+              ["login", "/login"], ...(enabled ? [["register", "/register"]] as Array<[Kind, string]> : []), ["record", "/record/1"],
             ];
             for (const [kind, route] of cases) {
               try {
                 await page.goto(origin + route, { waitUntil: "networkidle" });
+                await page.evaluate(() => document.fonts.ready);
+                const keyboard = await keyboardSkipLink(page);
                 if (kind === "policy") {
                   if (metadata) await page.getByText("Generation provenance", { exact: true }).click();
                   await page.getByText("Complete active / draft JSON", { exact: true }).click();
@@ -442,6 +583,8 @@ try {
                 }
                 if (kind === "discussion-demo") await page.locator("[data-demo-controls] > summary").click();
                 const preserved = await semantics(page, kind, enabled, seed);
+                preserved.checks += keyboard.checks;
+                preserved.findings.push(...keyboard.findings);
                 for (const phase of ["actual", "probe"] as const) {
                   if (phase === "probe") await page.evaluate(({ kind, token }) => {
                     const selectors: Record<string, string[]> = {
@@ -473,7 +616,11 @@ try {
                   const screenshot = join(output, "screenshots", `${mode}-${kind}-${width}-${phase}.png`);
                   await page.screenshot({ path: screenshot });
                   if (publishEvidence && enabled && phase === "actual" && kind === "quiz" && (width === 390 || width === 1280)) {
-                    await page.screenshot({ path: join(root, `docs/build-log/content-layout-quiz-${width === 390 ? "mobile" : "desktop"}.png`), fullPage: width === 1280 });
+                    await page.screenshot({ path: join(root, `docs/build-log/${evidencePrefix}-quiz-${width === 390 ? "mobile" : "desktop"}.png`), fullPage: width === 1280 });
+                  }
+                  if (publishEvidence && evidencePrefix !== "content-layout" && enabled && phase === "actual" && width === 1280 &&
+                      ["login", "discussion-demo", "record", "timeline", "register"].includes(kind)) {
+                    await page.screenshot({ path: join(root, `docs/build-log/${evidencePrefix}-${kind}-desktop.png`), fullPage: kind !== "timeline" });
                   }
                   const snapshot: Snapshot = { ...layout, mode, user, route, kind, width, phase,
                     checks: phase === "actual" ? preserved.checks : 1, screenshots: [relative(root, screenshot)] };
@@ -488,7 +635,7 @@ try {
                     await page.screenshot({ path: focused });
                     snapshot.screenshots.push(relative(root, focused));
                     if (publishEvidence && enabled && width === 1280 && (kind === "policy" || kind === "discussion-peer")) {
-                      await page.screenshot({ path: join(root, `docs/build-log/content-layout-${kind}-desktop.png`) });
+                      await page.screenshot({ path: join(root, `docs/build-log/${evidencePrefix}-${kind}-desktop.png`) });
                     }
                   }
                 }
@@ -516,7 +663,7 @@ finally {
   for (const [key, path] of Object.entries(inputPaths)) {
     if (await readFile(join(root, path), "utf8") !== inputs[key]) setupErrors.push(`Input changed during run: ${path}; rerun against a stable source tree.`);
   }
-  const expectedSnapshots = quizOnly ? 20 : 120;
+  const expectedSnapshots = quizOnly ? 20 : 150;
   if (snapshots.length !== expectedSnapshots) setupErrors.push(`Expected ${expectedSnapshots} actual/probe snapshots across ${expectedSnapshots / 2} route/viewport cases; collected ${snapshots.length}.`);
   const failed = snapshots.filter(snapshot => snapshot.findings.length);
   const report = {

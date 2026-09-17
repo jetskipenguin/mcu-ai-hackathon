@@ -2,15 +2,19 @@
 // dashboard-browser-smoke.mts, not a production dependency or presence bypass.
 import assert from "node:assert/strict";
 import { once } from "node:events";
-import { mkdir, mkdtemp, readFile, rm } from "node:fs/promises";
+import { copyFile, mkdir, mkdtemp, readFile, rm } from "node:fs/promises";
+import type { Server } from "node:http";
 import { join } from "node:path";
-import { chromium } from "playwright";
+import { chromium, type BrowserContext } from "playwright";
 import { createApp } from "../../portal/app.ts";
 import { readProvenanceEvents } from "../../countersign/server/log.ts";
 
 const root = process.cwd();
 await mkdir(join(root, "node_modules/.cache"), { recursive: true });
-const browser = await chromium.launch({ channel: "chrome", headless: true });
+// Set SCREENSHOT_DIR to an ignored cache directory to keep historical evidence.
+const screenshotDir = process.env.SCREENSHOT_DIR ?? join(root, "docs/build-log");
+if (process.env.SCREENSHOT_DIR) await mkdir(screenshotDir, { recursive: true });
+const browser = await chromium.launch({ channel: "chrome", headless: true, timeout: 15_000 });
 try {
   for (const enabled of [true, false]) {
     const mode = enabled ? "governed" : "ungoverned";
@@ -18,32 +22,51 @@ try {
     const temporary = await mkdtemp(join(root, "node_modules/.cache/discussion-reset-"));
     const credentialsPath = join(temporary, "credentials.json");
     const provenancePath = join(temporary, "events.jsonl");
-    const server = createApp({ countersignEnabled: enabled, credentialsPath, provenancePath,
-      sessionSecret: "isolated-discussion-reset-browser" }).listen(0, "localhost");
-    await once(server, "listening");
-    const address = server.address();
-    assert.ok(address && typeof address !== "string");
-    const target = `http://localhost:${address.port}`;
-    const context = await browser.newContext({ viewport: { width: 1280, height: 1000 } });
-    const page = await context.newPage();
-    page.setDefaultTimeout(15_000);
-    const errors: string[] = [];
-    page.on("pageerror", error => errors.push(error.message));
-    let resets = 0; let registrations = 0; let attestations = 0;
-    await context.route(`${origin}/**`, async route => {
-      const url = new URL(route.request().url());
-      if (url.pathname === "/discussion/2/reset" && route.request().method() === "POST") resets++;
-      if (url.pathname === "/countersign/webauthn/register/verify") registrations++;
-      const response = await route.fetch({ url: target + url.pathname + url.search, maxRedirects: 0 });
-      const location = response.headers().location;
-      if (response.status() >= 300 && response.status() < 400 && location) {
-        const next = new URL(location, origin);
-        assert.equal(next.origin, origin);
-        await route.fulfill({ response, status: 200, contentType: "text/html",
-          body: `<script>location.replace(${JSON.stringify(next.pathname + next.search + next.hash)})</script>` });
-      } else await route.fulfill({ response });
-    });
+    let server: Server | undefined;
+    let context: BrowserContext | undefined;
     try {
+      const policyPaths = { policyPath: join(temporary, "policy.json"), draftPath: join(temporary, "draft.json"),
+        metadataPath: join(temporary, "draft.meta.json") };
+      await Promise.all([
+        copyFile(join(root, "countersign/policy/countersign.policy.json"), policyPaths.policyPath),
+        copyFile(join(root, "countersign/policy/countersign.policy.draft.json"), policyPaths.draftPath),
+        copyFile(join(root, "countersign/policy/countersign.policy.draft.meta.json"), policyPaths.metadataPath),
+      ]);
+      server = createApp({ countersignEnabled: enabled, credentialsPath, provenancePath, policyPaths,
+        sessionSecret: "isolated-discussion-reset-browser" }).listen(0, "localhost");
+      await once(server, "listening", { signal: AbortSignal.timeout(15_000) });
+      const address = server.address();
+      assert.ok(address && typeof address !== "string");
+      const target = `http://localhost:${address.port}`;
+      context = await browser.newContext({ viewport: { width: 1280, height: 1000 }, serviceWorkers: "block" });
+      const page = await context.newPage();
+      page.setDefaultTimeout(15_000);
+      page.setDefaultNavigationTimeout(15_000);
+      const errors: string[] = [];
+      const dialogs: string[] = [];
+      page.on("pageerror", error => errors.push(error.message));
+      page.on("dialog", async dialog => { dialogs.push(`${dialog.type()}: ${dialog.message()}`); await dialog.dismiss(); });
+      let resets = 0; let registrations = 0; let attestations = 0;
+      await context.route("**/*", async route => {
+        try {
+          const url = new URL(route.request().url());
+          assert.equal(url.origin, origin, "Only isolated localhost traffic is permitted.");
+          assert.doesNotMatch(url.pathname, /^\/countersign\/policy\/(generate|approve)/);
+          if (url.pathname === "/discussion/2/reset" && route.request().method() === "POST") resets++;
+          if (url.pathname === "/countersign/webauthn/register/verify") registrations++;
+          const response = await route.fetch({ url: target + url.pathname + url.search, maxRedirects: 0, timeout: 15_000 });
+          const location = response.headers().location;
+          if (response.status() >= 300 && response.status() < 400 && location) {
+            const next = new URL(location, origin);
+            assert.equal(next.origin, origin);
+            await route.fulfill({ response, status: 200, contentType: "text/html",
+              body: `<script>location.replace(${JSON.stringify(next.pathname + next.search + next.hash)})</script>` });
+          } else await route.fulfill({ response });
+        } catch (error) {
+          errors.push(`Isolated route: ${String(error)}`);
+          await route.abort().catch(() => {});
+        }
+      });
       if (enabled) {
         const cdp = await context.newCDPSession(page);
         await cdp.send("WebAuthn.enable");
@@ -60,12 +83,23 @@ try {
       await page.goto(origin + "/discussion/2");
       const publish = async (text: string, attestation: string) => {
         await page.locator('textarea[name="body"]').fill(text);
-        if (enabled) page.once("dialog", async dialog => { attestations++; await dialog.accept(attestation); });
+        if (enabled) {
+          await page.locator("select[data-countersign-attestation]").selectOption(attestation);
+          attestations++;
+        } else assert.equal(await page.locator("select[data-countersign-attestation]").count(), 0);
         await page.getByRole("button", { name: "Publish response", exact: true }).click();
         await page.waitForURL(url => url.searchParams.has("posted"));
         await page.waitForLoadState("networkidle");
         assert.equal(await page.locator("[data-post-id]").count(), 31);
-        return new URL(page.url()).searchParams.get("posted")!;
+        const postId = new URL(page.url()).searchParams.get("posted")!;
+        if (enabled) {
+          const accepted = (await readProvenanceEvents(provenancePath)).filter(event => event.action === "POST /discussion/2/post" && event.decision === "allowed").at(-1)!;
+          assert.equal(accepted.attestation, attestation);
+          assert.equal(await page.locator(`[data-post-id="${postId}"] [data-attestation]`).getAttribute("data-attestation"), accepted.attestation);
+          assert.equal(await page.locator(`[data-post-id="${postId}"] [data-disclosure]`).innerText(), attestation === "own-work" ? "Own work (declared)" : "AI-assisted (disclosed)");
+        }
+        assert.deepEqual(dialogs, [], "Disclosure uses a dropdown, never window.prompt.");
+        return postId;
       };
       const firstId = await publish("First synthetic response in the reset browser check.", "own-work");
       const before = await readProvenanceEvents(provenancePath);
@@ -96,7 +130,7 @@ try {
           headers: { "content-type": "application/json" }, body: JSON.stringify({ body: "Synthetic no-proof attempt." }) })).status);
         assert.equal(status, 403);
       }
-      await page.screenshot({ path: join(root, `docs/build-log/discussion-reset-${mode}.png`), fullPage: true });
+      await page.screenshot({ path: join(screenshotDir, `discussion-reset-${mode}.png`), fullPage: true });
       if (enabled) {
         await page.goto(origin + "/quiz/1");
         for (const [index, answer] of ["c", "a", "d", "b", "c"].entries()) await page.locator(`input[name="answers[q${index + 1}]"][value="${answer}"]`).check();
@@ -123,6 +157,7 @@ try {
         assert.equal(registrations, 1);
         const accepted = after.filter(event => event.action === "POST /discussion/2/post" && event.decision === "allowed");
         assert.equal(accepted.length, 2);
+        assert.equal(accepted[0].attestation, "own-work");
         assert.equal(accepted[1].attestation, "ai-assisted");
         assert.equal(accepted[1].actor_class, "human-verified");
         assert.ok(accepted[1].presence?.up);
@@ -133,11 +168,15 @@ try {
         assert.deepEqual(after.map(event => event.rule_id), ["demo-discussion-reset"]);
       }
       assert.deepEqual(errors, []);
+      assert.deepEqual(dialogs, []);
       console.log(`PASS (${mode}): native confirmation, post-reset-post without restart/re-enrollment, hidden peers, retained audit, stale-token rejection, and ${enabled ? "fresh attestation/assertion" : "maintenance-only audit"}.`);
     } finally {
-      await context.close();
-      await new Promise<void>((resolve, reject) => { server.close(error => error ? reject(error) : resolve()); server.closeAllConnections(); });
-      await rm(temporary, { recursive: true, force: true });
+      try { await context?.close(); }
+      finally {
+        try {
+          if (server) await new Promise<void>((resolve, reject) => { server!.close(error => error ? reject(error) : resolve()); server!.closeAllConnections(); });
+        } finally { await rm(temporary, { recursive: true, force: true }); }
+      }
     }
   }
 } finally { await browser.close(); }

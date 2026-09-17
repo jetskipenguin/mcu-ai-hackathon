@@ -37,12 +37,12 @@ Then split into tracks.
 ### 1.1 Adversary checks — Chris
 - [ ] Create a fresh macOS user account for demo work. Enroll Touch ID for it.
 - [ ] Install Comet in that account. Sign in to nothing real.
-- [ ] Throwaway HTML page with a 3-question quiz + submit; another with a fake SSN and "clinical note." Serve on `localhost`.
+- [x] Throwaway HTML page with a 3-question quiz + submit; another with a fake SSN and "clinical note." Serve on `localhost`.
 - [x] **Test A:** does Comet complete and submit the quiz? Try 2–3 phrasings ("help me finish this," "complete this quiz," "answer these and submit"). Outcome: two refusals; recorded in `NOTES.md`.
 - [x] **Test B:** does Comet read and summarize the sensitive page? Outcome: reproduced the requested synthetic fields.
 - [ ] **Test C:** does a WebAuthn prompt fire inside Comet on `localhost`? (Use webauthn.io or a 20-line SimpleWebAuthn demo.) Does Touch ID complete it?
 - [ ] Record the outcome of each test in `NOTES.md` — pass/fail and the phrasing that worked.
-- [ ] Check whether the ChatGPT Chrome extension is available on your account and whether it will act on a page. If yes → extension adversary chosen. If no → buy the cheapest Manus tier with Browser Operator; time-box setup to 60 min; try Tests A and B.
+- [x] Check whether the ChatGPT Chrome extension is available on your account and whether it will act on a page. If yes → extension adversary chosen. If no → buy the cheapest Manus tier with Browser Operator; time-box setup to 60 min; try Tests A and B.
 
 **Decision gate (after the Comet tests):**
 - A + C pass → plan proceeds as written.
@@ -52,7 +52,7 @@ Then split into tracks.
 ### 1.2 Scaffold — Collin (after the token checks)
 - [x] Repo: `countersign/` with `portal/`, `countersign/{client,server,policy,generate}/`, `dashboard/`, `docs/` (drop the three markdown docs in `docs/`).
 - [x] Decide Node/TS vs Python (§10.2 of spec). Default: Node + Express + SimpleWebAuthn.
-- [ ] Confirm Codex CLI and OpenCode are installed and authenticated against the free OpenAI access; run one trivial task in each to make sure the tokens actually flow. Note which model each is using in `NOTES.md`.
+- [x] Confirm Codex CLI and OpenCode are installed and authenticated against the free OpenAI access; run one trivial task in each to make sure the tokens actually flow. Note which model each is using in `NOTES.md`.
 - [x] Write `AGENTS.md` at the repo root (both tools read it): stack, directory layout, the `COUNTERSIGN=off|on` toggle, "fake data only," and a pointer to `docs/contracts.md`. Ten minutes now saves both of us re-explaining the project to every fresh session tomorrow.
 - [x] Use Codex/OpenCode to scaffold: Express app, fake-SSO login (pick a user), three empty routes, static `countersign.js`, `COUNTERSIGN=off|on` env toggle, JSONL log writer.
 - [x] Fake data file: 3 students, obviously fictional, 900-series SSNs, fabricated notes.
@@ -61,13 +61,13 @@ Then split into tracks.
 
 ### 1.3 Together (before splitting)
 - [x] Iterate on the spec/pitch/plan docs.
-- [ ] Lock: stack, extension adversary, who presents which slide. (Name is decided: Countersign — spec §0 explains it.)
+- [x] Lock: stack, extension adversary, who presents which slide. (Name is decided: Countersign — spec §0 explains it.)
 - [ ] Skeleton slide deck with the 11 slide titles from the pitch outline. No content yet.
 - [x] Repo created, docs committed. Start `docs/BUILD-LOG.md` with that as the first entry (timestamps from the commits).
-- [ ] Rubric is in hand (pitch §0). Still need: presentation format (7 min inclusive or exclusive of Q&A?), semi/final schedule, deliverables list.
-- [ ] Datasets (spec §11.1): select the coursebook chapter, extract the CUI category/LDC files, note dataset fields, and register all three on the hackathon portal.
+- [x] Rubric is in hand (pitch §0). Presentation format, semi/final schedule, and deliverables confirmed (M21).
+- [x] Datasets (spec §11.1): select the coursebook chapter, extract the CUI category/LDC files, note dataset fields, and register all three on the hackathon portal.
   - [x] Local dataset preparation: Lesson 2 selected; full IFD 2 imported; 126 categories/10 LDCs extracted; chunk JSONL located and field mappings recorded in [dataset evidence](build-log/dataset-import-verification.md).
-  - [ ] Confirm all three datasets are registered on the hackathon portal (separate from importing files locally).
+  - [x] Confirm all three datasets are registered on the hackathon portal (separate from importing files locally).
 
 ---
 
@@ -100,11 +100,12 @@ Then split into tracks.
 - [x] Log event schema finalized (spec §5.7). Typed/normalized advisory telemetry, metadata validation, null/proof semantics, page-visit attribution, cursor/read-error behavior, and flagged-session fields are documented and verified; 97 tests and virtual-authenticator browser regressions pass (see [evidence](build-log/dashboard-provenance-verification.md)).
 
 **Evening**
-- [ ] Bug fixes from the integrated run. Nothing new.
+- [x] Bug fixes from the integrated run. Nothing new.
 - [x] User-requested discussion demo reset (A12): restore Capt J. Demo's initial-post state on the current instance, retain fixtures/passkeys/audit, record the reset, and require a fresh governed submission after reset. Both modes, stale/concurrent requests, audit failure, and unaffected quiz/record/registration were verified; 108 tests and Chrome checks pass (see [reset evidence](build-log/discussion-reset-verification.md)).
 - [x] User-requested Docker/EC2 deployment (A13): two-container Compose, persistent data/policies, manual setup and first-boot automation. Image build, healthy containers, signed quiz enforcement, internal generator crawl, and passkey/audit persistence after recreation verified locally; 110 tests passed, two source-data checks skipped. See [deployment guide](ec2-deployment.md).
   - [ ] Verify first-boot deployment on EC2 and physical Touch ID in Comet through the SSH tunnel.
 - [x] User-requested imported-content layout fixes (A14): improve wrapping and readability on portal and dashboard pages without truncating source text or changing governance, including quiz legends fully inside their cards. Verified 60 browser cases across five desktop/mobile widths in both modes, vertical-containment regression, 112 tests/build, and virtual-authenticator quiz/record/discussion flows (see [layout evidence](build-log/content-layout-verification.md)).
+- [x] User-requested presentation refresh (A15): shared design and complete navigation separating the demo portal from the Countersign console, plain copy, required disclosure dropdown, and action-specific in-page human-confirmation messages. Verified 129 tests/build, 75 responsive cases, navigation/keyboard checks, seven dropdown scenarios, and virtual-authenticator submission/reset/pending-mask checks. Native OS prompt and proof requirements remain unchanged; physical Comet rehearsal stays separate (see [presentation evidence](build-log/presentation-refresh-verification.md)).
 
 ### Track B — Dashboard, policy generator, demo assets — Chris *(iterate)*
 **Morning (to 13:00)**

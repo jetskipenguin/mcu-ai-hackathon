@@ -143,16 +143,51 @@ function telemetryFor(form) {
   return values.length === 1 ? values[0] : values;
 }
 
-async function askAttestation() {
-  // TODO(track-a): replace this scaffold prompt with the attestation UI.
-  const answer = window.prompt(
-    'Declare this post as "own-work" or "ai-assisted".',
-    "own-work",
-  );
+function ensureAttestationControl(form) {
+  let select = form.querySelector("select[data-countersign-attestation]");
+  if (!select) {
+    // Keep the injectable client usable on hosts that only annotate their form.
+    // The countersign namespace is excluded from the application form hash;
+    // the declaration is bound separately by the action challenge.
+    const wrapper = document.createElement("div");
+    wrapper.className = "attestation-control";
+    const label = document.createElement("label");
+    label.textContent = "How was this response prepared?";
+    select = document.createElement("select");
+    let index = 1;
+    let id = "countersign-attestation";
+    while (document.getElementById(id)) id = `countersign-attestation-${index++}`;
+    select.id = id;
+    select.name = "countersign[attestation]";
+    select.dataset.countersignAttestation = "";
+    label.htmlFor = id;
+    for (const [value, text] of [["", "Choose a disclosure"], ["own-work", "Own work"], ["ai-assisted", "AI-assisted"]]) {
+      const option = document.createElement("option");
+      option.value = value;
+      option.textContent = text;
+      option.disabled = value === "";
+      option.selected = value === "";
+      select.append(option);
+    }
+    const help = document.createElement("p");
+    help.id = `${id}-help`;
+    help.className = "form-note";
+    help.textContent = "Choose the description that matches how you prepared this response. This disclosure is recorded with your presence check.";
+    select.setAttribute("aria-describedby", help.id);
+    wrapper.append(label, select, help);
+    form.insertBefore(wrapper, form.firstChild);
+  }
+  select.required = true;
+  return select;
+}
+
+function readAttestation(select) {
+  const answer = select.value;
   if (answer === "own-work" || answer === "ai-assisted") {
     return answer;
   }
-  throw new Error("An own-work or ai-assisted attestation is required.");
+  select.reportValidity();
+  throw new Error("Choose Own work or AI-assisted before publishing.");
 }
 
 async function postJson(url, body) {
@@ -168,6 +203,17 @@ async function postJson(url, body) {
     throw error;
   }
   return payload;
+}
+
+function showHumanConfirmation(status, action, explanation) {
+  if (!status) return;
+  // This is application context, not a replacement for the browser/OS dialog.
+  const heading = document.createElement("strong");
+  heading.textContent = `Human confirmation required — ${action}`;
+  const detail = document.createElement("span");
+  detail.textContent = explanation;
+  status.replaceChildren(heading, document.createTextNode(" "), detail);
+  status.scrollIntoView({ block: "nearest", inline: "nearest" });
 }
 
 function showError(status, error) {
@@ -193,7 +239,7 @@ for (const form of document.querySelectorAll("form[data-countersign-register]"))
     const button = form.querySelector('button[type="submit"]');
     const status = form.querySelector("[data-countersign-status]");
     button.disabled = true;
-    status.textContent = "Use Touch ID to register this browser's passkey...";
+    showHumanConfirmation(status, "set up this passkey", "Follow your device’s passkey prompt. Countersign never receives your fingerprint or other biometric data.");
     try {
       const options = await postJson("/countersign/webauthn/register/options", {});
       const credential = await startRegistration({ optionsJSON: options });
@@ -210,6 +256,7 @@ for (const form of document.querySelectorAll("form[data-countersign-register]"))
 }
 
 for (const form of governedForms) {
+  const attestationControl = form.dataset.countersignClass === "attested" ? ensureAttestationControl(form) : null;
   let busy = false;
   form.addEventListener("submit", async (event) => {
     const rule = form.dataset.countersignRule;
@@ -225,15 +272,13 @@ for (const form of governedForms) {
     buttons.forEach((button) => { button.disabled = true; });
 
     const status = form.querySelector("[data-countersign-status]");
-    if (status) {
-      status.textContent = "Waiting for a human presence check...";
-    }
 
     try {
+      const attestation = attestationControl ? readAttestation(attestationControl) : null;
+      showHumanConfirmation(status, attestationControl ? "publish this response" : rule === "quiz-submit" ? "submit this quiz" : "complete this action",
+        `${attestation ? `Disclosure: ${attestation === "own-work" ? "Own work" : "AI-assisted"}. ` : ""}Confirm with Touch ID or your device’s passkey prompt. Nothing is submitted until you verify.`);
       const fields = serialize(form);
       const form_hash = await sha256Canonical(fields);
-      const attestation =
-        form.dataset.countersignClass === "attested" ? await askAttestation() : null;
       const challenge = await postJson("/countersign/challenge", {
         rule_id: rule,
         action: form.dataset.countersignAction,
@@ -245,6 +290,9 @@ for (const form of governedForms) {
       });
       if (await sha256Canonical(serialize(form)) !== form_hash) {
         throw new Error("The form changed during confirmation. Submit again to confirm the new contents.");
+      }
+      if (attestationControl && attestationControl.value !== attestation) {
+        throw new Error("Your disclosure changed during confirmation. Publish again to verify the new choice.");
       }
       const result = await postJson(form.action, {
         ...fields,
@@ -295,7 +343,7 @@ if (record) {
   registerButton.addEventListener("click", async () => {
     registerButton.disabled = true;
     try {
-      status.textContent = "A human must register a passkey using the device authenticator.";
+      showHumanConfirmation(status, "set up this passkey", "Follow your device’s passkey prompt. Protected fields stay hidden until you separately verify to reveal this view.");
       const options = await postJson("/countersign/webauthn/register/options", {});
       const registration = await startRegistration({ optionsJSON: options });
       await postJson("/countersign/webauthn/register/verify", registration);
@@ -312,7 +360,7 @@ if (record) {
     renderRecord();
     const current = ++generation;
     try {
-      status.textContent = "Waiting for a human presence check...";
+      showHumanConfirmation(status, "reveal this protected record", "Confirm with Touch ID or your device’s passkey prompt. The fields stay hidden until human verification succeeds.");
       const challenge = await postJson("/countersign/unmask", {
         rule_id: "student-record.unmask", action: "POST /countersign/unmask/verify",
       });
