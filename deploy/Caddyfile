@@ -1,0 +1,11 @@
+{
+    acme_ca https://acme-v02.api.letsencrypt.org/directory
+}
+
+{$PUBLIC_HOST} {
+    reverse_proxy governed:3000
+}
+
+off.{$PUBLIC_HOST} {
+    reverse_proxy ungoverned:3001
+}

@@ -10,6 +10,7 @@ import {
 } from "@simplewebauthn/server";
 
 import { isRecord } from "./canonical.js";
+import { portalOrigin } from "./origin.js";
 import { CredentialStore } from "./credentials.js";
 import { appendProvenanceEvent } from "./log.js";
 import { loadPolicy, matchRule } from "./policy.js";
@@ -18,8 +19,9 @@ import type { Attestation, PolicyRule, PortalUser, PresenceProof } from "./types
 
 export const RP = {
   rpName: "Countersign",
-  rpID: "localhost",
-  origin: "http://localhost:3000",
+  // Read after server.ts loads .env; derive the RP ID from the exact browser origin.
+  get rpID() { return new URL(RP.origin).hostname; },
+  get origin() { return portalOrigin(true); },
 } as const;
 
 // A test seam for node:test mocks, not a runtime verification bypass.
@@ -253,7 +255,7 @@ export function createWebAuthnRouter(
     } else if (!request.is("application/json")) {
       response.status(415).json({ error: "json_required", message: "Send a JSON request." });
     } else if (request.get("origin") && request.get("origin") !== RP.origin) {
-      response.status(403).json({ error: "origin_mismatch", message: "Use http://localhost:3000." });
+      response.status(403).json({ error: "origin_mismatch", message: `Use ${RP.origin}.` });
     } else {
       response.set("Cache-Control", "no-store");
       next();

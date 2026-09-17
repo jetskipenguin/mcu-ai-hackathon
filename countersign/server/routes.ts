@@ -78,7 +78,7 @@ export function createCountersignRouter(
     if (!enabled) response.status(404).json({ error: "countersign_disabled", message: "Use the governed portal for policy management." });
     else if (!response.locals.user) response.status(401).json({ error: "login_required", message: "Sign in at /login before managing policy." });
     else if (!request.is("application/json")) response.status(415).json({ error: "json_required", message: "Send a JSON request." });
-    else if (request.get("origin") && request.get("origin") !== RP.origin) response.status(403).json({ error: "origin_mismatch", message: "Use http://localhost:3000." });
+    else if (request.get("origin") && request.get("origin") !== RP.origin) response.status(403).json({ error: "origin_mismatch", message: `Use ${RP.origin}.` });
     else next();
   });
 

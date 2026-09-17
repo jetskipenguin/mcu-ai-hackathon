@@ -76,6 +76,22 @@ async function setup(t: TestContext, enabled = true) {
     events: () => readProvenanceEvents(provenancePath) };
 }
 
+for (const enabled of [true, false]) test(`public HTTPS reset checks the configured origin (governed=${enabled})`, async t => {
+  const key = enabled ? "PUBLIC_ORIGIN" : "UNGOVERNED_ORIGIN";
+  const previous = process.env[key];
+  const origin = `https://${enabled ? "" : "off."}203.0.113.10.sslip.io`;
+  process.env[key] = origin;
+  t.after(() => {
+    if (previous === undefined) delete process.env[key];
+    else process.env[key] = previous;
+  });
+  const h = await setup(t, enabled);
+  await h.publish();
+  const body = { reset_token: await h.token(), confirmation: "reset-discussion" };
+  assert.equal((await h.post("/discussion/2/reset", body, h.cookie, { origin: `http://localhost:${enabled ? 3000 : 3001}` })).status, 403);
+  assert.equal((await h.post("/discussion/2/reset", body, h.cookie, { origin })).status, 200);
+});
+
 for (const enabled of [true, false]) test(`post-reset-post restores only demo state and retains credentials/audit (governed=${enabled})`, async t => {
   const h = await setup(t, enabled);
   const first = await h.publish();

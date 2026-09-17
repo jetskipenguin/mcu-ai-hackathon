@@ -1,4 +1,5 @@
 .env
+ssh.pem
 data/provenance.jsonl
 data/credentials.json
 data/credentials.json.*.tmp

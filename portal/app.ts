@@ -17,7 +17,8 @@ import { createRecordGovernance, type RecordOptions } from "../countersign/serve
 import { appendProvenanceEvent } from "../countersign/server/log.js";
 import type { CountersignPolicy, PolicyRule, PortalUser, SubmissionProvenance } from "../countersign/server/types.js";
 import { PolicyStore, type PolicyStorePaths } from "../countersign/server/policy-store.js";
-import { RP, WebAuthnService, type GovernedAction, type WebAuthnOptions } from "../countersign/server/webauthn.js";
+import { WebAuthnService, type GovernedAction, type WebAuthnOptions } from "../countersign/server/webauthn.js";
+import { portalOrigin } from "../countersign/server/origin.js";
 
 interface Student extends PortalUser {
   email: string;
@@ -206,6 +207,7 @@ export interface AppOptions extends WebAuthnOptions {
 export function createApp(options: AppOptions = {}): express.Express {
   const enabled =
     options.countersignEnabled ?? process.env.COUNTERSIGN !== "off";
+  const origin = portalOrigin(enabled);
   const sessionSecret =
     options.sessionSecret || process.env.SESSION_SECRET || randomUUID();
   const students = readJson<Student[]>("portal/data/students.json");
@@ -507,7 +509,7 @@ export function createApp(options: AppOptions = {}): express.Express {
       response.status(403).json({ error: "demo_user_required", message: "Only Capt J. Demo's rehearsal response can be reset." });
       return;
     }
-    if (request.get("origin") && request.get("origin") !== (enabled ? RP.origin : "http://localhost:3001")) {
+    if (request.get("origin") && request.get("origin") !== origin) {
       response.status(403).json({ error: "origin_mismatch", message: "Reset from this portal instance's discussion page." });
       return;
     }

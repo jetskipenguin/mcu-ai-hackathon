@@ -346,6 +346,37 @@ test("challenge issuance validates the known action, matching rule, hash, and at
   assert.deepEqual(a.options.allowCredentials.map((item: { id: string }) => item.id), [h.device.credential.id]);
 });
 
+test("public HTTPS origin supports registration, quiz and record proofs and rejects localhost proofs", async (context) => {
+  const previous = process.env.PUBLIC_ORIGIN;
+  process.env.PUBLIC_ORIGIN = "https://203.0.113.10.sslip.io";
+  context.after(() => {
+    if (previous === undefined) delete process.env.PUBLIC_ORIGIN;
+    else process.env.PUBLIC_ORIGIN = previous;
+  });
+  const h = await harness(context, { seed: false });
+  const post = (path: string, body: unknown, origin = RP.origin) =>
+    h.post(path, body, h.session.cookie, { origin });
+  assert.equal((await post("/countersign/webauthn/register/options", {}, "http://localhost:3000")).status, 403);
+  const options = await (await post("/countersign/webauthn/register/options", {})).json();
+  assert.equal(options.rp.id, "203.0.113.10.sslip.io");
+  assert.equal((await post("/countersign/webauthn/register/verify", h.device.registration(options.challenge))).status, 200);
+  const wrong = await h.issue();
+  await expectBlocked(await h.submit(wrong, fields, h.device.assertion(wrong.options.challenge, {
+    origin: "http://localhost:3000",
+  })), "verification_failed");
+  assert.equal((await h.submit(await h.issue())).status, 200);
+  const reveal = await (await post("/countersign/unmask", {
+    rule_id: "student-record.unmask", action: "POST /countersign/unmask/verify",
+  })).json();
+  assert.equal((await post("/countersign/unmask/verify", {
+    challenge_id: reveal.challenge_id, assertion: h.device.assertion(reveal.options.challenge, { counter: 2 }),
+  })).status, 200);
+  // Invalid selection checks the policy Origin gate without changing policy files.
+  assert.equal((await post("/countersign/policy/approve", {})).status, 400);
+  assert.equal((await post("/countersign/policy/approve", {}, "http://localhost:3000")).status, 403);
+  assert.ok((await h.events()).some(event => event.decision === "allowed" && event.presence?.assertion_id));
+});
+
 test("first login enrolls a passkey and real registration persists a usable public key", async (context) => {
   const h = await harness(context, { seed: false });
   assert.equal(h.session.location, "/register");

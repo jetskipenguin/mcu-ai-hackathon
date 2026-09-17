@@ -1,0 +1,31 @@
+# Enable with COMPOSE_FILE=compose.yaml:compose.public.yaml in .env.
+services:
+  governed:
+    environment:
+      PUBLIC_ORIGIN: https://${PUBLIC_HOST:?Set PUBLIC_HOST in .env}
+
+  ungoverned:
+    environment:
+      UNGOVERNED_ORIGIN: https://off.${PUBLIC_HOST:?Set PUBLIC_HOST in .env}
+
+  caddy:
+    image: caddy:2.10.2-alpine
+    restart: unless-stopped
+    environment:
+      PUBLIC_HOST: ${PUBLIC_HOST:?Set PUBLIC_HOST in .env}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on:
+      governed:
+        condition: service_healthy
+      ungoverned:
+        condition: service_healthy
+
+volumes:
+  caddy-data:
+  caddy-config:
